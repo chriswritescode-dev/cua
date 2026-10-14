@@ -1386,46 +1386,25 @@ fn num(a: &Value, k: &str) -> Result<f64, CuaError> {
 /// decision that is never shown, so the call never returned.
 const HOST_READ_TOOLS: [&str; 2] = ["upload", "send_file"];
 
-/// Overrides every tool's time limit, in seconds.
+/// Sets a limit on every tool call, in seconds. Unset means no limit.
 const TOOL_TIMEOUT_ENV: &str = "CUA_MCP_TOOL_TIMEOUT";
 
 /// How long one tool call may take before `cua mcp` stops waiting and says
-/// so: an agent must never wait in silence. Calls that create machines or
-/// move files get longer; a call with its own `timeout` gets that plus a
-/// minute.
-fn tool_budget(tool: &str, arguments: &Value, env: Option<&str>) -> Duration {
-    if let Some(secs) = env
-        .and_then(|v| v.trim().parse::<u64>().ok())
+/// so: an agent must never wait in silence. There is no limit by default;
+/// [`TOOL_TIMEOUT_ENV`] (a positive number of seconds) sets one.
+fn tool_budget(env: Option<&str>) -> Option<Duration> {
+    env.and_then(|v| v.trim().parse::<u64>().ok())
         .filter(|s| *s > 0)
-    {
-        return Duration::from_secs(secs);
-    }
-    let base = match tool {
-        // A macOS image pull is ~25 GB before readiness starts counting.
-        "create_space" | "start_space" | "sandbox_create" | "sandbox_start" => 2 * 3600,
-        "upload"
-        | "send_file"
-        | "download"
-        | "agent_start"
-        | "teleport_app"
-        | "teleport_browser_session" => 30 * 60,
-        _ => 10 * 60,
-    };
-    let asked = arguments
-        .get("timeout")
-        .and_then(Value::as_u64)
-        .map_or(0, |t| t.min(24 * 3600) + 60);
-    Duration::from_secs(base.max(asked))
+        .map(Duration::from_secs)
 }
 
 /// Runs `call` within [`tool_budget`]; past it, a `timeout` tool error.
-async fn bounded(
-    tool: &str,
-    arguments: &Value,
-    call: impl std::future::Future<Output = ToolOutcome>,
-) -> ToolOutcome {
+async fn bounded(tool: &str, call: impl std::future::Future<Output = ToolOutcome>) -> ToolOutcome {
     let env = std::env::var(TOOL_TIMEOUT_ENV).ok();
-    within(tool, tool_budget(tool, arguments, env.as_deref()), call).await
+    match tool_budget(env.as_deref()) {
+        Some(budget) => within(tool, budget, call).await,
+        None => call.await,
+    }
 }
 
 async fn within(
@@ -1499,7 +1478,7 @@ impl SdkTools {
 #[async_trait::async_trait]
 impl cua_spaces::mcp::ToolBackend for SdkTools {
     async fn call(&self, tool: &str, arguments: Value) -> ToolOutcome {
-        bounded(tool, &arguments, self.forward(tool, arguments.clone())).await
+        bounded(tool, self.forward(tool, arguments.clone())).await
     }
 }
 
@@ -1530,7 +1509,7 @@ impl cua_spaces::mcp::ToolExtension for Server {
                 Err(e) => ToolOutcome::error_message(error_kind(&e), e.to_string()),
             }
         };
-        Some(bounded(tool, &arguments, run).await)
+        Some(bounded(tool, run).await)
     }
 }
 
@@ -1687,23 +1666,12 @@ mod tests {
     }
 
     #[test]
-    fn every_tool_call_has_a_time_limit() {
-        let none = json!({});
-        let b = |tool: &str, a: &Value| tool_budget(tool, a, None).as_secs();
-        assert_eq!(b("list_spaces", &none), 600);
-        assert_eq!(b("upload", &none), 1800);
-        assert_eq!(b("send_file", &none), 1800);
-        assert_eq!(b("create_space", &none), 7200);
-        // A call's own timeout wins, plus a minute, capped at a day.
-        assert_eq!(b("space_bash", &json!({"timeout": 3600})), 3660);
-        assert_eq!(b("space_bash", &json!({"timeout": 5})), 600);
-        assert_eq!(
-            b("space_bash", &json!({"timeout": u64::MAX})),
-            24 * 3600 + 60
-        );
-        assert_eq!(tool_budget("upload", &none, Some("12")).as_secs(), 12);
-        assert_eq!(tool_budget("upload", &none, Some("0")).as_secs(), 1800);
-        assert_eq!(tool_budget("upload", &none, Some("x")).as_secs(), 1800);
+    fn tool_calls_have_no_time_limit_unless_the_env_sets_one() {
+        assert_eq!(tool_budget(None), None);
+        assert_eq!(tool_budget(Some("0")), None);
+        assert_eq!(tool_budget(Some("x")), None);
+        assert_eq!(tool_budget(Some("")), None);
+        assert_eq!(tool_budget(Some("12")), Some(Duration::from_secs(12)));
     }
 
     #[tokio::test]
