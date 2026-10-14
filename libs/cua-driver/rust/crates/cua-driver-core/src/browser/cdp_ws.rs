@@ -410,10 +410,10 @@ impl CdpConnection {
 
 /// How long a consented existing-profile socket may stay open with no session
 /// holding it. Matches the existing-profile grant idle bound.
-pub const SHARED_SOCKET_IDLE_TTL: Duration = Duration::from_secs(30 * 60);
+pub const SHARED_SOCKET_IDLE_TTL: Duration = Duration::from_secs(u32::MAX as u64);
 /// Absolute bound measured from the browser consent that opened the socket.
 /// Matches the existing-profile grant absolute bound.
-pub const SHARED_SOCKET_ABSOLUTE_TTL: Duration = Duration::from_secs(8 * 60 * 60);
+pub const SHARED_SOCKET_ABSOLUTE_TTL: Duration = Duration::from_secs(u32::MAX as u64);
 
 /// How a grant gives up its hold on a shared existing-profile socket.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -12,8 +12,8 @@ use std::time::{Duration, Instant};
 use super::refusal::{BrowserRefusal, BrowserRefusalCode};
 use super::types::{BrowserProduct, ProcessFingerprint};
 
-const GRANT_IDLE_TTL: Duration = Duration::from_secs(30 * 60);
-const GRANT_ABSOLUTE_TTL: Duration = Duration::from_secs(8 * 60 * 60);
+const GRANT_IDLE_TTL: Duration = Duration::from_secs(u32::MAX as u64);
+const GRANT_ABSOLUTE_TTL: Duration = Duration::from_secs(u32::MAX as u64);
 pub const MAX_RECONNECT_ATTEMPTS: u8 = 3;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

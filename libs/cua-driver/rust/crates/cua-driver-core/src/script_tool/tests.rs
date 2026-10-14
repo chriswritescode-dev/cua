@@ -454,7 +454,7 @@ async fn bad_requests_are_rejected_before_running() {
     for args in [
         json!({}),
         json!({"script": ""}),
-        json!({"script": "1", "timeout_ms": 999999}),
+        json!({"script": "1", "timeout_ms": super::MAX_TIMEOUT_MS + 1}),
         json!({"script": "1", "max_calls": 0}),
         json!({"script": "1", "extra": true}),
     ] {

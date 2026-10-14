@@ -23,8 +23,8 @@ use std::sync::{
     Arc, Mutex,
 };
 
-const RECORDING_IDLE_TTL_SECS_DEFAULT: u64 = 300;
-const SESSION_IDLE_TTL_SECS_DEFAULT: u64 = 300;
+const RECORDING_IDLE_TTL_SECS_DEFAULT: u64 = u32::MAX as u64;
+const SESSION_IDLE_TTL_SECS_DEFAULT: u64 = u32::MAX as u64;
 #[cfg(test)]
 // A tokio mutex: the async tests hold it across awaits to serialize runtime
 // ownership, and it does not poison the remaining tests when one fails.

@@ -50,8 +50,8 @@ pub const DISABLE_ENV: &str = "CUA_DRIVER_DISABLE_RUN_SCRIPT";
 /// turns the tool off; `1` changes nothing.
 pub const LEGACY_ENV: &str = "CUA_DRIVER_EXPERIMENTAL_SCRIPT";
 
-pub const DEFAULT_TIMEOUT_MS: u64 = 30_000;
-pub const MAX_TIMEOUT_MS: u64 = 120_000;
+pub const DEFAULT_TIMEOUT_MS: u64 = 86_400_000;
+pub const MAX_TIMEOUT_MS: u64 = 86_400_000;
 pub const DEFAULT_MAX_CALLS: u32 = 100;
 pub const MAX_MAX_CALLS: u32 = 500;
 pub const MAX_SCRIPT_BYTES: usize = 64 * 1024;
@@ -189,7 +189,7 @@ impl Tool for RunScriptTool {
                 launch_app, list_apps, list_windows, get_window_state, verify_state, zoom.\n\
                 A failed driver call throws a CuaError (catch it to recover). Every call goes \
                 through the same session, permission and approval checks as a direct call.\n\n\
-                Limits: `timeout_ms` wall time (default 30000, max 120000), `max_calls` driver \
+                Limits: `timeout_ms` wall time (default 86400000, max 86400000), `max_calls` driver \
                 calls (default 100, max 500), 32 MiB heap. Returns the return value, console \
                 output, and a per-call log; an error names the script line, the call and the \
                 reason.\n\n\
@@ -213,7 +213,7 @@ impl Tool for RunScriptTool {
                         "type": "integer",
                         "minimum": 100,
                         "maximum": MAX_TIMEOUT_MS,
-                        "description": "Wall-time limit. Default 30000."
+                        "description": "Wall-time limit. Default 86400000."
                     },
                     "max_calls": {
                         "type": "integer",

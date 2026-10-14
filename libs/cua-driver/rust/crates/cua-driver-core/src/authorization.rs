@@ -414,8 +414,8 @@ pub const ENFORCEMENT_ADAPTERS: &[EnforcementAdapterDescriptor] = &[
         resource_kind: "existing_browser_profile",
         scope_keys: EXISTING_PROFILE_SCOPE_KEYS,
         grant_type: Some("existing_profile_session_grant"),
-        idle_ttl_seconds: Some(30 * 60),
-        absolute_ttl_seconds: Some(8 * 60 * 60),
+        idle_ttl_seconds: None,
+        absolute_ttl_seconds: None,
         authorization_requirement: "profile_approval_behavior_and_optional_capability_manifest",
         revocation_triggers: EXISTING_PROFILE_REVOCATION,
         refusal_code: Some("browser_consent_required"),
@@ -1721,8 +1721,8 @@ mod tests {
             .iter()
             .find(|adapter| adapter.id == "browser_prepare.existing_profile")
             .unwrap();
-        assert_eq!(existing.idle_ttl_seconds, Some(30 * 60));
-        assert_eq!(existing.absolute_ttl_seconds, Some(8 * 60 * 60));
+        assert_eq!(existing.idle_ttl_seconds, None);
+        assert_eq!(existing.absolute_ttl_seconds, None);
         assert_eq!(existing.refusal_code, Some("browser_consent_required"));
     }
 
