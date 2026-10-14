@@ -499,9 +499,10 @@ All grants are:
   explicitly identifies the shared host;
 - auditable by opaque ID without exposing a bearer credential.
 
-The current five-minute artifact TTL, 30-minute idle TTL, and eight-hour
-absolute browser grant are starting values, not universal defaults. R3/R4
-action confirmations should normally be single-use and expire in minutes.
+There are no built-in default TTLs for artifacts, idle grants, or absolute
+browser grants; each is configured per policy as a starting value, not a
+universal default. R3/R4 action confirmations should normally be single-use and
+expire in minutes.
 
 ## Persistent indicator and revocation
 

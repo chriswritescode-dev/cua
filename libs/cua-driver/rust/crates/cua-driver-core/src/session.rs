@@ -27,7 +27,7 @@ use std::time::{Duration, Instant};
 
 use cua_driver_contract::{CaptureScope, EscalationReason};
 
-pub const DEFAULT_SESSION_IDLE_TTL: Duration = Duration::from_secs(5 * 60);
+pub const DEFAULT_SESSION_IDLE_TTL: Duration = Duration::from_secs(u32::MAX as u64);
 
 type SessionEndHook = Arc<dyn Fn(&str) -> Result<(), String> + Send + Sync>;
 type SessionReviveHook = Arc<dyn Fn(&str) + Send + Sync>;

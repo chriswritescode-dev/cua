@@ -19,7 +19,7 @@ use uuid::Uuid;
 
 const MAX_REQUESTS: usize = 4096;
 const MAX_REQUEST_BYTES: usize = 1024 * 1024;
-const MAX_DEADLINE_MS: u128 = 120_000;
+const MAX_DEADLINE_MS: u128 = 86_400_000;
 
 /// A session-scoped executor. Implementations must preserve native results and
 /// must not interpret closing a connection as shutting down the shared runtime.

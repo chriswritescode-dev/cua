@@ -564,7 +564,7 @@ impl DriverEnvelopeChannel for Inner {
             .duration_since(UNIX_EPOCH)
             .map_err(|_| "Driver clock is invalid")?
             .as_millis();
-        let timeout = request.deadline_unix_ms.saturating_sub(now).min(120000) as u64;
+        let timeout = request.deadline_unix_ms.saturating_sub(now).min(86_400_000) as u64;
         if timeout == 0 {
             return Err("Driver request deadline has expired".into());
         }
