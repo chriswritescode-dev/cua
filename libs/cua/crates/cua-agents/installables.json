@@ -177,15 +177,15 @@
     "opencode": {
       "name": "OpenCode",
       "kind": "npm",
-      "version": "1.18.32",
+      "version": "2.3.0",
       "license": "MIT",
-      "source": "https://registry.npmjs.org/opencode-ai/1.18.32",
+      "source": "https://registry.npmjs.org/@opencode/cli/2.3.0",
       "packages": [
         {
-          "name": "opencode-ai",
-          "version": "1.18.32",
-          "tarball": "https://registry.npmjs.org/opencode-ai/-/opencode-ai-1.18.32.tgz",
-          "integrity": "sha512-SCrZWdq44y/EoH2+fE4HLcXS+DzpVqHPzmXk3p2RrufYy8LWvpfhRhKtijb5ktvx8r94ScqToqwHxR0BwS65OQ=="
+          "name": "@opencode/cli",
+          "version": "2.3.0",
+          "tarball": "https://registry.npmjs.org/@opencode/cli/-/cli-2.3.0.tgz",
+          "integrity": "sha512-Q5RV8jLJ4O8bY2O8X2hkBOkgPf6+nDB9MEkz/Q/Cc4Ojd2SwUFFzEd1LzgNGKiXiS7g/9+/X4eqhrxY60fLMOQ=="
         }
       ],
       "bins": {
