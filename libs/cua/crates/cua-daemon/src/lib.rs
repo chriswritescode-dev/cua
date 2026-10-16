@@ -626,6 +626,28 @@ impl InstanceLock {
     }
 }
 
+/// `~/.cua/remote-mcp-token`: the bearer of the daemon's remote MCP
+/// listener ([`server::DaemonHandle::serve_remote_mcp`]).
+pub fn remote_mcp_token_path() -> PathBuf {
+    cua_home().join("remote-mcp-token")
+}
+
+/// The remote MCP bearer: the file's token when it holds one, else a fresh
+/// [`random_token`] written owner-only (0600). Stable across restarts so
+/// remote clients configure it once.
+pub fn remote_mcp_token() -> std::io::Result<String> {
+    let path = remote_mcp_token_path();
+    if let Ok(s) = std::fs::read_to_string(&path) {
+        let s = s.trim();
+        if !s.is_empty() {
+            return Ok(s.to_string());
+        }
+    }
+    let token = random_token();
+    write_private(&path, token.as_bytes())?;
+    Ok(token)
+}
+
 /// What every caller shows when no daemon listens: [`Error::DaemonNotRunning`].
 pub const DAEMON_NOT_RUNNING: &str =
     "The Cua daemon isn't running. Start Cua, or run `cua daemon start`.";
