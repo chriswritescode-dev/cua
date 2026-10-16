@@ -214,6 +214,55 @@ impl DaemonHandle {
         self.cleanup();
     }
 
+    /// Serves the Spaces MCP endpoint (`/mcp`, streamable HTTP) on a
+    /// second, separate listener bound to `addr` — any address, including a
+    /// non-loopback one such as `0.0.0.0` — authenticated by `token` alone.
+    /// Remote clients may not dial arbitrary hosts or run agents
+    /// ([`remote_mcp_exposes`]); every other tool is exposed, so the token
+    /// grants host filesystem access through the file tools and travels in
+    /// clear over plain HTTP. Returns the bound local address.
+    pub async fn serve_remote_mcp(
+        &mut self,
+        addr: SocketAddr,
+        token: String,
+    ) -> Result<SocketAddr> {
+        #[cfg(not(feature = "spaces"))]
+        {
+            let _ = (addr, token);
+            Err(Error::Unsupported(
+                "this build has no Spaces MCP server".into(),
+            ))
+        }
+        #[cfg(feature = "spaces")]
+        {
+            if token.is_empty() {
+                return Err(Error::InvalidArgument(
+                    "the remote MCP token is empty".into(),
+                ));
+            }
+            let listener = tokio::net::TcpListener::bind(addr).await?;
+            let local = listener.local_addr()?;
+            let server = spaces_mcp(&self.shared).with_filter(Arc::new(remote_mcp_exposes));
+            let shared = self.shared.clone();
+            self.tasks.push(tokio::spawn(async move {
+                let busy = axum::middleware::from_fn(
+                    move |req: axum::extract::Request, next: axum::middleware::Next| {
+                        let shared = shared.clone();
+                        async move {
+                            let _busy = Busy::new(shared);
+                            next.run(req).await
+                        }
+                    },
+                );
+                let router = cua_spaces::mcp::http::router(server, Some(token)).layer(busy);
+                if let Err(e) = axum::serve(listener, router).await {
+                    tracing::error!(error = %e, "remote MCP listener stopped");
+                }
+            }));
+            Ok(local)
+        }
+    }
+
     fn cleanup(&self) {
         if let Some(p) = &self.socket_path {
             let _ = std::fs::remove_file(p);
@@ -468,6 +517,28 @@ async fn accept_loop<L: Accept>(listener: L, app: BoxedApp, mut shutdown: watch:
     conns.abort_all();
 }
 
+/// The daemon's Spaces MCP server, over the runtime's Spaces and the
+/// session broker. The loopback/socket listener and the remote listener
+/// both serve this; only the remote one narrows it with a filter.
+#[cfg(feature = "spaces")]
+fn spaces_mcp(shared: &Shared) -> cua_spaces::mcp::McpServer {
+    let mut mcp = cua_spaces::mcp::McpServer::new(shared.runtime.spaces().clone());
+    if let Some(broker) = shared.runtime.session_broker() {
+        mcp = mcp.with_session_broker(broker);
+    }
+    mcp
+}
+
+/// Which Spaces tools the remote MCP listener exposes. Remote clients may
+/// not dial arbitrary hosts (`add_space`) or run agents (`agent_*`,
+/// `persistent_agent_*`, `routine_*`); everything else stays exposed.
+pub fn remote_mcp_exposes(tool: &str) -> bool {
+    !tool.starts_with("agent_")
+        && !tool.starts_with("persistent_agent_")
+        && !tool.starts_with("routine_")
+        && tool != "add_space"
+}
+
 fn app(shared: Arc<Shared>, require_token: bool) -> BoxedApp {
     let svc = Svc(shared.clone());
     // The clients' limit, not gRPC's 4 MiB default: a tool call can carry
@@ -526,13 +597,7 @@ fn app(shared: Arc<Shared>, require_token: bool) -> BoxedApp {
     // The Spaces MCP server over streamable HTTP. The listener's own auth
     // (loopback bearer, or the 0600 socket) already guards it.
     #[cfg(feature = "spaces")]
-    let router = {
-        let mut mcp = cua_spaces::mcp::McpServer::new(shared.runtime.spaces().clone());
-        if let Some(broker) = shared.runtime.session_broker() {
-            mcp = mcp.with_session_broker(broker);
-        }
-        router.merge(cua_spaces::mcp::http::router(mcp, None))
-    };
+    let router = router.merge(cua_spaces::mcp::http::router(spaces_mcp(&shared), None));
     // tonic-web answers every non-gRPC-Web HTTP/1.1 request with 400, so
     // only gRPC-Web goes through it; native gRPC (h2c), WebSocket upgrades
     // and plain HTTP reach the router directly.

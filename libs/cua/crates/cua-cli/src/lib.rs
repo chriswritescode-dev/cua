@@ -672,7 +672,9 @@ enum DaemonCmd {
     #[command(after_help = "Examples:
   cua daemon start
   # In the foreground, for a service manager
-  cua daemon start --foreground")]
+  cua daemon start --foreground
+  # Let agents on the LAN use the Spaces MCP
+  cua daemon start --mcp-listen 0.0.0.0:7420")]
     Start {
         /// Stay in the foreground.
         #[arg(long)]
@@ -683,6 +685,9 @@ enum DaemonCmd {
         /// Loopback address (default 127.0.0.1:0; "off" disables).
         #[arg(long, default_value = "127.0.0.1:0")]
         loopback: String,
+        /// Also serve the Spaces MCP endpoint (`/mcp`) to other machines at this address (for example 0.0.0.0:7420), authenticated by the token in ~/.cua/remote-mcp-token. Plain HTTP: the token grants Space and host file access, so use it only on a trusted network.
+        #[arg(long, env = "CUA_DAEMON_MCP_LISTEN")]
+        mcp_listen: Option<String>,
     },
     /// Stop the daemon.
     #[command(after_help = "Examples:
@@ -1667,7 +1672,18 @@ async fn run(cli: Cli, out: &mut dyn Write) -> Result<i32, CuaError> {
             foreground,
             socket,
             loopback,
-        }) => return daemon_start(&cli, *foreground, socket.clone(), loopback, out).await,
+            mcp_listen,
+        }) => {
+            return daemon_start(
+                &cli,
+                *foreground,
+                socket.clone(),
+                loopback,
+                mcp_listen.as_deref(),
+                out,
+            )
+            .await;
+        }
         Command::Teleport(
             cmd @ (teleport::TeleportCmd::Providers | teleport::TeleportCmd::Manifest(_)),
         ) => {
@@ -1866,7 +1882,15 @@ async fn run_sdk(cli: Cli, out: &mut dyn Write) -> Result<i32, CuaError> {
         && !cli.embedded
         && cli.daemon.is_none()
         && std::env::var_os("CUA_NO_DAEMON_AUTOSTART").is_none()
-        && let Err(e) = daemon_start(&cli, false, None, "127.0.0.1:0", &mut std::io::stderr()).await
+        && let Err(e) = daemon_start(
+            &cli,
+            false,
+            None,
+            "127.0.0.1:0",
+            None,
+            &mut std::io::stderr(),
+        )
+        .await
     {
         eprintln!("note: could not start the cua daemon ({e}); continuing without it");
     }
@@ -1876,7 +1900,15 @@ async fn run_sdk(cli: Cli, out: &mut dyn Write) -> Result<i32, CuaError> {
         && !cli.embedded
         && cli.daemon.is_none()
     {
-        daemon_start(&cli, false, None, "127.0.0.1:0", &mut std::io::stderr()).await?;
+        daemon_start(
+            &cli,
+            false,
+            None,
+            "127.0.0.1:0",
+            None,
+            &mut std::io::stderr(),
+        )
+        .await?;
     }
     let cua = open(&cli, needs_fleet).await?;
     match cli.command {
@@ -2206,9 +2238,16 @@ async fn daemon_start(
     foreground: bool,
     socket: Option<PathBuf>,
     loopback: &str,
+    mcp_listen: Option<&str>,
     out: &mut dyn Write,
 ) -> Result<i32, CuaError> {
     let discovery = cua_daemon::default_discovery_path();
+    let mcp_listen_addr = mcp_listen
+        .map(|a| {
+            a.parse::<std::net::SocketAddr>()
+                .map_err(|_| CuaError::InvalidArgument(format!("bad --mcp-listen address {a}")))
+        })
+        .transpose()?;
     if !foreground {
         if let Some(d) = cua_daemon::Discovery::read(&discovery)
             && Cua::connect(None, None)?.info().await.is_ok()
@@ -2285,6 +2324,10 @@ async fn daemon_start(
         }
         args.push("--loopback".into());
         args.push(loopback.to_string());
+        if let Some(a) = mcp_listen {
+            args.push("--mcp-listen".into());
+            args.push(a.to_string());
+        }
         if let Some(d) = &cli.state_dir {
             args.push("--state-dir".into());
             args.push(d.clone());
@@ -2437,7 +2480,15 @@ async fn daemon_start(
             cua_telemetry::global().shutdown(Duration::from_millis(400));
         }
     }
-    let h = h?;
+    let mut h = h?;
+    if let Some(addr) = mcp_listen_addr {
+        let token = cua_daemon::remote_mcp_token().map_err(util::internal)?;
+        let bound = h.serve_remote_mcp(addr, token).await?;
+        eprintln!(
+            "cua daemon remote MCP: http://{bound}/mcp (bearer token in {})",
+            cua_daemon::remote_mcp_token_path().display()
+        );
+    }
     eprintln!(
         "cua daemon listening: socket={} loopback={}",
         h.socket_path

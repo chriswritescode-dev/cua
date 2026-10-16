@@ -8439,7 +8439,7 @@
    "subcommands": [
     {
      "abstract": "Start the daemon (in the background unless --foreground)",
-     "after_help": "Examples:\n  cua daemon start\n  # In the foreground, for a service manager\n  cua daemon start --foreground",
+     "after_help": "Examples:\n  cua daemon start\n  # In the foreground, for a service manager\n  cua daemon start --foreground\n  # Let agents on the LAN use the Spaces MCP\n  cua daemon start --mcp-listen 0.0.0.0:7420",
      "aliases": [],
      "arguments": [],
      "flags": [
@@ -8490,6 +8490,22 @@
        "takes_value": true,
        "type": "string",
        "value_name": "LOOPBACK"
+      },
+      {
+       "aliases": [],
+       "default_value": null,
+       "env": "CUA_DAEMON_MCP_LISTEN",
+       "help": "Also serve the Spaces MCP endpoint (`/mcp`) to other machines at this address (for example 0.0.0.0:7420), authenticated by the token in ~/.cua/remote-mcp-token. Plain HTTP: the token grants Space and host file access, so use it only on a trusted network",
+       "hidden": false,
+       "is_optional": true,
+       "multiple_values": false,
+       "name": "mcp-listen",
+       "possible_values": [],
+       "repeatable": false,
+       "short_name": null,
+       "takes_value": true,
+       "type": "string",
+       "value_name": "MCP_LISTEN"
       }
      ],
      "subcommand_optional": false,
