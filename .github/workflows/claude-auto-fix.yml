@@ -272,7 +272,6 @@ jobs:
           FIXING TEST FAILURES:
           For Python test failures:
             - Run the specific failing test: uv run python -m pytest libs/python/<package>/tests/ -v --tb=long
-            - The test environment uses CUA_TELEMETRY_ENABLED=false
             - Tests use pytest-asyncio with asyncio_mode=auto
           For TypeScript build/type failures:
             - Check types: pnpm -C libs/typescript typecheck
@@ -306,11 +305,6 @@ jobs:
           ANTHROPIC_BEDROCK_BASE_URL: "https://bedrock-runtime.us-west-2.amazonaws.com"
           AWS_REGION: us-west-2
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CUA_TELEMETRY_ENABLED: "false"
-          CLAUDE_CODE_ENABLE_TELEMETRY: "1"
-          OTEL_METRICS_EXPORTER: otlp
-          OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-          OTEL_EXPORTER_OTLP_ENDPOINT: https://otel.cua.ai
         run: |
           srt claude \
             --output-format=stream-json \
@@ -400,105 +394,3 @@ jobs:
               issue_number: prNumber,
               body: body
             });
-
-      - name: Send autofix metrics to OTEL
-        if: always() && steps.context.outputs.has_failed_run == 'true'
-        env:
-          OTEL_EXPORTER_OTLP_ENDPOINT: https://otel.cua.ai
-          START_TIME: ${{ steps.start-time.outputs.start_time }}
-          START_TIME_NANO: ${{ steps.start-time.outputs.start_time_nano }}
-          PR_NUMBER: ${{ steps.context.outputs.pr_number }}
-          TARGET_BRANCH: ${{ steps.context.outputs.target_branch }}
-          BRANCH_EXISTS: ${{ steps.verify-branch.outputs.branch_exists }}
-          TRIGGERED_BY: ${{ steps.context.outputs.failed_workflow_name }}
-        run: |
-          END_TIME=$(date +%s)
-          END_TIME_NANO=$(date +%s%N)
-          DURATION_SECONDS=$((END_TIME - START_TIME))
-
-          if [ "$BRANCH_EXISTS" = "true" ]; then
-            SUCCESS=1
-          else
-            SUCCESS=0
-          fi
-
-          echo "Sending autofix metrics to OTEL:"
-          echo "  PR: #${PR_NUMBER}"
-          echo "  Duration: ${DURATION_SECONDS}s"
-          echo "  Success: ${SUCCESS}"
-
-          METRICS_PAYLOAD=$(cat <<EOF
-          {
-            "resourceMetrics": [{
-              "resource": {
-                "attributes": [
-                  {"key": "service.name", "value": {"stringValue": "claude-autofix"}},
-                  {"key": "service.version", "value": {"stringValue": "1.0.0"}}
-                ]
-              },
-              "scopeMetrics": [{
-                "scope": {"name": "claude-autofix"},
-                "metrics": [
-                  {
-                    "name": "claude_autofix_attempt",
-                    "description": "Autofix attempt counter",
-                    "sum": {
-                      "dataPoints": [{
-                        "asInt": "1",
-                        "startTimeUnixNano": "${START_TIME_NANO}",
-                        "timeUnixNano": "${END_TIME_NANO}",
-                        "attributes": [
-                          {"key": "pr_number", "value": {"stringValue": "${PR_NUMBER}"}},
-                          {"key": "repository", "value": {"stringValue": "${{ github.repository }}"}},
-                          {"key": "triggered_by", "value": {"stringValue": "${TRIGGERED_BY}"}},
-                          {"key": "success", "value": {"stringValue": "${SUCCESS}"}}
-                        ]
-                      }],
-                      "aggregationTemporality": 2,
-                      "isMonotonic": true
-                    }
-                  },
-                  {
-                    "name": "claude_autofix_duration_seconds",
-                    "description": "Duration of autofix run in seconds",
-                    "gauge": {
-                      "dataPoints": [{
-                        "asDouble": ${DURATION_SECONDS},
-                        "timeUnixNano": "${END_TIME_NANO}",
-                        "attributes": [
-                          {"key": "pr_number", "value": {"stringValue": "${PR_NUMBER}"}},
-                          {"key": "repository", "value": {"stringValue": "${{ github.repository }}"}},
-                          {"key": "triggered_by", "value": {"stringValue": "${TRIGGERED_BY}"}},
-                          {"key": "success", "value": {"stringValue": "${SUCCESS}"}}
-                        ]
-                      }]
-                    }
-                  },
-                  {
-                    "name": "claude_autofix_success_total",
-                    "description": "Total number of successful autofix runs",
-                    "sum": {
-                      "dataPoints": [{
-                        "asInt": "${SUCCESS}",
-                        "startTimeUnixNano": "${START_TIME_NANO}",
-                        "timeUnixNano": "${END_TIME_NANO}",
-                        "attributes": [
-                          {"key": "pr_number", "value": {"stringValue": "${PR_NUMBER}"}},
-                          {"key": "repository", "value": {"stringValue": "${{ github.repository }}"}},
-                          {"key": "triggered_by", "value": {"stringValue": "${TRIGGERED_BY}"}}
-                        ]
-                      }],
-                      "aggregationTemporality": 2,
-                      "isMonotonic": true
-                    }
-                  }
-                ]
-              }]
-            }]
-          }
-          EOF
-          )
-
-          curl -s -X POST "${OTEL_EXPORTER_OTLP_ENDPOINT}/v1/metrics" \
-            -H "Content-Type: application/json" \
-            -d "$METRICS_PAYLOAD" || echo "Warning: Failed to send metrics"

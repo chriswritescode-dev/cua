@@ -9,26 +9,24 @@ import Testing
 
 /// The first run on the Mac is the shared web onboarding: what the bridge
 /// answers it (`onboarding.get`, `onboarding.complete`), the Space it
-/// creates ("<Space> is ready", `notifyWhenReady`) and the usage notice it
-/// shows.
+/// creates ("<Space> is ready", `notifyWhenReady`).
 @MainActor
 @Suite("First run (web onboarding)", .serialized)
 struct FirstRunTests {
     init() { _ = NSApplication.shared }
 
     func bridge(backend: SpacesBackend = FixtureSpacesBackend(),
-                loginItem: LoginItemControlling? = nil) -> (WebUIBridge, AppModel, FixtureTelemetry, URL) {
+                loginItem: LoginItemControlling? = nil) -> (WebUIBridge, AppModel, URL) {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("cua-firstrun-\(UUID().uuidString)")
         let state = dir.appendingPathComponent("onboarding.json")
-        let telemetry = FixtureTelemetry()
         let model = AppModel(backend: backend, keyvault: KeyvaultModel(client: nil),
                              onboarding: OnboardingModel(statePath: state.path),
-                             settingsPath: dir.appendingPathComponent("settings.json").path, telemetry: telemetry,
+                             settingsPath: dir.appendingPathComponent("settings.json").path,
                              loginItem: loginItem)
         model.settings.experiments = AppExperiments(cuaVolume: false, yourCloud: false, sharing: true, webUi: true)
         let bridge = WebUIBridge(model: model, allowedOrigins: [])
         bridge.notifySpaceReady = { _ in }
-        return (bridge, model, telemetry, state)
+        return (bridge, model, state)
     }
 
     func yield() async {
@@ -52,7 +50,7 @@ struct FirstRunTests {
     // MARK: - onboarding.get, onboarding.complete
 
     @Test func theFirstRunIsDueUntilItFinishesAndPersists() async throws {
-        let (bridge, model, _, state) = bridge()
+        let (bridge, model, state) = bridge()
         let due = try #require(try await bridge.handle("onboarding.get", [:]) as? [String: Any])
         #expect(due["completed"] as? Bool == false && due["mode"] as? String == "client")
         let session = try #require(try await bridge.handle("session.get", [:]) as? [String: Any])
@@ -72,7 +70,7 @@ struct FirstRunTests {
 
     @Test func completingNeedsAModeAndAppliesTheLoginCheckbox() async throws {
         let item = FixtureLoginItem()
-        let (bridge, model, _, _) = bridge(loginItem: item)
+        let (bridge, model, _) = bridge(loginItem: item)
         for bad: [String: Any] in [[:], ["mode": "team"], ["mode": 1]] {
             do {
                 _ = try await bridge.handle("onboarding.complete", bad)
@@ -85,33 +83,6 @@ struct FirstRunTests {
         _ = try await bridge.handle("onboarding.complete", ["mode": "client", "launchAtLogin": true])
         #expect(item.calls == ["register"])
         #expect(model.settings.launchAtLogin == true)
-    }
-
-    // MARK: - The usage notice
-
-    @Test func theUsageNoticeIsSeenWhenWelcomeIsLeftNotBefore() async throws {
-        let (bridge, _, telemetry, _) = bridge()
-        func track(_ page: String, _ action: String) async throws {
-            _ = try await bridge.handle("telemetry.track", ["signals": [
-                ["type": "onboarding-page", "page": page, "action": action, "choice": "none"]]])
-        }
-        try await track("welcome", "shown")
-        #expect(telemetry.acknowledgements == 0, "Welcome showing is not Welcome left")
-        try await track("signin", "shown")
-        #expect(telemetry.acknowledgements == 1)
-
-        // Skipping the first run also moves past it.
-        let (skip, _, skipped, _) = self.bridge()
-        _ = try await skip.handle("telemetry.track", ["signals": [["type": "step", "step": "onboarding_skipped", "ok": true]]])
-        #expect(skipped.acknowledgements == 1)
-
-        // The switch beside the note, and finishing, count as seen too.
-        let (settings, _, viaSwitch, _) = self.bridge()
-        _ = try await settings.handle("settings.choose", ["row": "telemetry", "option": "off"])
-        #expect(viaSwitch.acknowledgements == 1 && viaSwitch.current.enabled == false)
-        let (finish, _, finished, _) = self.bridge()
-        _ = try await finish.handle("onboarding.complete", ["mode": "client"])
-        #expect(finished.acknowledgements == 1)
     }
 
     // MARK: - "<Space> is ready"
@@ -150,7 +121,7 @@ struct FirstRunTests {
     }
 
     @Test func aCreateFromTheOnboardingNotifiesWhenItSucceeds() async throws {
-        let (bridge, _, _, _) = bridge()
+        let (bridge, _, _) = bridge()
         var posted: [SpaceReadyNote] = []
         bridge.notifySpaceReady = { posted.append($0) }
         _ = try await bridge.handle("spaces.create", ["config": config("aurora"), "pendingId": "pending:a1",
@@ -168,7 +139,7 @@ struct FirstRunTests {
     @Test func aFailedOrCancelledCreateNeverNotifies() async throws {
         let backend = FixtureSpacesBackend()
         backend.cancelledCreates = ["pending:b1"]
-        let (bridge, _, _, _) = bridge(backend: backend)
+        let (bridge, _, _) = bridge(backend: backend)
         var posted: [SpaceReadyNote] = []
         bridge.notifySpaceReady = { posted.append($0) }
         for id in ["pending:b1"] {
@@ -194,7 +165,7 @@ struct FirstRunTests {
     @Test func closingTheWindowMidCreateDoesNotCancelIt() async throws {
         let backend = FixtureSpacesBackend()
         backend.holdCreates = true
-        let (_, model, _, _) = bridge(backend: backend)
+        let (_, model, _) = bridge(backend: backend)
         let controller = WebUIWindowController(model: model, route: "/onboarding")
         var posted: [SpaceReadyNote] = []
         controller.bridge.notifySpaceReady = { posted.append($0) }

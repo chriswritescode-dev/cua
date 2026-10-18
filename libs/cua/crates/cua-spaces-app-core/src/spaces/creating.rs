@@ -882,9 +882,8 @@ pub enum FailureCause {
 }
 
 impl FailureCause {
-    /// The error enum case name telemetry records for it (`error_kind`
-    /// `insufficient_disk`, `local_network`, `vm_limit`, ...): a fixed word,
-    /// never the message.
+    /// The error enum case name for it (`error_kind` `insufficient_disk`,
+    /// `local_network`, `vm_limit`, ...): a fixed word, never the message.
     pub fn variant(self) -> &'static str {
         match self {
             Self::Disk => "InsufficientDisk",
@@ -973,7 +972,7 @@ pub fn failure_cause(raw: &str, phase: Option<&str>, gpu: bool) -> Option<Failur
     }
 }
 
-/// The `error_kind` word a failed create records in telemetry: the cause
+/// The `error_kind` word a failed create records: the cause
 /// the SDK's text names (`image_pull_not_found`, `vm_boot_timeout`,
 /// `services_unreachable`, ...; [`cua_create_failure::create_failure_kind`]),
 /// else what the shell sent (`Runtime`, as most are), else `other`. Only
@@ -1006,8 +1005,8 @@ pub struct FailDecision {
 }
 
 /// [`FailDecision`] for `p` failing with the SDK's `error` (and the shell's
-/// enum case `error_variant`). One function for the reducer and for
-/// telemetry, so the event a failure sends matches what the row does.
+/// enum case `error_variant`). One function for the reducer and for the
+/// error word, so the word matches what the row does.
 pub fn fail_decision(p: &PendingCreate, error: &str, error_variant: &str) -> FailDecision {
     let kind = retry::snake(failure_variant(error, Some(&p.phase), p.gpu, error_variant));
     let plain = crate::errors::plain_error(error);
@@ -3170,7 +3169,7 @@ mod tests {
             "image_pull"
         );
         // QEMU missing on a Windows PC: 0.9.2's after the pull, and the
-        // refusal before it. Not `other` in telemetry, and the SDK's words.
+        // refusal before it. Not `other`, and the SDK's words.
         for raw in [
             "local runtime: [local] qemu-img is not available: install QEMU (macOS: `brew \
              install qemu`; Debian/Ubuntu: `apt install qemu-utils`)",

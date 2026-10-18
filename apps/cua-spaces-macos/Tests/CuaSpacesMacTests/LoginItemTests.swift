@@ -26,7 +26,7 @@ struct LoginItemTests {
         return AppModel(backend: FixtureSpacesBackend(), keyvault: KeyvaultModel(client: nil, clock: { fixtureNow }),
                         onboarding: OnboardingModel(statePath: state.path),
                         settingsPath: dir.appendingPathComponent("settings.json").path,
-                        host: host, telemetry: FixtureTelemetry(), loginItem: loginItem)
+                        host: host, loginItem: loginItem)
     }
 
     func toggleOn(_ m: AppModel) -> Bool? {
@@ -41,8 +41,7 @@ struct LoginItemTests {
 
     @Test func theToggleShowsWhatTheSystemReportsAndChangesIt() async {
         let item = FixtureLoginItem(.enabled)
-        let telemetry = FixtureTelemetry()
-        let m = ViewModelTests().makeModel(loginItem: item, telemetry: telemetry)
+        let m = ViewModelTests().makeModel(loginItem: item)
         await m.loadSettings()
         #expect(general(m).first?.kind == .toggle)
         #expect(toggleOn(m) == true)
@@ -54,11 +53,6 @@ struct LoginItemTests {
         #expect(item.calls == ["unregister", "register"])
         #expect(toggleOn(m) == true)
         #expect(m.settings.launchAtLogin == true)
-        let features = telemetry.recorded.compactMap { s -> String? in
-            if case let .feature(f) = s { return f }
-            return nil
-        }
-        #expect(features == ["launch_at_login_off", "launch_at_login_on"])
     }
 
     @Test func approvalIsShownWithAButtonToLoginItems() async {

@@ -616,7 +616,6 @@ impl ShareDaemon {
             .env("CUA_HOME", &home)
             .env("CUA_CREDENTIAL_STORE", "file")
             .env("CUA_RELAY_URL", &relay_url)
-            .env("CUA_TELEMETRY", "0")
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())

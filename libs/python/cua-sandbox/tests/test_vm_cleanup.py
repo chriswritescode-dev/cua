@@ -20,7 +20,7 @@ pytestmark = pytest.mark.asyncio
 
 def _make_sandbox(*, name: str = "test-vm", ephemeral: bool = True) -> Sandbox:
     """A sandbox over a mock transport, without calling _connect()."""
-    return Sandbox(AsyncMock(), name=name, _ephemeral=ephemeral, _telemetry_enabled=False)
+    return Sandbox(AsyncMock(), name=name, _ephemeral=ephemeral)
 
 
 def _with_runtime(sb: Sandbox, *, name: str, delete: AsyncMock | None = None) -> AsyncMock:
@@ -112,7 +112,6 @@ class TestServerPortValidation:
                 local=True,
                 runtime=runtime,
                 server_port=server_port,
-                telemetry_enabled=False,
             )
 
         runtime.start.assert_not_awaited()
@@ -127,7 +126,6 @@ class TestServerPortValidation:
                 local=True,
                 runtime=runtime,
                 server_port=server_port,
-                telemetry_enabled=False,
             )
 
         runtime.start.assert_not_awaited()
@@ -153,7 +151,6 @@ class TestEphemeralCleanup:
             async with Sandbox.ephemeral(
                 Image.from_registry("registry.example/workspace:latest"),
                 local=True,
-                telemetry_enabled=False,
             ) as sb:
                 assert sb is created
 
@@ -166,7 +163,6 @@ class TestEphemeralCleanup:
                 async with Sandbox.ephemeral(
                     Image.from_registry("registry.example/workspace:latest"),
                     local=True,
-                    telemetry_enabled=False,
                 ):
                     raise AssertionError("test failed")
 
@@ -179,6 +175,5 @@ class TestEphemeralCleanup:
                 async with Sandbox.ephemeral(
                     Image.from_registry("registry.example/workspace:latest"),
                     local=True,
-                    telemetry_enabled=False,
                 ):
                     pass

@@ -112,9 +112,8 @@ print(f"{len(binaries)} binaries link only the OS and the bundle")
 PY
 
 # Only a build that knows --check-launch-only is run (an older one would start
-# for real), and even then with a throwaway HOME and CUA_HOME, telemetry
-# off and no inherited environment: nothing it could read or write is the
-# account's.
+# for real), and even then with a throwaway HOME and CUA_HOME and no inherited
+# environment: nothing it could read or write is the account's.
 # (grep reads everything: with -q, strings would die of SIGPIPE under
 # pipefail.)
 if ! strings -a "$app/Contents/MacOS/CuaSpacesMac" | grep -x -- '--check-launch-only' >/dev/null; then
@@ -125,7 +124,7 @@ out="$(mktemp)"
 sandbox="$(mktemp -d)"
 trap 'rm -f "$out"; rm -rf "$sandbox"' EXIT
 env -i HOME="$sandbox" CUA_HOME="$sandbox/.cua" TMPDIR="$sandbox" PATH=/usr/bin:/bin \
-  CUA_TELEMETRY=0 DO_NOT_TRACK=1 CUA_DAEMON_AUTOSTART=0 \
+  CUA_DAEMON_AUTOSTART=0 \
   "$app/Contents/MacOS/CuaSpacesMac" --check-launch-only >"$out" 2>&1 &
 pid=$!
 for _ in $(seq 1 100); do kill -0 "$pid" 2>/dev/null || break; sleep 0.1; done

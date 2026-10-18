@@ -100,7 +100,6 @@ class FakeSDK:
                 cpu=None,
                 memory_mb=None,
                 time_to_start=None,
-                telemetry_enabled=True,
             ):
                 sdk.calls.append(
                     dict(image=image, on=on, local=local, cpu=cpu, memory_mb=memory_mb)

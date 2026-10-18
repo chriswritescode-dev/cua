@@ -93,7 +93,7 @@ function AboutPage() {
             <UpdateRows
               updates={updates}
               canChange={data.canChange && !unavailable}
-              onChange={(on) => void setAbout({ autoCheck: on, autoInstall: on }).catch(toastError("Couldn't change the update settings"))}
+              onChange={(on) => void setAbout({ autoCheck: on }).catch(toastError("Couldn't change the update settings"))}
               onCheck={() => void checkNow().catch(toastError("Couldn't check for updates"))}
             />
           </div>
@@ -105,13 +105,13 @@ function AboutPage() {
   );
 }
 
-/** "Keep Cua Spaces up to date": one switch for checking, downloading and installing when you quit. */
+/** "Check for new releases": the switch for the check; a release is announced, never downloaded. */
 function UpdateRows({ updates: u, canChange, onChange, onCheck }: { updates: AboutUpdates; canChange: boolean; onChange: (on: boolean) => void; onCheck: () => void }) {
   return (
     <>
       <SettingsRow
-        label="Keep Cua Spaces up to date"
-        description="Updates download in the background and install when you quit."
+        label="Check for new releases"
+        description="New releases are announced here; update by pulling the repository and rebuilding."
         htmlFor="about-auto-update"
         control={<Switch id="about-auto-update" data-about-auto-check="" checked={u.autoCheck} disabled={!canChange} onCheckedChange={onChange} />}
       />

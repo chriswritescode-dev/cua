@@ -59,8 +59,6 @@ cua-auth.workspace = true
 cua-spacesd-client.workspace = true
 # `resolve_image` / `canonical_image`: the one image resolver.
 cua-image.workspace = true
-# Anonymous usage telemetry.
-cua-telemetry.workspace = true
 cua-create-failure.workspace = true
 cua-sandbox-core.workspace = true
 # `Sandboxes.bake`: the compose project, packed for upload.

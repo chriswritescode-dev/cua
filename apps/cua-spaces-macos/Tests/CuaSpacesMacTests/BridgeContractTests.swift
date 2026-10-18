@@ -40,8 +40,7 @@ struct BridgeContractTests {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("cua-contract-\(UUID().uuidString)")
         let model = AppModel(backend: FixtureSpacesBackend(), keyvault: KeyvaultModel(client: nil),
                              onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
-                             settingsPath: dir.appendingPathComponent("settings.json").path,
-                             telemetry: FixtureTelemetry())
+                             settingsPath: dir.appendingPathComponent("settings.json").path)
         let bridge = WebUIBridge(model: model, allowedOrigins: [])
         bridge.actions = WebUIActions(openSpace: { _ in })
         // The CLI's plan on temp folders, not this Mac's ~/.local/bin.
@@ -199,7 +198,7 @@ struct BridgeContractTests {
                              onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
                              settingsPath: dir.appendingPathComponent("settings.json").path,
                              host: FixtureHost(), account: FixtureAccount(identity: "ada@example.com"),
-                             telemetry: FixtureTelemetry(), agentSetup: FixtureAgentSetup(),
+                             agentSetup: FixtureAgentSetup(),
                              devices: FixtureDevices(), presence: FixturePresence(),
                              loginItem: FixtureLoginItem(.enabled), startup: startup)
         model.updates = UpdatesModel(updater: FixtureUpdater(lastCheck: fixtureNow), channel: .stable)
@@ -261,7 +260,7 @@ struct BridgeContractTests {
             ("volume.overview", [:]), ("volume.storage", [:]), ("volume.mount", [:]), ("volume.unmount", [:]),
             ("volume.storageSet", ["update": ["backend": "fs", "dry_run": true]]),
             ("about.get", [:]), ("about.set", ["channel": "beta"]), ("about.checkNow", [:]),
-            ("update.get", [:]), ("update.install", [:]),
+            ("update.get", [:]),
             ("loginItem.get", [:]), ("loginItem.set", ["on": true]),
             ("devices.get", [:]), ("devices.enroll", [:]), ("devices.checkEnrolled", [:]),
             ("devices.createPairingCode", ["team": NSNull()]), ("devices.pairingCodes", [:]),
@@ -269,13 +268,12 @@ struct BridgeContractTests {
             ("devices.revokePairingCode", ["id": "pc_fixture1"]),
             ("storage.get", [:]), ("storage.run", ["request": ["kind": "clear-cache"]]),
             ("notifications.list", [:]), ("notifications.markRead", ["ids": ["n1"]]), ("notifications.markAllRead", [:]),
-            ("telemetry.track", ["signals": [["type": "step", "step": "app_launched", "ok": true]]]),
-            ("telemetry.linkNotice", [:]), ("telemetry.acknowledgeLinkNotice", [:]), ("crashReporting.config", [:]),
+            ("crashReporting.config", [:]),
             ("spaces.usage", ["spaceId": space]), ("spaces.windows", ["spaceId": space]),
             ("spaces.thumbnail", ["spaceId": space]),
             ("spaces.droppedFiles", ["names": ["notes.txt"]]), ("spaces.chooseFiles", [:]),
             ("spaces.sendFiles", ["spaceId": space, "paths": ["/tmp/cua-contract-notes.txt"]]),
-            ("settings.get", [:]), ("settings.choose", ["row": "telemetry", "option": "off"]),
+            ("settings.get", [:]), ("settings.choose", ["row": "notch", "option": "hide"]),
             ("runtimes.check", ["kind": "container", "path": "/usr/local/bin/docker"]), ("runtimes.browse", ["kind": "container"]),
             ("settings.update", ["tips": ["off": false, "done": ["try-agent"]]]),
             ("keyvault.get", [:]),

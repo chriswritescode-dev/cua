@@ -16,8 +16,8 @@ files on the rolling `cua-spaces-latest` release. Inputs:
 | `channel` | `stable` (default), `beta` (rehearsal only) |
 | `dry_run` | on by default: prints the feed diff, uploads nothing |
 
-Typical flow after a stable release: `10`, watch crash and update telemetry,
-`50`, `100`. Bad build: `pause`. The release workflow still publishes feeds as
+Typical flow after a stable release: `10`, watch crash reports and update
+observations, `50`, `100`. Bad build: `pause`. The release workflow still publishes feeds as
 before (everyone); writing them at 10% on publish comes with phase 2.
 
 ## Automatic advance (health gates, auto-pause)
@@ -37,14 +37,16 @@ job summary as usual. Manual dispatch is unchanged.
 | hold | the variable `SPACES_ROLLOUT_HOLD` is set (the text is the reason) or an open issue has the label `spaces-rollout-hold`: never advances; a failing gate still pauses |
 | none | 100%, paused (resuming is a person's call), or the feeds disagree |
 
-Gates (PostHog project 56041, `spaces_app` events of the new version against the
-previous stable, the most active non-prerelease version the week before the stage):
+Gates read the app's PostHog usage events, which this build no longer sends:
+they see no data and wait, so a rollout is by hand. Each compares the new
+version against the previous stable, the most active non-prerelease version
+the week before the stage:
 
 - adoption: at least 15 installs of the new version sent `cua_app_active` since the stage began;
 - space create: `cua_space_create` error share at most 10 points above the previous version's, at least 30 events each;
 - update: failed share of `cua_app_update` from the previous version (the one installing the new one) at most 15 points above its share the week before, at least 20 attempts;
 - incident: no active incident.io incident with "spaces" in its name (needs the `INCIDENT_IO_API_KEY` secret; skipped and said so in the summary until it is set).
-- crash: Sentry release health (org and project in `config/spaces-crash-reporting.json`, release `cua-spaces-desktop@<version>`, environment `stable`). Crash-free sessions of the new version since the stage began must be at most 0.5 points below the previous version's over the same window, with at least 100 sessions on the new version (fewer: wait). A previous version with fewer than 100 sessions (it shipped before crash reporting) is no baseline, so the new version must reach 99% crash-free. Needs the `SENTRY_AUTH_TOKEN` secret (`org:read`, `project:read`); skipped and said so in the summary until it is set. Crash reports and sessions only come from people who left "Share usage data" on, so the numbers are a sample.
+- crash: Sentry release health (org and project in `config/spaces-crash-reporting.json`, release `cua-spaces-desktop@<version>`, environment `stable`). Crash-free sessions of the new version since the stage began must be at most 0.5 points below the previous version's over the same window, with at least 100 sessions on the new version (fewer: wait). A previous version with fewer than 100 sessions (it shipped before crash reporting) is no baseline, so the new version must reach 99% crash-free. Needs the `SENTRY_AUTH_TOKEN` secret (`org:read`, `project:read`); skipped and said so in the summary until it is set. Crash reports and sessions come only from machines where usage data was left on and its first-run notice was shown, so the numbers are a sample.
 
 Thresholds are flags of that script. Secrets: `POSTHOG_API_KEY` (query read),
 optional `INCIDENT_IO_API_KEY`, `SENTRY_AUTH_TOKEN`, and the existing

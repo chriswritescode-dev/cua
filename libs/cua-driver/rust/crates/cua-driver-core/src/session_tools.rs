@@ -1,8 +1,8 @@
 //! Session lifecycle and per-session capture-scope tools.
 //!
 //! A session is lifecycle identity for an agent run (see [`crate::session`]).
-//! It owns the agent cursor, per-run configuration, recording, cleanup, and
-//! telemetry. A trusted transport lease receives one implicit session when a
+//! It owns the agent cursor, per-run configuration, recording, and cleanup.
+//! A trusted transport lease receives one implicit session when a
 //! session-requiring call omits a public label; explicit labels remain an
 //! optional coordination mechanism inside the same trusted namespace.
 //!

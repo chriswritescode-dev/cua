@@ -30,7 +30,6 @@ fn warm_up() {
     WARM.call_once(|| {
         let _ = Command::new(env!("CARGO_BIN_EXE_cua"))
             .arg("--version")
-            .env("CUA_TELEMETRY", "0")
             .stdin(Stdio::null())
             .output();
     });
@@ -69,7 +68,6 @@ impl Rig {
         cmd.args(args)
             .env("HOME", self.dir.path())
             .env("CUA_HOME", self.dir.path().join(".cua"))
-            .env("CUA_TELEMETRY", "0")
             .env("CUA_RELAY_URL", "http://127.0.0.1:9")
             // An empty PATH: a bare `argv[0]` is not looked up in the
             // developer's own `~/.local/bin`.
@@ -194,7 +192,6 @@ fn run_fresh(rig: &Rig, program: &str, args: &[&str]) -> (Option<i32>, String, S
         .env_clear()
         .env("HOME", &home)
         .env("PATH", "")
-        .env("CUA_TELEMETRY", "0")
         .env("CUA_CREDENTIAL_STORE", "file")
         .stdin(Stdio::null())
         .output()
@@ -296,7 +293,6 @@ fn status(
         .env_clear()
         .env("HOME", &home)
         .env("PATH", "")
-        .env("CUA_TELEMETRY", "0")
         // The file store: never the developer's Keychain.
         .env("CUA_CREDENTIAL_STORE", "file")
         .envs(extra.iter().copied())

@@ -4,11 +4,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { HostError } from "../adapter";
 import { createDemoAdapter } from "../adapters/demo";
-import type { TelemetryView } from "../contracts/host";
-import { sanitizeSignals } from "../ops/telemetry";
-import { TelemetryForwarder, telemetryAllowed } from "../telemetry";
 import { toMachineRows } from "../adapters/webkit";
 import { machineIdOf, machinesView, rowsToSpaces, toMachines } from "../derive";
 import { agentRunLines, desktopCover, PIP_CHANGED_EVENT, SpaceDetailStore, spaceDetail } from "../space-detail";
@@ -17,70 +13,6 @@ import { parseDropped, sendFiles, splitDrop } from "../space-files";
 import type { MachineAccessNotice } from "../contracts/devices";
 import type { SpaceRow } from "../contracts/spaces";
 import { testCore, wasmBuilt } from "./testCore";
-
-const view = (enabled: boolean, noticeShown = true): TelemetryView => ({
-  enabled,
-  noticeShown,
-  source: "config",
-  sourceKind: "config",
-  noticeText: "",
-  docsUrl: "",
-});
-
-describe("usage events", () => {
-  it("lets only schema fields and fixed words through", () => {
-    expect(
-      sanitizeSignals([
-        { type: "step", step: "app_launched", ok: true, email: "ada@example.com" },
-        { type: "feature", feature: "/Users/ada" },
-        { type: "space-create-started", location: "local", guestOs: "linux", kind: "container", gpu: false },
-        { type: "space-create", location: "local", guestOs: "linux", kind: "vm", outcome: "ok", failedPhase: "none", stalled: false, elapsedMs: -1, gpu: false },
-        { type: "space-create", location: "local", guestOs: "linux", kind: "vm", outcome: "ready", failedPhase: "none", stalled: false, elapsedMs: 10, gpu: false },
-        { type: "space-create", location: "yours", guestOs: "windows", kind: "vm", outcome: "error", failedPhase: "booting", stalled: false, elapsedMs: 10, gpu: false, errorVariant: "InsufficientDisk" },
-        { type: "space-create", location: "local", guestOs: "linux", kind: "vm", outcome: "error", failedPhase: "booting", stalled: false, elapsedMs: 10, gpu: false, errorVariant: "need 52 GB" },
-        { type: "space-create", location: "local", guestOs: "linux", kind: "vm", outcome: "ok", failedPhase: "none", stalled: false, elapsedMs: 10, gpu: false, errorVariant: "", retryAttempt: 1, errorSubclass: "runtime_start" },
-        { type: "space-create", location: "local", guestOs: "linux", kind: "vm", outcome: "ok", failedPhase: "none", stalled: false, elapsedMs: 10, gpu: false, errorVariant: "", retryAttempt: 2, errorSubclass: "none" },
-        { type: "space-create", location: "local", guestOs: "linux", kind: "vm", outcome: "error", failedPhase: "none", stalled: false, elapsedMs: 10, gpu: false, errorVariant: "", retryAttempt: 0, errorSubclass: "/Users/ada" },
-        { type: "made-up", word: "x" },
-        "step",
-      ]),
-    ).toEqual([
-      { type: "step", step: "app_launched", ok: true },
-      { type: "space-create-started", location: "local", guestOs: "linux", kind: "container", gpu: false },
-      { type: "space-create", location: "yours", guestOs: "windows", kind: "vm", outcome: "error", failedPhase: "booting", stalled: false, elapsedMs: 10, gpu: false, errorVariant: "InsufficientDisk" },
-      { type: "space-create", location: "local", guestOs: "linux", kind: "vm", outcome: "ok", failedPhase: "none", stalled: false, elapsedMs: 10, gpu: false, errorVariant: "", retryAttempt: 1, errorSubclass: "runtime_start" },
-    ]);
-  });
-
-  it("sends only while the setting is on and the notice was shown", async () => {
-    expect(telemetryAllowed(null)).toBe(false);
-    expect(telemetryAllowed(view(true, false))).toBe(false);
-    const demo = createDemoAdapter({ latencyMs: 0 });
-    let current = view(true);
-    const f = new TelemetryForwarder(demo, async () => current);
-    await f.track([{ type: "step", step: "signed_in", ok: true }]);
-    current = view(false);
-    await f.track([{ type: "step", step: "first_space", ok: true }]);
-    expect(demo.state.telemetry).toEqual([{ type: "step", step: "signed_in", ok: true }]);
-    demo.dispose?.();
-  });
-
-  it("stops asking a host with no telemetry route", async () => {
-    let calls = 0;
-    const host = {
-      mode: "webkit" as const,
-      call: async () => {
-        calls++;
-        throw new HostError("no route", "unsupported");
-      },
-      subscribe: () => () => {},
-    };
-    const f = new TelemetryForwarder(host as never, async () => view(true));
-    await f.track([{ type: "step", step: "a", ok: true }]);
-    await f.track([{ type: "step", step: "b", ok: true }]);
-    expect(calls).toBe(1);
-  });
-});
 
 describe("demo host: Space detail and This machine", () => {
   it("reads usage and windows for a running Space, and toggles picture in picture", async () => {
@@ -251,7 +183,7 @@ describe("a Space's drop well", () => {
     for (const bad of [undefined, null, "Slack.app", [], [""], ["a", 3], Array.from({ length: 201 }, () => "x")]) expect(parseDropped(bad)).toBeUndefined();
   });
 
-  it("says what it sends and what landed, or why it failed", async () => {
+  it.skipIf(!wasmBuilt)("says what it sends and what landed, or why it failed", async () => {
     const core = await testCore();
     const demo = createDemoAdapter({ latencyMs: 0 });
     const seen: string[] = [];

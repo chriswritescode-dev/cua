@@ -20,8 +20,8 @@ use crate::{
     cloud_page, cloud_sheet, connectors, devices, diagnostics, drive_mount_preview, drive_page,
     drive_settings, driver_preview, experiments, host, local_network, login_item, machines, notch,
     notifications, nudges, onboarding, onboarding_preview, palette, paths, persistent, presence,
-    relay_usage, resources, runtimes, settings, share, sign_in, space_menu, summon, telemetry,
-    tips, upsell, window, wizard,
+    relay_usage, resources, runtimes, settings, share, sign_in, space_menu, summon, tips, upsell,
+    window, wizard,
 };
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -310,25 +310,11 @@ pub const METHODS: &[&str] = &[
     "storage.requestText",
     "notifications.plan",
     "notifications.view",
-    "telemetry.launched",
-    "telemetry.feature",
-    "telemetry.onboarding",
-    "telemetry.onboardingFinished",
-    "telemetry.onboardingSkipped",
-    "telemetry.signInFailed",
-    "telemetry.signInFailure",
-    "telemetry.creates",
-    "telemetry.storage",
-    "telemetry.share",
-    "telemetry.enroll",
-    "telemetry.checklist",
     "checklist.reduce",
     "checklist.view",
     "checklist.observeFrom",
     "palette.keybindings",
     "palette.rank",
-    "telemetry.experimentsChanged",
-    "telemetry.experimentsOn",
     "settings.withStorage",
     "experiments.page",
     "experiments.choose",
@@ -349,9 +335,6 @@ pub const METHODS: &[&str] = &[
     "firstRun.agentUsed",
     "firstRun.leadAgent",
     "firstRun.cli",
-    "telemetry.upsell",
-    "telemetry.planLimit",
-    "upgrade.link",
     "nudge.secondAgent",
     "nudge.riskyAction",
     // The new Spaces page: menus, bulk delete and leave, tips, the Pro
@@ -651,24 +634,6 @@ pub fn call_value(method: &str, args: Value) -> Result<Value, CoreError> {
                 .unwrap_or_default(),
         )),
         "nudge.riskyAction" => out(nudges::risky_action(&a.get("request")?, a.get("nowMs")?)),
-        // `kind` (the meter's cap past a limit) and `plan` are optional: a
-        // click is also `cua_upgrade_link_opened`, the meter past a limit
-        // also `cua_plan_limit_shown`.
-        "telemetry.upsell" => out(telemetry::upsell_with(
-            &a.get::<String>("surface")?,
-            &a.get::<String>("action")?,
-            a.get::<Option<String>>("kind")?.as_deref(),
-            a.get::<Option<String>>("plan")?.as_deref(),
-        )),
-        // A plan limit shown at `surface` (`action` `shown`) or its upgrade
-        // link opened (`opened`).
-        "telemetry.planLimit" => out(telemetry::plan_limit(
-            &a.get::<String>("action")?,
-            &a.get::<String>("surface")?,
-            &a.get::<Option<String>>("kind")?.unwrap_or_default(),
-            &a.get::<Option<String>>("plan")?.unwrap_or_default(),
-        )),
-        // An upgrade link with `?from=<surface>`, its other parameters kept.
         // ---- The new Spaces page (CUA-2204) ----
         "spaces.menu" => out(space_menu::menu(&a.all()?)),
         "spaces.bulkConfirm" => out(bulk_confirm::confirm(
@@ -704,10 +669,6 @@ pub fn call_value(method: &str, args: Value) -> Result<Value, CoreError> {
         )),
         "upsell.proBanner" => out(upsell::pro_banner(&a.all()?)),
         "account.menu" => out(account::menu(&a.all()?)),
-        "upgrade.link" => out(telemetry::upgrade_link(
-            &a.get::<String>("url")?,
-            &a.get::<String>("from")?,
-        )),
         "wizard.pickerImages" => out(wizard::picker_images()),
         "wizard.pickerGroups" => out(wizard::picker_groups()),
         "wizard.findImage" => out(wizard::find_image(&a.get::<String>("ref")?)),
@@ -1385,33 +1346,6 @@ pub fn call_value(method: &str, args: Value) -> Result<Value, CoreError> {
             &a.get::<String>("text")?,
             a.get::<Option<String>>("home")?.as_deref(),
         )),
-        "telemetry.launched" => out(telemetry::launched(a.get("onboardingEligible")?)),
-        "telemetry.feature" => out(telemetry::feature_used(&a.get::<String>("feature")?)),
-        "telemetry.onboarding" => out(telemetry::onboarding(&a.get("state")?, &a.get("action")?)),
-        "telemetry.onboardingFinished" => out(telemetry::onboarding_finished(&a.get("state")?)),
-        "telemetry.onboardingSkipped" => out(telemetry::onboarding_skipped(&a.get("state")?)),
-        "telemetry.signInFailed" => out(telemetry::sign_in_failed(
-            a.get::<Option<String>>("message")?.as_deref(),
-        )),
-        "telemetry.signInFailure" => out(telemetry::sign_in_failure(a.get("reason")?)),
-        "telemetry.creates" => out(telemetry::creates(
-            &a.get::<Option<creating::CreatesState>>("state")?
-                .unwrap_or_default(),
-            &a.get("action")?,
-            a.get("now")?,
-        )),
-        "telemetry.storage" => out(telemetry::storage(
-            &a.get("input")?,
-            &a.get("state")?,
-            &a.get("action")?,
-        )),
-        "telemetry.share" => out(telemetry::share(
-            &a.get("input")?,
-            &a.get("state")?,
-            &a.get("action")?,
-        )),
-        "telemetry.enroll" => out(telemetry::enroll(&a.get("state")?, &a.get("action")?)),
-        "telemetry.checklist" => out(telemetry::checklist(&a.get::<String>("event")?)),
         "checklist.reduce" => out(checklist::reduce(
             &a.get::<checklist::ChecklistState>("state")?,
             &a.get::<checklist::ChecklistAction>("action")?,
@@ -1427,16 +1361,6 @@ pub fn call_value(method: &str, args: Value) -> Result<Value, CoreError> {
         "palette.rank" => out(palette::rank(
             &a.get::<Vec<palette::PaletteEntry>>("entries")?,
             &a.get::<String>("query")?,
-        )),
-        "telemetry.experimentsChanged" => out(telemetry::experiments_changed(
-            &a.get::<Option<experiments::Experiments>>("before")?
-                .unwrap_or_default(),
-            &a.get::<Option<experiments::Experiments>>("after")?
-                .unwrap_or_default(),
-        )),
-        "telemetry.experimentsOn" => out(telemetry::experiments_on(
-            &a.get::<Option<experiments::Experiments>>("experiments")?
-                .unwrap_or_default(),
         )),
         other => Err(CoreError::Invalid(format!("unknown method {other}"))),
     }
@@ -1470,49 +1394,6 @@ mod tests {
         assert_eq!(
             call_value("upsell.allows", json!({"state": state(true)})).unwrap(),
             json!(false)
-        );
-        assert_eq!(
-            call_value(
-                "telemetry.upsell",
-                json!({"surface": "meter", "action": "shown"})
-            )
-            .unwrap(),
-            json!([{"type": "feature", "feature": "upsell_meter_shown"}])
-        );
-        assert_eq!(
-            call_value(
-                "telemetry.upsell",
-                json!({"surface": "plan_card", "action": "shown"})
-            )
-            .unwrap(),
-            json!([])
-        );
-        assert_eq!(
-            call_value(
-                "telemetry.upsell",
-                json!({"surface": "meter", "action": "click", "kind": "hours", "plan": "free"})
-            )
-            .unwrap(),
-            json!([
-                {"type": "feature", "feature": "upsell_meter_click"},
-                {"type": "upgrade-link-opened", "surface": "app_meter", "kind": "hours", "plan": "free"}
-            ])
-        );
-        assert_eq!(
-            call_value(
-                "telemetry.planLimit",
-                json!({"action": "shown", "surface": "app_create", "kind": "sessions", "plan": "pro"})
-            )
-            .unwrap(),
-            json!([{"type": "plan-limit-shown", "surface": "app_create", "kind": "sessions", "plan": "pro"}])
-        );
-        assert_eq!(
-            call_value(
-                "upgrade.link",
-                json!({"url": "https://app.cua.ai/buy/pro?from=plan_limit", "from": "app_create"})
-            )
-            .unwrap(),
-            json!("https://app.cua.ai/buy/pro?from=app_create")
         );
     }
 

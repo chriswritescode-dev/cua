@@ -13,8 +13,6 @@ import os
 
 import pytest
 
-# Tests must never send real telemetry.
-os.environ["CUA_TELEMETRY"] = "0"
 
 _LIVE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "live") + os.sep
 _DEFAULT_VARS = (

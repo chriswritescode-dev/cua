@@ -7,26 +7,18 @@ import { createDemoAdapter, DEMO_CREATE_FAILURES, type DemoOptions } from "../ad
 import { HOST_RUNS_CREATES, loadCreateStreaks } from "../create-retry";
 import type { HostEvent } from "../protocol";
 import type { Space } from "../contracts/spaces";
-import type { TelemetrySignal } from "../ops/telemetry";
 import { BridgeStore } from "../store";
 import { testCore, until, wasmBuilt } from "./testCore";
 
-/** The demo host, counting `spaces.create` calls and the usage signals the
- * page sends; `mode` stands in for a native host. */
+/** The demo host, counting `spaces.create` calls; `mode` stands in for a
+ * native host. */
 function host(options: DemoOptions, mode?: DataAdapter["mode"]) {
   const demo = createDemoAdapter({ latencyMs: 0, stepMs: 4, ...options });
-  const seen = { creates: 0, signals: [] as TelemetrySignal[] };
+  const seen = { creates: 0 };
   const adapter: DataAdapter = Object.assign(Object.create(demo), {
     ...(mode ? { mode } : {}),
     call: ((method: string, args: unknown) => {
       if (method === "spaces.create") seen.creates++;
-      if (method === "telemetry.track") seen.signals.push(...((args as { signals: TelemetrySignal[] }).signals ?? []));
-      if (method === "settings.get") {
-        return Promise.resolve(demo.call(method as never, args as never)).then((s: { telemetry?: object }) => ({
-          ...s,
-          telemetry: { ...s.telemetry, enabled: true, noticeShown: true },
-        }));
-      }
       return demo.call(method as never, args as never);
     }) as DataAdapter["call"],
     subscribe: (l: (e: HostEvent) => void) => demo.subscribe(l),
@@ -63,11 +55,9 @@ describe.skipIf(!wasmBuilt)("a create that fails", () => {
     expect(seen.creates).toBe(2);
     expect(labels.has("Retrying…")).toBe(true);
     expect(labels.has("Failed")).toBe(false);
-    // One final outcome: ok, retried once, past the runtime's start.
-    await until(() => expect(seen.signals.some((s) => s.type === "space-create")).toBe(true));
-    const created = seen.signals.filter((s) => s.type === "space-create");
-    expect(created).toHaveLength(1);
-    expect(created[0]).toMatchObject({ outcome: "ok", retryAttempt: 1, errorSubclass: "runtime_start" });
+    // One final outcome: ready, past the runtime's start.
+    await until(() => expect(row(store, "box")?.progress ?? null).toBeNull());
+    expect(store.get<Space[]>("spaces").data?.find((x) => x.name === "box")?.power).toBe("running");
   });
 
   it("is never retried for a lasting cause, and offers the fix the second time", async () => {
@@ -86,23 +76,21 @@ describe.skipIf(!wasmBuilt)("a create that fails", () => {
     expect(seen.creates).toBe(2);
     const second = row(store, "mac")!;
     expect(second.progress?.fix).toMatchObject({ action: "copy-command", value: "cua cache prune", label: "Copy cua cache prune" });
-    // Each failure counted once, never retried.
-    const created = seen.signals.filter((s) => s.type === "space-create");
-    expect(created.map((s) => (s as { retryAttempt?: number }).retryAttempt)).toEqual([0, 0]);
+    // Never retried.
+    expect(seen.creates).toBe(2);
     // The kept counts never hold the error's text.
     expect(JSON.stringify(loadCreateStreaks())).not.toContain("/Users/me");
   });
 
-  it("follows a native host's own retry and leaves its usage events to it", async () => {
+  it("follows a native host's own retry", async () => {
     expect(HOST_RUNS_CREATES.webkit && HOST_RUNS_CREATES.electron).toBe(true);
     const demo = createDemoAdapter({ latencyMs: 0, stepMs: 4 });
     const listeners = new Set<(e: HostEvent) => void>();
-    const seen = { creates: 0, tracked: 0 };
+    const seen = { creates: 0 };
     let release!: () => void;
     const adapter: DataAdapter = Object.assign(Object.create(demo), {
       mode: "webkit",
       call: ((method: string, args: { pendingId?: string }) => {
-        if (method === "telemetry.track") seen.tracked++;
         if (method === "spaces.create") {
           seen.creates++;
           // The host fails once, says it runs it again, then finishes.
@@ -127,6 +115,5 @@ describe.skipIf(!wasmBuilt)("a create that fails", () => {
     await done;
     // The page never runs it again itself, and sends no create events.
     expect(seen.creates).toBe(1);
-    expect(seen.tracked).toBe(0);
   });
 });

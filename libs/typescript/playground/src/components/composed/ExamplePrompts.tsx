@@ -80,22 +80,11 @@ export const EXAMPLE_PROMPTS: ExamplePrompt[] = [
 interface ExamplePromptsProps {
   /** Callback when a prompt is selected */
   onSelectPrompt: (prompt: string) => void;
-  /** Optional telemetry callback when example prompt is selected */
-  onExamplePromptSelected?: (promptId: string, promptTitle: string) => void;
   /** Custom prompts to display (defaults to EXAMPLE_PROMPTS) */
   prompts?: ExamplePrompt[];
 }
 
-export function ExamplePrompts({
-  onSelectPrompt,
-  onExamplePromptSelected,
-  prompts = EXAMPLE_PROMPTS,
-}: ExamplePromptsProps) {
-  const handleSelectPrompt = (example: ExamplePrompt) => {
-    onExamplePromptSelected?.(example.id, example.title);
-    onSelectPrompt(example.prompt);
-  };
-
+export function ExamplePrompts({ onSelectPrompt, prompts = EXAMPLE_PROMPTS }: ExamplePromptsProps) {
   return (
     <motion.div
       className="mt-6 flex w-full flex-col items-center gap-2"
@@ -109,7 +98,7 @@ export function ExamplePrompts({
             <TooltipTrigger asChild>
               <motion.button
                 type="button"
-                onClick={() => handleSelectPrompt(example)}
+                onClick={() => onSelectPrompt(example.prompt)}
                 className="group flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-left transition-all hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:hover:border-neutral-600 dark:hover:bg-neutral-700"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}

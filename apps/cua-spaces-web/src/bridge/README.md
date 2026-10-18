@@ -34,7 +34,7 @@ import { BridgeProvider, useSpaces } from "@/bridge";
 | `useMachines()` | `Machine[]`, this machine first, each with `spaceIds`, `connection` (`relay`, `direct`, or null before host setup), `detail`, `lastSeen` and, for this machine, `panel` (the core's `host.panel`). Also `setupGuide`: host setup in the core's words (`host.panel` choices, `host.formView`), for the Add a machine explainer. |
 | `usePairingCode({ open, enabled, team? })` | "Add a machine" by link or QR code: makes a code on opening (`devices.createPairingCode`), reads `devices.pairingCodes` every 3 s until it is `used`, `revoked` or `expired`, and `revoke()` / `renew()`. `phase` is `idle`, `minting`, `ready`, `used`, `revoked`, `expired` or `error` (`error.unsupported` when the host or relay can't make codes). |
 | `useJoinWithCode({ onJoined? })` | "Join with a code": `{ phase, error, join(codeOrLink, relay?), reset() }`. `join` reads the code the way `cua host setup --pair` does (`pairing-code.ts`), then asks the host to run the bundled `cua host setup --pair` (`host.joinWithCode`). Opening the app with a `cua://add/<code>` link lands on `/machines?join=<code>`, which fills the dialog and waits for Join. |
-| `useSettings()` | `{ values, telemetry, defaultLocation, page }`, where `page` is the core's Settings layout. Action: `updateSetting(key, value)` for `theme`, `menuBar`, `hotkey`, `telemetry`, `defaultLocation`, `launchAtLogin` or `updateChannel`. The last two are `null` when the host can't offer them, and the Settings page hides their rows. `globalShortcut` is the host's ⌘⇧Space (macOS) with whether the system gave it to the app; absent or `null` where the host has none. |
+| `useSettings()` | `{ values, defaultLocation, page }`, where `page` is the core's Settings layout. Action: `updateSetting(key, value)` for `theme`, `menuBar`, `hotkey`, `defaultLocation`, `launchAtLogin` or `updateChannel`. The last two are `null` when the host can't offer them, and the Settings page hides their rows. `globalShortcut` is the host's ⌘⇧Space (macOS) with whether the system gave it to the app; absent or `null` where the host has none. |
 | `useKeyvault()` | `{ overview, groups, views, vaultState }`. `views` holds the core's `page`, `sidebar` and `vault` (the list grouped by app, then site). Actions: `unlock(passphrase?)`, `lockItem(id)`, `lockItems(ids)`, `unlockItems(ids)`, `setDisabled`, `approve`, `deny`, `revokeGrant`, `vaultAction(action)` (search, select, open), and `pane(selection)`. |
 | `useSession()` | `{ account, onboarding, daemon, signedIn, identity, signIn }`, where `signIn` is the sign-in phase. Actions: `signIn()`, `signOut()`, `completeOnboarding(mode)`, `openExternal(url)`. |
 | `useAgents()` | `{ agents, runs, unread, canList }`: persistent agents (state `running`, `paused` or `idle`, the core's row line and action label, the run the detail opens) and the runs in every running Space, in the core's order. Actions: `pauseAgent(name)`, `resumeAgent(name)`, `agentSetup()`, `configureAgents(agents?)`. |
@@ -93,7 +93,7 @@ Each is an existing Tauri command under a host-neutral name:
 | `spaces.open` `{spaceId, name?, os?}` | `open_space_window` (`space: {id, name, os}`) |
 | `machines.list` | `host_status` + `list_hosts` + `get_environment` |
 | `host.status` | `host_status` |
-| `settings.get` / `settings.set` `{key, value}` | UI storage (`ui_storage_set`), `telemetry_status`/`telemetry_set_enabled`, `get_default_location`/`set_default_location`, `login_item_status`/`login_item_set` (`launchAtLogin`). The Tauri updater has no channels, so `updateChannel` is `null` there. |
+| `settings.get` / `settings.set` `{key, value}` | UI storage (`ui_storage_set`), `get_default_location`/`set_default_location`, `login_item_status`/`login_item_set` (`launchAtLogin`). The Tauri updater has no channels, so `updateChannel` is `null` there. |
 | `settings.choose` `{row, option}` | none: the Tauri shell lays out none of the host's own rows (`SettingsSnapshot.hostSettings`: the SwiftUI app's Runtimes, auto-connect and Keyvault switches, which the page draws from the core's Settings page and changes with `settings.choose`; New Space's "Use built-in Lume" too). |
 | `keyvault.overview` | `keyvault_overview` |
 | `keyvault.unlock` `{passphrase?}` | `keyvault_unlock` / `keyvault_unlock_passphrase` |
@@ -166,7 +166,7 @@ speaks it as is:
   (camelCase records). `adapters/webkit.ts` maps each operation onto them and
   turns the results back into the wire shapes above, so the store derives
   the same way as for every other host. `AppSpace` becomes `SpaceRow`, the
-  Settings page rows (`notch`, `telemetry`) become
+  Settings page rows (`notch`, `default-location`) become
   `SettingsValues`, and the Keyvault overview becomes snake_case.
 - Events arrive as `window` `cua:event` CustomEvents (`detail: { event }`):
   `spaces.changed` (it also refreshes machines), `machines.changed` (this
@@ -343,7 +343,7 @@ The wizard and "Connect a cloud" run the core's `wizard.*` and `cloudConnect.*`;
 ## First run (`onboarding.ts`)
 
 The pages, copy and answers are the core's, the same as `OnboardingView.swift`.
-The pages: Welcome with the usage-data switch, Sign in (optional), AI
+The pages: Welcome, Sign in (optional), AI
 agents (detected agents, the cua skills and MCP server, and the cua-driver
 card; see "Cua Volume" below), Menu bar (notch and menu bar, or menu bar
 only; the pick writes the `menuBar` setting, as Settings' notch row does),
@@ -358,8 +358,6 @@ current `menuBar` setting and Done leaves out its "Shows in" fact.
 - Progress is saved in `localStorage` (`cua-spaces:onboarding`), so the flow
   resumes on the same page. "Set up later" sets `skipped`; the shell stops
   opening it and the sidebar offers "Finish setting up".
-- The usage switch writes `settings.set {telemetry}` at once, and shows only
-  once the host has reported the setting (`settings.get`'s `telemetry`).
 - `finish()` calls `session.completeOnboarding {mode}` and forgets progress.
 - No new operations: hosts answer `host.status` (permissions, `configured`),
   `settings.set`, `session.*`, as before.
@@ -438,10 +436,9 @@ mechanism. Types are in `contracts/settings.ts`, `contracts/devices.ts` and
 | Operation | Args | Result | Tauri | SwiftUI source |
 |---|---|---|---|---|
 | `about.get` | `{}` | `AboutInput` | `plugin:app\|version`, `get_environment` (no updater) | `UpdatesModel.input` |
-| `about.set` | `{ autoCheck?, autoInstall?, channel? }` | `AboutInput` | unsupported | `UpdatesModel.setAutoCheck/setAutoInstall/choose(channel:)` |
+| `about.set` | `{ autoCheck?, channel? }` | `AboutInput` | unsupported | `UpdatesModel.setAutoCheck/choose(channel:)` |
 | `about.checkNow` | `{}` | `AboutInput` | unsupported | `UpdatesModel.checkNow` |
-| `update.get` | `{}` | `UpdateState` (`status`, `currentVersion`, `version`, `percent`, `notesUrl`, `message`) | unsupported | `UpdatesModel.updateState` (Sparkle driven by `InAppUpdateDriver`; Electron: `update-state.ts`) |
-| `update.install` | `{}` | `UpdateState` | unsupported | `UpdatesModel.installUpdate`: "Restart to update". Only a click calls it; with nothing downloaded it changes nothing |
+| `update.get` | `{}` | `UpdateState` (`status`, `currentVersion`, `version`, `notesUrl`, `instructions`, `message`) | unsupported | `UpdatesModel.updateState` (Sparkle checks only; Electron: `update-state.ts`). A found release carries the host's rebuild instruction |
 | `experiments.get` / `.set` | `{}` / `{ experiments }` | `Experiments` | UI storage `cua.settings.experiments` | `app.info`, `settings.choose {row: "experiment:…"}` (routed today) |
 | `loginItem.get` / `.set` | `{}` / `{ on }` | `{ status, providesSpaces, runsAgents }` | `login_item_status` / `login_item_set`, `host_status`, `agents_tool` | `LoginItem.status()`, `register/unregister`, `HostModel.provideSpaces`, `PersistentModel` |
 | `loginItem.openSettings` | `{}` | `null` | `host_open_settings` | `SMAppService.openSystemSettingsLoginItems()` |
@@ -471,7 +468,7 @@ answers `unsupported`.
 Notifications post as toasts only outside the SwiftUI host, which posts its
 own system notifications. Send `agents.changed` when the feed changes.
 
-## Space detail, This machine and usage events (round 3, W5)
+## Space detail and This machine (round 3, W5)
 
 New operations live in `ops/<feature>.ts` (types, host mappings, coverage
 rows) and the demo's answers in `adapters/demo/<feature>.ts`. Each is
@@ -479,10 +476,7 @@ something the native apps already do; nothing is a new mechanism.
 
 | Operation | Args | Result | Tauri | SwiftUI (`WebUIBridge+Pages.swift`) |
 |---|---|---|---|---|
-| `telemetry.track` | `{ signals }` | `null` | `telemetry_record_signals` | `model.telemetrySink?.record(signals)` (`appTelemetryRecord`), only while `status().enabled`; each signal checked again |
-| `telemetry.linkNotice` | `{}` | `{ due, title, body, okLabel, turnOffLabel, detailsLabel, docsUrl } \| null` | `telemetry_link_notice` | `model.telemetrySink?.linkNotice()` (`telemetryLinkNotice`, `telemetryLinkNoticeDue`); the one-time notice that usage data is now linked to the account (CUA-1881). The page shows it only while `due`. The demo host has none |
-| `telemetry.acknowledgeLinkNotice` | `{}` | `null` | `telemetry_acknowledge_link_notice` | `model.telemetrySink?.acknowledgeLinkNotice()` (`telemetryAcknowledgeLinkNotice`); either button. "Turn off usage data" first sets `telemetry` off through `updateSetting` |
-| `crashReporting.config` | `{}` | `{ allowed, dsn, release, environment, shell, crashTest? }` | none (unsupported) | the host's crash-reporting settings (CUA-2343): `allowed` only while usage data is on and its notice shown; `dsn` empty when the build has none; `crashTest: "ui"` only on a `local` build with `CUA_CRASH_TEST=ui`. Older hosts (`unimplemented`), the demo host and Tauri read as off. Electron: `src/bridge/telemetry.ts` |
+| `crashReporting.config` | `{}` | `{ allowed, dsn, release, environment, shell, crashTest? }` | none (unsupported) | the host's crash-reporting settings (CUA-2343): `allowed` only while usage data is on and its notice shown; `dsn` empty when the build has none; `crashTest: "ui"` only on a `local` build with `CUA_CRASH_TEST=ui`. Older hosts (`unimplemented`), the demo host and Tauri read as off. Electron: `src/crash-reporting.ts` |
 | `spaces.usage` | `{ spaceId }` | `SpaceUsage \| null` | `space_usage` | `backend.usage(id:)` |
 | `spaces.windows` | `{ spaceId }` | `{ windows, display, open }` (`open`: the rows whose picture in picture is open) | none (the viewer lists windows over its own stream) | `StreamRowsModel` over `backend.streamProvider(id:)` |
 | `stream.pip` | `{ spaceId, command: { type: "open" \| "close", row } }` | open row ids | none (its PiP is a viewer window) | a `StreamPiPSet` per Space, as the detail view keeps |
@@ -491,7 +485,7 @@ something the native apps already do; nothing is a new mechanism.
 | `host.action` | `{ action }` (`stop-sharing`, `resume-sharing`, `remove`, a switch, `sign-in`) | `HostStatus` | `host_stop_sharing`, `host_start_sharing`, `host_remove` + `host_status`, `host_configure` | `HostModel.run(action)`; no timeout |
 | `host.openSettings` | `{ url }` (`x-apple.systempreferences:` only) | `null` | `host_open_settings` | `PermissionRows.open` |
 
-WebKit routes all seven under these names (`ops/webkit-pages.ts`). A failed
+WebKit routes these under these names (`ops/webkit-pages.ts`). A failed
 `host.setUp` or `host.action` is worded as the native page words it
 (`HostSetupFailure`): the error's `message` is what to do, with `title`,
 `details` (the raw error) and `actionLabel` (Retry, or Sign In) beside it;
@@ -500,19 +494,6 @@ again. `host.status` also carries `progress` (`HostModel.progress`: what a
 running setup or Sign In waits for).
 `machines.list`'s current row may carry `arch` (`aarch64`, `x86_64`) for the
 facts' emulation warning; the Swift host can send `appHostArch()`.
-
-**Usage events.** The store asks the core what each step means
-(`telemetry.launched`, `.onboarding`, `.onboardingFinished`, `.creates`;
-`telemetryStorage`, `telemetryShare` and `telemetryEnroll` are ready for the
-screens that drive those reducers) and `TelemetryForwarder` sends them. It
-sends only while `settings.get`'s `telemetry` says on and the notice was
-shown, read before every batch; with the first-run switch off the core
-derives nothing. `sanitizeSignals` drops any signal that isn't a known type
-with exactly its fields as fixed lowercase words, flags or durations, so
-names, emails, paths and URLs can't leave the page. Tauri, the SwiftUI
-app and Electron record `app_launched` themselves (`HOST_RECORDS_LAUNCH`);
-the page records it only in demo. Electron holds the page's signals until
-the first run leaves Welcome (its usage notice), then sends them in order.
 
 **Space detail.** `useSpaceDetail(space, hostArch)` gives the core's
 `sidebar.detail` (facts, sections, Delete's question) and

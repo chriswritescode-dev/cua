@@ -6,7 +6,6 @@ import {
   useRelayUsageView,
   useSession,
   useSettings,
-  useTrackPlanClick,
   type RelayUsage,
   type SettingsRow as CoreRow,
   type SettingsSection,
@@ -75,7 +74,6 @@ export function AccountTab() {
   const { data: session, signIn, signOut, cancelSignIn, openExternal } = useSession();
   const view = useRelayUsageView();
   const usage = useRelayUsage();
-  const trackClick = useTrackPlanClick();
   if (isLoading && !settings) return null;
 
   const page = settings?.page;
@@ -157,10 +155,7 @@ export function AccountTab() {
           <Button
             className="h-12 w-full text-[13px]"
             data-plan-primary=""
-            onClick={() => {
-              trackClick("plan_card");
-              open(upgrade.url);
-            }}
+            onClick={() => open(upgrade.url)}
           >
             Upgrade
           </Button>

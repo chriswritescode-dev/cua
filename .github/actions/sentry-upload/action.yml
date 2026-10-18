@@ -45,6 +45,10 @@ runs:
         SENTRY_CLI: "@sentry/cli@3.8.2"
       run: |
         set -uo pipefail
+        case "$KIND" in
+          debug-files|sourcemaps) ;;
+          *) echo "::error::unknown kind $KIND"; exit 1 ;;
+        esac
         cfg="$GITHUB_WORKSPACE/config/spaces-crash-reporting.json"
         dsn=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("dsn",""))' "$cfg" 2>/dev/null || true)
         org=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["org"])' "$cfg")

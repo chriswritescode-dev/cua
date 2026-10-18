@@ -126,7 +126,6 @@ export function createDemoSettings(ctx: DemoSettingsContext): Handlers {
   let lastCheck: number | null = now() - 2 * 3_600_000;
   let checking = false;
   let autoCheck = true;
-  let autoInstall = false;
   let experiments: Experiments = { ...NO_EXPERIMENTS, ...ctx.experiments };
   let devices = demoDevices(now(), ctx.unenrolled);
   // One code made earlier (`cua host pair`) that nobody used yet; only the
@@ -151,12 +150,12 @@ export function createDemoSettings(ctx: DemoSettingsContext): Handlers {
     cache: { size_bytes: Math.round(1.2 * GIB), capacity_bytes: 10 * GIB },
   };
 
-  let update: UpdateState = {
+  const update: UpdateState = {
     status: "idle",
     currentVersion: "0.6.0",
     version: null,
-    percent: null,
     notesUrl: null,
+    instructions: null,
     message: null,
     ...ctx.update,
   };
@@ -168,7 +167,6 @@ export function createDemoSettings(ctx: DemoSettingsContext): Handlers {
     os: machine.osText,
     updater: true,
     autoCheck,
-    autoInstall,
     channel: ctx.settings().updateChannel ?? "stable",
     lastCheck: lastCheck === null ? null : timeText(lastCheck),
     checking,
@@ -193,9 +191,8 @@ export function createDemoSettings(ctx: DemoSettingsContext): Handlers {
 
   return {
     "about.get": () => about(),
-    "about.set": ({ autoCheck: c, autoInstall: i, channel }) => {
+    "about.set": ({ autoCheck: c, channel }) => {
       if (c !== undefined) autoCheck = c;
-      if (i !== undefined) autoInstall = i;
       if (channel) ctx.setSettings({ updateChannel: channel });
       return about();
     },
@@ -210,16 +207,6 @@ export function createDemoSettings(ctx: DemoSettingsContext): Handlers {
     },
 
     "update.get": () => ({ ...update }),
-    "update.install": async () => {
-      // Nothing downloaded: nothing to install, and the state says so.
-      if (update.status !== "downloaded") return { ...update };
-      // Installing takes a moment before the relaunch.
-      await wait(stepMs);
-      // The real host relaunches into the new version.
-      update = { ...update, status: "idle", currentVersion: update.version ?? update.currentVersion, version: null, notesUrl: null };
-      emit({ type: "update.changed" });
-      return { ...update };
-    },
 
     "experiments.get": () => ({ ...experiments }),
     "experiments.set": ({ experiments: next }) => {
@@ -295,8 +282,8 @@ export function createDemoSettings(ctx: DemoSettingsContext): Handlers {
         id: `pc_demo${pairingSeq}`,
         code,
         url: `https://cua.ai/add/${code}`,
-        installSh: `curl -fsSL https://cua.ai/install.sh | sh -s -- --pair ${code}`,
-        installPowershell: `& ([scriptblock]::Create((irm https://cua.ai/install.ps1))) -Pair ${code}`,
+        installSh: `git clone https://github.com/trycua/cua.git ~/.cua/cua 2>/dev/null; git -C ~/.cua/cua pull --ff-only; cargo build --release -p cua-cli --manifest-path ~/.cua/cua/libs/cua/Cargo.toml && ~/.cua/cua/libs/cua/target/release/cua host setup --pair ${code}`,
+        installPowershell: `git clone https://github.com/trycua/cua.git $HOME\.cua\cua 2>$null; git -C $HOME\.cua\cua pull --ff-only; cargo build --release -p cua-cli --manifest-path $HOME\.cua\cua\libs\cua\Cargo.toml; & $HOME\.cua\cua\libs\cua\target\release\cua.exe host setup --pair ${code}`,
         state: "active",
         team: team ?? null,
         createdAt: t,

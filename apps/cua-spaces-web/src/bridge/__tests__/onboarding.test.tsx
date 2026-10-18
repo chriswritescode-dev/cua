@@ -12,7 +12,6 @@ import {
   hasNotch,
   onboardingInitial,
   onboardingReduce,
-  onboardingTelemetry,
   onboardingView,
   passedSteps,
   permissionRows,
@@ -145,27 +144,6 @@ describe.each([
     expect(s).toMatchObject({ step: "presentation", menuBar: true });
   });
 
-  it("shows the usage switch from the setting, and locks it when the environment decides", async () => {
-    const core = await getCore();
-    let s = onboardingInitial(core, null);
-    s = onboardingReduce(core, s, { type: "telemetry-loaded", telemetry: { enabled: false, lockedBy: null } }, ctx);
-    expect(onboardingView(core, s, "linux").usage).toMatchObject({ on: false, enabled: true });
-    s = onboardingReduce(core, s, { type: "usage-data-toggled", on: true }, ctx);
-    expect(onboardingView(core, s, "linux").usage?.on).toBe(true);
-
-    const locked = onboardingTelemetry({
-      enabled: false,
-      source: "env DO_NOT_TRACK",
-      sourceKind: "do_not_track",
-      noticeShown: true,
-      noticeText: "",
-      docsUrl: "",
-    });
-    s = onboardingReduce(core, onboardingInitial(core, null), { type: "telemetry-loaded", telemetry: locked }, ctx);
-    s = onboardingReduce(core, s, { type: "usage-data-toggled", on: true }, ctx);
-    expect(onboardingView(core, s, "linux").usage).toMatchObject({ on: false, enabled: false, help: "Set by env DO_NOT_TRACK" });
-  });
-
   it("lists only the permissions still to grant, and one image per OS", async () => {
     const core = await getCore();
     const rows = permissionRows(core, [
@@ -222,13 +200,10 @@ function mount(core: CoreClient, mode?: "electron") {
 describe.skipIf(!wasmBuilt)("useOnboarding over the demo adapter", () => {
   beforeEach(() => onPlatform("Linux x86_64"));
 
-  it("saves progress, follows sign-in, writes the usage switch and finishes", async () => {
+  it("saves progress, follows sign-in and finishes", async () => {
     const { probe, adapter } = mount(await testCore());
-    await waitFor(() => expect(probe.flow.view?.usage).toBeTruthy());
+    await waitFor(() => expect(probe.flow.view).toBeTruthy());
     expect(probe.flow.view?.step).toBe("welcome");
-
-    act(() => probe.flow.send({ type: "usage-data-toggled", on: false }));
-    await waitFor(() => expect(adapter.state.settings.telemetry).toBe(false));
 
     act(() => probe.flow.send({ type: "start" }));
     expect(readSavedOnboarding().state?.step).toBe("signin");

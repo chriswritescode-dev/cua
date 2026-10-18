@@ -3,11 +3,12 @@
 
 // Settings → About (the SwiftUI app's UpdatesModel.swift): the core's
 // `AboutInput` over the updater's state, the channel saved in the app
-// settings (`AppSettings.updateChannel`), Check Now, and the usage events
-// for what each check found. The Electron updater (`src/updater.ts`,
-// electron-updater) stands where Sparkle does in the Swift app.
+// settings (`AppSettings.updateChannel`) and Check Now. The Electron updater
+// (`src/updater.ts`, electron-updater) stands where Sparkle does in the Swift
+// app; it only finds a newer release, which is installed by pulling the
+// repository and rebuilding (update-state.ts).
 import * as os from "node:os";
-import type { AppAboutInput, AppTelemetrySignal, AppUpdateChannel } from "../native/generated/index";
+import type { AppAboutInput, AppUpdateChannel } from "../native/generated/index";
 import type { Native } from "../native/load";
 import { initialUpdateState, reduceUpdate, type UpdateEvent, type UpdateStateValue } from "../update-state";
 
@@ -15,60 +16,41 @@ import { initialUpdateState, reduceUpdate, type UpdateEvent, type UpdateStateVal
 export interface UpdaterDriving {
   /** Checks on its own. */
   automaticallyChecks: boolean;
-  /** Downloads and installs on its own. */
-  automaticallyInstalls: boolean;
   /** The last check (ms), or null: never. */
   readonly lastCheck: number | null;
   /** Check Now can run (false while a check runs). */
   readonly canCheck: boolean;
-  /** The channel it installs from (`stable` or `beta`). */
+  /** The channel it checks (`stable` or `beta`). */
   channel: "stable" | "beta";
   /** Called after any of the above changes. */
   onChange: (() => void) | null;
-  /** Told each step: `found`, `not_found`, `downloaded`, `installed` or `failed` (fixed words). */
-  onUpdateEvent: ((event: string) => void) | null;
   /** Checks now; what it finds shows in the in-app indicator (a failure of this check, in a window). */
   checkNow(): void;
-  /** Where the update is (found, downloading, ready): the in-app indicator. */
+  /** Where the update is (found): the in-app indicator. */
   readonly state: UpdateStateValue;
-  /** "Restart to update": installs the downloaded update and relaunches. Only a click calls it. */
-  installNow(): void;
 }
 
 /** An in-memory updater (tests): nothing is checked or stored. */
 export class FixtureUpdater implements UpdaterDriving {
   automaticallyChecks = true;
-  automaticallyInstalls = false;
   lastCheck: number | null;
   canCheck = true;
   channel: "stable" | "beta" = "stable";
   onChange: (() => void) | null = null;
-  onUpdateEvent: ((event: string) => void) | null = null;
   checks = 0;
-  /** What the next check finds. */
-  nextResult = "not_found";
   state: UpdateStateValue = initialUpdateState("0.0.0");
-  /** How many times "Restart to update" ran. */
-  installs = 0;
   constructor(lastCheck: number | null = null) {
     this.lastCheck = lastCheck;
   }
   checkNow() {
     this.checks += 1;
     this.lastCheck = Date.now();
-    this.onUpdateEvent?.(this.nextResult);
     this.onChange?.();
   }
   /** Feeds what electron-updater would report (tests). */
-  report(event: UpdateEvent, word?: string) {
+  report(event: UpdateEvent) {
     this.state = reduceUpdate(this.state, event);
-    if (word) this.onUpdateEvent?.(word);
     this.onChange?.();
-  }
-  installNow() {
-    if (this.state.status !== "downloaded") return;
-    this.installs += 1;
-    this.onUpdateEvent?.("installed");
   }
 }
 
@@ -106,10 +88,6 @@ export function dateText(ms: number): string {
 export class UpdatesModel {
   /** The chosen channel (saved in the app settings). */
   channel: AppUpdateChannel;
-  /** Where usage events go. */
-  telemetry: { record(signals: AppTelemetrySignal[]): void } | null = null;
-  /** A check the user started runs until the updater answers. */
-  private userCheck = false;
   private readonly listeners = new Set<() => void>();
 
   constructor(
@@ -124,8 +102,6 @@ export class UpdatesModel {
     if (updater) {
       updater.channel = this.channelWord;
       updater.onChange = () => this.changed();
-      // What each check found, and installs (the Swift app records the same words).
-      updater.onUpdateEvent = (event) => this.record(event);
     }
   }
 
@@ -143,24 +119,8 @@ export class UpdatesModel {
     return this.updater?.state ?? initialUpdateState(this.info.version);
   }
 
-  /** "Restart to update". */
-  installUpdate(): void {
-    this.updater?.installNow();
-  }
-
   get channelWord(): "stable" | "beta" {
     return this.channel === this.native.AppUpdateChannel.Beta ? "beta" : "stable";
-  }
-
-  private record(action: string): void {
-    const trigger = this.userCheck ? "user" : "background";
-    if (action !== "found") this.userCheck = false;
-    const channel = this.channelWord;
-    const signals: AppTelemetrySignal[] = [];
-    const S = this.native.AppTelemetrySignal;
-    if (action === "found" || action === "not_found") signals.push(new S.AppUpdate({ action: "checked", channel, trigger }));
-    signals.push(new S.AppUpdate({ action, channel, trigger }));
-    this.telemetry?.record(signals);
   }
 
   /** What the pane is built from: the app, and the updater's state. */
@@ -173,7 +133,6 @@ export class UpdatesModel {
       os: this.info.os,
       updater: u !== null,
       autoCheck: u?.automaticallyChecks ?? false,
-      autoInstall: u?.automaticallyInstalls ?? false,
       channel: this.channel,
       lastCheck: u?.lastCheck != null ? dateText(u.lastCheck) : undefined,
       checking: !(u?.canCheck ?? true),
@@ -185,11 +144,6 @@ export class UpdatesModel {
     this.changed();
   }
 
-  setAutoInstall(on: boolean): void {
-    if (this.updater) this.updater.automaticallyInstalls = on;
-    this.changed();
-  }
-
   choose(id: string): void {
     this.channel = id === "beta" ? this.native.AppUpdateChannel.Beta : this.native.AppUpdateChannel.Stable;
     if (this.updater) this.updater.channel = this.channelWord;
@@ -198,7 +152,6 @@ export class UpdatesModel {
   }
 
   checkNow(): void {
-    this.userCheck = true;
     this.updater?.checkNow();
   }
 }

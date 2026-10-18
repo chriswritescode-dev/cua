@@ -1,14 +1,13 @@
 //! Crash reporting for the Cua Spaces app's Rust core and daemon.
 //!
 //! The Spaces shells (Electron, SwiftUI) pass a Sentry DSN down through
-//! `CUA_CRASH_*` environment variables. When the DSN is set and the user
-//! allows it, panics in this process go to Sentry as events with a stack
-//! trace and nothing else: no messages, paths, emails, host names, IPs,
-//! breadcrumbs or sessions.
+//! `CUA_CRASH_*` environment variables. When the DSN is set (the user
+//! allowed reports), panics in this process go to Sentry as events with a
+//! stack trace and nothing else: no messages, paths, emails, host names,
+//! IPs, breadcrumbs or sessions.
 //!
-//! Consent is the "Share usage data" decision of [`cua_telemetry`]: reports
-//! are allowed only when telemetry is enabled and the first-run notice has
-//! been shown. It is checked at start and again for every event.
+//! Consent is the shell's: the Spaces apps pass a DSN only when the user
+//! allowed reports. Without one nothing is sent.
 //!
 //! Without `CUA_CRASH_DSN` nothing is initialised, so the `cua` CLI and
 //! every other user of these crates are unaffected.
@@ -67,12 +66,6 @@ impl Config {
 /// Whether reports are allowed right now. Called for every event.
 pub type Consent = Arc<dyn Fn() -> bool + Send + Sync>;
 
-/// The "Share usage data" rule: telemetry enabled and the notice shown.
-pub fn telemetry_consent() -> bool {
-    let s = cua_telemetry::global().status();
-    s.enabled && s.notice_shown
-}
-
 /// Keeps the SDK alive; dropping it flushes what is queued and closes the
 /// client.
 pub struct Guard {
@@ -91,19 +84,15 @@ static PROCESS_GUARD: OnceLock<Guard> = OnceLock::new();
 
 /// Starts crash reporting for this process from the `CUA_CRASH_*` variables.
 ///
-/// Returns `None` when no DSN is set, when the user has not allowed reports
-/// (telemetry off or the notice not yet shown; a switch turned on later
-/// takes effect at the next launch), or when it already started in this
-/// process. Keep the guard for the life of the process.
+/// Returns `None` when no DSN is set (the shell lets no reports) or when it
+/// already started in this process. Keep the guard for the life of the
+/// process.
 pub fn init_from_env(component: &str) -> Option<Guard> {
     let cfg = Config::from_env(component)?;
-    if !telemetry_consent() {
-        return None;
-    }
     if STARTED.swap(true, Ordering::SeqCst) {
         return None;
     }
-    let guard = init_with(cfg, Arc::new(telemetry_consent));
+    let guard = init_with(cfg, Arc::new(|| true));
     if guard.is_none() {
         STARTED.store(false, Ordering::SeqCst);
     }
@@ -116,16 +105,6 @@ pub fn start_for_process(component: &str) -> bool {
     match init_from_env(component) {
         Some(g) => PROCESS_GUARD.set(g).is_ok(),
         None => false,
-    }
-}
-
-/// Closes the client when consent was withdrawn while running. Cheap; call
-/// it after the "Share usage data" switch changes.
-pub fn refresh_consent() {
-    if !telemetry_consent()
-        && let Some(client) = sentry::Hub::main().client()
-    {
-        client.close(Some(Duration::from_millis(200)));
     }
 }
 

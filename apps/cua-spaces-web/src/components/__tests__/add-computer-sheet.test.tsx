@@ -99,7 +99,7 @@ describe("Add a computer: the methods", () => {
     fireEvent.click(method("signin"));
     expect(view()).toBe("signin");
     expect(screen.getByText("https://cua.ai/install")).toBeTruthy();
-    expect(document.querySelector("[data-add-signin]")?.textContent).toMatch(/sign in as ada@example\.com/);
+    await waitFor(() => expect(document.querySelector("[data-add-signin]")?.textContent).toMatch(/sign in as ada@example\.com/));
     expect(status()).toBe("Waiting for a new machine…");
     // No code here, so no menu.
     expect(document.querySelector("[data-add-more]")).toBeNull();
@@ -154,11 +154,11 @@ describe("Add a computer: the methods", () => {
     await waitFor(() => expect(phase()).toBe("ready"));
     fireEvent.click(method("command"));
     const command = () => document.querySelector("[data-add-command] code")?.textContent ?? "";
-    expect(command()).toMatch(/^curl -fsSL https:\/\/cua\.ai\/install\.sh \| sh -s -- --pair K7QM-4XPB-[0-9A-Z]{4}$/);
+    expect(command()).toMatch(/^git clone https:\/\/github\.com\/trycua\/cua\.git .*cargo build --release -p cua-cli .*--pair K7QM-4XPB-[0-9A-Z]{4}$/);
     // Wrapped only between words: `--pair` stays whole.
     expect([...document.querySelectorAll("[data-add-command] code span")].map((w) => w.textContent?.trim())).toContain("--pair");
     fireEvent.click(screen.getByText("Windows (preview)"));
-    await waitFor(() => expect(command()).toMatch(/install\.ps1\)\)\) -Pair K7QM-4XPB-/));
+    await waitFor(() => expect(document.querySelector("[data-add-command]")?.textContent).toMatch(/cua\.exe host setup --pair K7QM-4XPB-/));
     back();
     expect(view()).toBe("pick");
   });

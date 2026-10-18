@@ -328,7 +328,7 @@ export function extract(): CbDocs {
       cwd: REPO_ROOT,
       encoding: 'utf-8',
       maxBuffer: 64 * 1024 * 1024,
-      env: { ...process.env, CUA_BENCH_NO_BANNER: '1', CUA_TELEMETRY_ENABLED: 'false' },
+      env: { ...process.env, CUA_BENCH_NO_BANNER: '1' },
     }
   );
   return JSON.parse(out);

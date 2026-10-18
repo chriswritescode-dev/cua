@@ -18,11 +18,11 @@
 // - .../onboarding.json, the first run's progress: copied as is.
 // - The defaults domain com.trycua.spaces.macos: the window frame
 //   ("NSWindow Frame CuaSpacesWebUI") becomes `windowBounds`; Sparkle's
-//   SUEnableAutomaticChecks / SUAutomaticallyUpdate are recorded in the
-//   marker, and the updater follows them until the user chooses in this app
-//   (update-prefs.ts: checks stay on unless they were off). The rest is the
-//   Swift window's colour cache (WebUIBackground*), its native video switch
-//   (WebUINativeVideo) and Sparkle's bookkeeping, none of which applies here.
+//   SUEnableAutomaticChecks is recorded in the marker, and the updater
+//   follows it until the user chooses in this app (update-prefs.ts: checks
+//   stay on unless they were off). The rest is the Swift window's colour
+//   cache (WebUIBackground*), its native video switch (WebUINativeVideo) and
+//   Sparkle's bookkeeping, none of which applies here.
 // - ~/.cua is shared by both apps and needs nothing.
 // Not carried over: the web UI's WebKit localStorage (the theme choice;
 // onboarding's authoritative state is onboarding.json).
@@ -202,8 +202,6 @@ export function migrateFromSwiftApp(input: MigrationInput): Partial<Settings> | 
     return typeof v === "boolean" ? v : typeof v === "number" ? v !== 0 : undefined;
   };
   const checks = bool("SUEnableAutomaticChecks");
-  const downloads = bool("SUAutomaticallyUpdate");
   if (checks !== undefined) marker.sparkleAutomaticChecks = checks;
-  if (downloads !== undefined) marker.sparkleAutomaticDownloads = downloads;
   return patch;
 }

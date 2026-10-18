@@ -196,11 +196,7 @@ struct Run: AsyncParsableCommand {
             return
         }
 
-        // Record telemetry
         let displayMode = DisplayMode.resolve(requested: display, noDisplay: noDisplay)
-        TelemetryClient.shared.record(event: TelemetryEvent.run, properties: [
-            "headless": displayMode == .none
-        ])
 
         try await runVM(displayMode: displayMode)
     }

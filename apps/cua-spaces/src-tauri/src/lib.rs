@@ -36,7 +36,6 @@ pub mod presence;
 pub mod sf_symbol;
 pub mod share;
 pub mod space_switch;
-pub mod telemetry;
 pub mod tray;
 pub mod viewer_windows;
 pub mod webview_data;
@@ -398,7 +397,6 @@ fn host_backend(core: &std::sync::Arc<core::AppCore>) -> std::sync::Arc<dyn host
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let config = core::CoreConfig::from_env();
-    telemetry::init(&config.home);
     let core = core::AppCore::new(config);
 
     tauri::Builder::default()
@@ -568,17 +566,6 @@ pub fn run() {
             keyvault::keyvault_release,
             keyvault::keyvault_approve,
             keyvault::keyvault_deny,
-            telemetry::telemetry_status,
-            telemetry::telemetry_link_notice,
-            telemetry::telemetry_acknowledge_link_notice,
-            telemetry::telemetry_set_enabled,
-            telemetry::telemetry_acknowledge_notice,
-            telemetry::telemetry_record_feature,
-            telemetry::telemetry_record_step,
-            telemetry::telemetry_record_signals,
-            telemetry::telemetry_set_ui_locale,
-            telemetry::telemetry_welcome_left,
-            telemetry::telemetry_record_stream,
             webview_data::ui_storage_set,
             commands::login_item_status,
             commands::login_item_set,
@@ -588,13 +575,6 @@ pub fn run() {
         ])
         .setup(move |app| {
             let accessory_activation = false;
-
-            // Links usage data to the signed-in account when the Spaces API
-            // offers it (CUA-1881). Best effort, off the startup path.
-            {
-                let core = core.clone();
-                tauri::async_runtime::spawn(async move { core.sync_usage_link().await });
-            }
 
             // Webview data stays in the app's data directory (webview_data):
             // the page's settings file, then the tauri.conf.json windows
@@ -868,10 +848,6 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building Cua Spaces")
         .run(|app, event| {
-            if let tauri::RunEvent::Exit = event {
-                // Flush queued usage events briefly; the rest are spooled.
-                telemetry::shutdown();
-            }
             // Clicking the Dock icon with no window showing reopens the main
             // window.
             #[cfg(target_os = "macos")]

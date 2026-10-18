@@ -10,7 +10,6 @@ test, so precedence is tested end to end: explicit > env >
 
 from __future__ import annotations
 
-import importlib
 import os
 from types import SimpleNamespace
 from typing import Any
@@ -27,8 +26,6 @@ from cua_sandbox.runtime import native as native_rt
 from cua_sandbox.runtime.docker import DockerRuntime
 
 cua = pytest.importorskip("cua")
-sandbox_module = importlib.import_module("cua_sandbox.sandbox")
-
 ROOTFS = Image.from_registry("python:3.12-slim", kind="container")
 
 
@@ -49,7 +46,6 @@ def local_sdk(monkeypatch):
     monkeypatch.setattr(
         native_rt, "local_runtime", lambda: SimpleNamespace(sandboxes=lambda: _Sandboxes())
     )
-    monkeypatch.setattr(sandbox_module, "_TELEMETRY_AVAILABLE", False)
     # These tests check what reaches the SDK, not the host: a Linux VM's QEMU
     # preflight must not depend on whether this machine has QEMU installed.
     monkeypatch.setattr("cua_sandbox.runtime.compat._has_qemu", lambda: True)
@@ -80,7 +76,7 @@ def _temp_config():
 
 async def test_builtin_default_is_local_with_the_notice(local_sdk, notice):
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, telemetry_enabled=False)
+        await Sandbox.create(ROOTFS)
     assert local_sdk[0].on == "local"
     [message] = notice()
     assert "defaulting to a local sandbox" in message and "CUA_QUIET_DEFAULT=1" in message
@@ -90,7 +86,7 @@ async def test_env_beats_config(monkeypatch, local_sdk, notice):
     cua.config_set("default.on", "aws")
     monkeypatch.setenv("CUA_DEFAULT_ON", "local")
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, telemetry_enabled=False)
+        await Sandbox.create(ROOTFS)
     assert local_sdk
     assert not notice(), "the notice is only for the built-in default"
 
@@ -98,9 +94,9 @@ async def test_env_beats_config(monkeypatch, local_sdk, notice):
 async def test_explicit_beats_env(monkeypatch, local_sdk):
     monkeypatch.setenv("CUA_DEFAULT_ON", "cloud")
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, local=True, telemetry_enabled=False)
+        await Sandbox.create(ROOTFS, local=True)
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, on="local", telemetry_enabled=False)
+        await Sandbox.create(ROOTFS, on="local")
     assert len(local_sdk) == 2
 
 
@@ -108,14 +104,14 @@ async def test_default_kind_and_runtime_come_from_config(local_sdk):
     cua.config_set("default.kind", "container")
     cua.config_set("default.runtime", "runc")
     with pytest.raises(_Captured):
-        await Sandbox.create(Image.from_registry("python:3.12-slim"), telemetry_enabled=False)
+        await Sandbox.create(Image.from_registry("python:3.12-slim"))
     assert (local_sdk[0].kind, local_sdk[0].runtime) == ("container", "runc")
 
 
 async def test_a_default_runtime_that_does_not_fit_is_skipped(monkeypatch, local_sdk):
     monkeypatch.setenv("CUA_DEFAULT_RUNTIME", "runc")
     with pytest.raises(_Captured):
-        await Sandbox.create(Image.linux(), on="local", kind="vm", telemetry_enabled=False)
+        await Sandbox.create(Image.linux(), on="local", kind="vm")
     [options] = local_sdk
     assert (options.kind, options.runtime) == ("vm", None), "runc does not run VMs"
     assert options.image.startswith("vm:")
@@ -131,7 +127,7 @@ async def test_on_and_a_contradicting_local_is_invalid(local_sdk):
         await Sandbox.create(ROOTFS, on="local", local=False)
     assert not local_sdk
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, on="local", local=True, telemetry_enabled=False)
+        await Sandbox.create(ROOTFS, on="local", local=True)
 
 
 # ── kind and runtime reach the SDK ───────────────────────────────────────
@@ -139,11 +135,11 @@ async def test_on_and_a_contradicting_local_is_invalid(local_sdk):
 
 async def test_local_kind_and_runtime_reach_the_sdk(local_sdk):
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, on="local", runtime="runc", telemetry_enabled=False)
+        await Sandbox.create(ROOTFS, on="local", runtime="runc")
     with pytest.raises(_Captured):
-        await Sandbox.create(Image.linux(), on="local", runtime="qemu", telemetry_enabled=False)
+        await Sandbox.create(Image.linux(), on="local", runtime="qemu")
     with pytest.raises(_Captured):
-        await Sandbox.create(Image.linux(), on="local", kind="vm", telemetry_enabled=False)
+        await Sandbox.create(Image.linux(), on="local", kind="vm")
     runc, qemu, vm = local_sdk
     assert (runc.on, runc.kind, runc.runtime) == ("local", "container", "runc")
     assert runc.image.startswith("container:")
@@ -154,7 +150,7 @@ async def test_local_kind_and_runtime_reach_the_sdk(local_sdk):
 
 async def test_ephemeral_takes_the_same_placement(local_sdk):
     with pytest.raises(_Captured):
-        async with Sandbox.ephemeral(ROOTFS, on="local", runtime="gvisor", telemetry_enabled=False):
+        async with Sandbox.ephemeral(ROOTFS, on="local", runtime="gvisor"):
             pass
     assert (local_sdk[0].kind, local_sdk[0].runtime) == ("container", "gvisor")
 
@@ -184,7 +180,7 @@ async def test_an_sdk_placement_error_surfaces_as_invalid_placement(monkeypatch)
         native_rt, "local_runtime", lambda: SimpleNamespace(sandboxes=lambda: _Sandboxes())
     )
     with pytest.raises(InvalidPlacement, match="valid runtime: auto"):
-        await Sandbox.create(ROOTFS, on="local", telemetry_enabled=False)
+        await Sandbox.create(ROOTFS, on="local")
 
 
 # ── the legacy Runtime object ────────────────────────────────────────────
@@ -204,10 +200,10 @@ async def test_a_runtime_object_still_runs_locally(monkeypatch, notice):
     calls: list = []
     monkeypatch.setenv("CUA_DEFAULT_ON", "cloud")
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, runtime=_Recorder(calls), telemetry_enabled=False)
+        await Sandbox.create(ROOTFS, runtime=_Recorder(calls))
     # Shipped in 0.8.0: local=False with a Runtime object ran it locally.
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, runtime=_Recorder(calls), local=False, telemetry_enabled=False)
+        await Sandbox.create(ROOTFS, runtime=_Recorder(calls), local=False)
     assert len(calls) == 2 and not notice()
     for _, opts in calls:
         assert "kind" not in opts and "runtime" not in opts, "the adapter decides"

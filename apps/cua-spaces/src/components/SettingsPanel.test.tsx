@@ -6,11 +6,9 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as appCore from "../core";
-import type { TelemetryBridge, TelemetryView } from "../native/telemetry";
 import { fakeDrive, MOUNT_OFF, MOUNTED, NEEDS_APPROVAL } from "../test/fakeDrive";
 import { currentUiLocale } from "../i18n";
 import { setLocaleChoice } from "../i18n/preference";
-import * as telemetryModule from "../native/telemetry";
 import { SettingsPanel, SIGN_IN_URL } from "./SettingsPanel";
 
 beforeEach(() => {
@@ -332,95 +330,23 @@ describe("SettingsPanel AI agents", () => {
   });
 });
 
-describe("SettingsPanel Privacy", () => {
-  function fakeTelemetry(over: Partial<TelemetryView> = {}): TelemetryBridge & { calls: string[] } {
-    let view: TelemetryView = {
-      enabled: true,
-      source: "default",
-      sourceKind: "default",
-      noticeShown: true,
-      noticeText: "",
-      docsUrl: "https://cua.ai/docs/cua-sdk/concepts/telemetry",
-      ...over,
-    };
-    const calls: string[] = [];
-    return {
-      isNative: true,
-      calls,
-      status: async () => view,
-      acknowledgeNotice: async () => {
-        calls.push("ack");
-        return view;
-      },
-      setEnabled: async (enabled) => {
-        calls.push(`set:${enabled}`);
-        view = { ...view, enabled, source: "config /tmp/cua/config.toml", sourceKind: "config" };
-        return view;
-      },
-      setUiLocale: () => {},
-      recordFeature: () => {},
-      recordStep: () => {},
-      recordStream: () => {},
-      recordSignals: () => {},
-      welcomeLeft: async () => view,
-    };
-  }
-
-  it("acknowledges the notice, turns usage telemetry off and links the docs", async () => {
-    const telemetry = fakeTelemetry();
-    const props = renderPanel({ telemetry });
-    await screen.findByText("Share usage data to help improve Cua");
-    expect(telemetry.calls).toEqual(["ack"]);
-    await userEvent.click(screen.getByRole("radio", { name: "Off" }));
-    expect(telemetry.calls).toContain("set:false");
-    expect(await screen.findByRole("radio", { name: "Off" })).toHaveAttribute("aria-checked", "true");
-    await userEvent.click(screen.getByRole("button", { name: "What is collected" }));
-    expect(props.onOpenExternal).toHaveBeenCalledWith("https://cua.ai/docs/cua-sdk/concepts/telemetry");
-  });
-
-  it("locks the switch when the environment decides", async () => {
-    renderPanel({ telemetry: fakeTelemetry({ enabled: false, source: "env DO_NOT_TRACK", sourceKind: "do_not_track" }) });
-    const on = await screen.findByRole("radio", { name: "On" });
-    expect(on).toBeDisabled();
-    expect(screen.getByTitle("Set by env DO_NOT_TRACK")).toBeInTheDocument();
-  });
-
-  it("lists Account, Teams, General, Runtimes, Privacy, AI agents and Experiments in order, with Show again", async () => {
+describe("SettingsPanel sections", () => {
+  it("lists Account, Teams, General, Runtimes, AI agents and Experiments in order, with Show again", async () => {
     const onShowWelcome = vi.fn();
-    renderPanel({ telemetry: fakeTelemetry(), onShowWelcome });
-    await screen.findByText("Share usage data to help improve Cua");
+    renderPanel({ onShowWelcome });
+    await screen.findByText("General");
     const titles = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
-    expect(titles).toEqual(["Account", "Teams", "General", "Runtimes", "Privacy", "AI agents", "Experiments", "Language"]);
+    expect(titles).toEqual(["Account", "Teams", "General", "Runtimes", "AI agents", "Experiments", "Language"]);
     await userEvent.click(screen.getByRole("button", { name: "Show again" }));
     expect(onShowWelcome).toHaveBeenCalled();
   });
 });
 
 describe("SettingsPanel Experiments", () => {
-  it("turns Cua Volume on: Storage shows after General, the switch is saved and recorded", async () => {
+  it("turns Cua Volume on: Storage shows after General and the switch is saved", async () => {
     const user = userEvent.setup();
-    const view: TelemetryView = {
-      enabled: true,
-      source: "default",
-      sourceKind: "default",
-      noticeShown: true,
-      noticeText: "",
-      docsUrl: "https://cua.ai/docs/cua-sdk/concepts/telemetry",
-    };
-    const telemetry: TelemetryBridge = {
-      isNative: true,
-      status: async () => view,
-      acknowledgeNotice: async () => view,
-      setEnabled: async () => view,
-      welcomeLeft: async () => view,
-      setUiLocale: () => {},
-      recordFeature: () => {},
-      recordStep: () => {},
-      recordStream: () => {},
-      recordSignals: vi.fn(),
-    };
-    renderPanel({ telemetry });
-    await screen.findByText("Share usage data to help improve Cua");
+    renderPanel();
+    await screen.findByText("General");
     const experiments = within(screen.getByRole("region", { name: "Experiments" }));
     expect(experiments.getByRole("switch", { name: "Cua Volume" })).toHaveAttribute("aria-checked", "false");
     // Sharing is on by default (cua.ai/pricing lists it), and so is Your cloud (a linked cloud shows under Run on).
@@ -435,10 +361,6 @@ describe("SettingsPanel Experiments", () => {
     expect(JSON.parse(window.localStorage.getItem("cua.settings.experiments") ?? "{}")).toMatchObject({
       cuaVolume: true,
     });
-    expect(telemetry.recordSignals).toHaveBeenCalledWith([
-      { type: "experiment", action: "experiment_on", experiment: "cua_volume" },
-      { type: "experiments-on", experiments: ["cua_volume", "your_cloud", "sharing"] },
-    ]);
   });
 });
 
@@ -727,7 +649,6 @@ describe("SettingsPanel language", () => {
 
   it("offers System default and the six languages, saves the choice and switches live", async () => {
     const user = userEvent.setup();
-    const report = vi.spyOn(telemetryModule, "telemetryBridge");
     renderPanel();
     const select = screen.getByRole("combobox", { name: "Language" });
     expect(within(select).getAllByRole("option").map((o) => o.textContent)).toEqual([
@@ -743,11 +664,9 @@ describe("SettingsPanel language", () => {
     await user.selectOptions(select, "ja");
     await waitFor(() => expect(window.localStorage.getItem("cua.settings.locale")).toBe("ja"));
     expect(currentUiLocale()).toBe("ja");
-    expect(report).toHaveBeenCalled(); // setUiLocale goes out through the telemetry bridge
     expect(await screen.findByRole("combobox", { name: "言語" })).toHaveValue("ja");
     await user.selectOptions(screen.getByRole("combobox", { name: "言語" }), "system");
     await waitFor(() => expect(window.localStorage.getItem("cua.settings.locale")).toBeNull());
     expect(currentUiLocale()).toBe("en");
-    report.mockRestore();
   });
 });

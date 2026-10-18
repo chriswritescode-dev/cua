@@ -38,21 +38,10 @@ import {
   errorDocUrl,
   omarchyImage,
   resolveImage,
-  cuaSdkVersion,
-  telemetrySetSurface,
 } from "./native/index.js"
 
 export * from "./native/index.js"
 export { connectMcp, mcpHeaders, type McpEndpointConfig } from "./mcp.js"
-
-// Usage telemetry (anonymous, content-free; https://cua.ai/docs/cua-sdk/concepts/telemetry)
-// attributes events to this binding. It sends nothing by itself; off with
-// DO_NOT_TRACK=1, CUA_TELEMETRY=0 or `telemetrySetEnabled(false)`.
-try {
-  telemetrySetSurface("sdk_typescript", cuaSdkVersion())
-} catch {
-  // Telemetry never fails an import.
-}
 
 /**
  * The qualified refs (`local:box`, `cloud:box`) a `CuaError.AmbiguousSandbox`

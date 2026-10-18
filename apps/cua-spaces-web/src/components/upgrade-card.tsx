@@ -29,7 +29,7 @@ export function UpgradeCard({
 }) {
   const relay = useRelayUsage();
   const { openExternal } = useSession();
-  const { card, click, dismiss } = useUpsellCard(reason, usage ?? relay);
+  const { card, dismiss } = useUpsellCard(reason, usage ?? relay);
   if (!card) return null;
   return (
     <section role="note" data-upgrade-card={card.reason} className={`rounded-lg border bg-card px-4 py-3.5 ${className ?? ""}`}>
@@ -43,10 +43,7 @@ export function UpgradeCard({
         <Button
           size="sm"
           data-upgrade-cta=""
-          onClick={() => {
-            click();
-            void openExternal(card.cta.url).catch(() => {});
-          }}
+          onClick={() => void openExternal(card.cta.url).catch(() => {})}
         >
           {card.cta.label}
         </Button>

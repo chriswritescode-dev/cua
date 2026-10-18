@@ -300,7 +300,6 @@ export interface SettingsInput {
   signIn: SignInPhase;
   canSignOut: boolean;
   menuBar: boolean;
-  telemetry?: { enabled: boolean; lockedBy?: string | null } | null;
   agents?: AgentSettingsRow[] | null;
   agentsBusy: boolean;
   agentsPending: string[];

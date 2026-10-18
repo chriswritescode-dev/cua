@@ -162,9 +162,6 @@ class Fixture:
             "CUA_DRIVER_RS_VERSION": version,
             "CUA_DRIVER_RS_INSTALL_DIR": str(self.bin),
             "CUA_DRIVER_RS_NO_MODIFY_PATH": "1",
-            "CUA_DRIVER_RS_TELEMETRY_ENABLED": "0",
-            "CUA_TELEMETRY": "0",
-            "DO_NOT_TRACK": "1",
         }
         return subprocess.run(
             ["bash", str(self.scripts / "_install-rust.sh"), *args],

@@ -27,18 +27,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "$home/.cua/helper" "$home/.cua/telemetry" "$home/data"
-# Crash reporting allowed: the notice was shown and telemetry is on.
-echo 1 >"$home/.cua/telemetry/notice_shown"
+mkdir -p "$home/.cua/helper" "$home/data"
+
 cat >"$home/.cua/helper/service.json" <<JSON
 {"args": ["serve", "--listen", "127.0.0.1:0", "--no-desktop", "--no-driver", "--no-mcp", "--data-dir", "$home/data"],
  "env": [], "log": "$home/service.log"}
 JSON
 
-# No CI, DO_NOT_TRACK or CUA_TELEMETRY: they would turn crash reporting off
-# and hide the check-in this test is for.
-env -u CI -u GITHUB_ACTIONS -u DO_NOT_TRACK -u CUA_TELEMETRY HOME="$home" CUA_HOME="$home/.cua" \
-  "$exe" --service-helper run >"$home/helper.out" 2>&1 &
+env HOME="$home" CUA_HOME="$home/.cua" "$exe" --service-helper run >"$home/helper.out" 2>&1 &
 pid=$!
 
 registered=""

@@ -101,7 +101,6 @@ def test_the_closure_is_what_the_two_packages_build():
         "cua-image",
         "cua-host",
         "cua-agent-setup",
-        "cua-telemetry",
     ):
         assert name in crates, name
     # A workspace crate nothing in the slice depends on is not scanned.
@@ -113,7 +112,7 @@ def test_the_closure_is_what_the_two_packages_build():
 def test_the_files_outside_the_hashed_tree_are_derived_from_the_code(extra):
     # palette.rs embeds it with include_str!; the reviewer's finding.
     assert "apps/cua-spaces-web/src/lib/keybindings.json" in extra
-    # wizard.rs and cua-cli include it; cua-image and cua-telemetry's build scripts copy it.
+    # wizard.rs and cua-cli include it; cua-image's build script copies it.
     assert "libs/images/sandbox-images.json" in extra
     # cua-host's build script.
     assert "libs/cua-spacesd/VERSION" in extra

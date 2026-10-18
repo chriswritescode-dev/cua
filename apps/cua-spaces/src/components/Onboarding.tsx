@@ -47,8 +47,6 @@ export function Onboarding({
   // machines" is the default so the page always has an enabled way forward.
   const [selected, setSelected] = useState<OnboardingMode>(view.preselectedMode ?? "client");
 
-  // The first run's telemetry (its notice on the Welcome page, the pages
-  // and Done) is the installer flow's, from the app core.
   const finish = (mode: OnboardingMode, status?: HostStatus) => {
     void host
       .completeOnboarding(mode)
@@ -115,16 +113,6 @@ export function Onboarding({
       <p className="host-setup-lede" data-testid="mode-later">
         {t("onboarding.mode.change_later")}
       </p>
-      {view.notice && (
-        <p className="onboarding-telemetry-notice" data-testid="telemetry-notice">
-          {view.notice}{" "}
-          {view.noticeLinkUrl && (
-            <a href={view.noticeLinkUrl} target="_blank" rel="noreferrer">
-              {view.noticeLinkLabel}
-            </a>
-          )}
-        </p>
-      )}
     </Page>
   );
 }

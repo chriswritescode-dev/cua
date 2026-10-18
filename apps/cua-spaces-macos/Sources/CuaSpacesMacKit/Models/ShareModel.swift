@@ -46,9 +46,6 @@ public final class ShareModel {
         if let rows = try? await backend.shares(id: spaceId) { shares = rows }
     }
 
-    /// Where usage events go (shared view-only or not, unshared, a role
-    /// changed: never who; the app core's, like the Tauri app).
-    public var telemetry: TelemetryRunning?
     /// A Space was shared with someone (the getting-started checklist).
     public var onShared: (() -> Void)?
 
@@ -56,14 +53,11 @@ public final class ShareModel {
         let wasBusy = state.busy
         state = appShareReduce(input: input, state: state, action: action)
         guard !wasBusy, state.busy, let request = state.request else { return }
-        // Who it was shared with before the call (a role change or a new share).
-        let before = input
         do {
             switch request {
             case let .share(space, who, role): shares = try await backend.share(id: space, who: who, role: role)
             case let .unshare(space, who): shares = try await backend.unshare(id: space, who: who)
             }
-            telemetry?.record(appTelemetryShare(input: before, state: state, action: .done))
             if case .share = request { onShared?() }
             state = appShareReduce(input: input, state: state, action: .done)
         } catch {
@@ -73,7 +67,6 @@ public final class ShareModel {
             let raw = "\(error.localizedDescription) \(error)"
             let words = appShareErrorWords(error: raw, who: who) ?? error.localizedDescription
             let failed = AppShareSheetAction.failed(error: words)
-            telemetry?.record(appTelemetryShare(input: before, state: state, action: failed))
             state = appShareReduce(input: input, state: state, action: failed)
         }
     }

@@ -57,7 +57,7 @@ describe.skipIf(!wasmBuilt)("Settings, About", () => {
     expect(q("[data-about-check]")!.textContent).toBe("Check now");
     expect(q("[data-about-auto-check]")!.hasAttribute("data-disabled")).toBe(true);
     // One switch for checking, downloading and installing; Beta is in Advanced.
-    expect(document.body.textContent).toContain("Keep Cua Spaces up to date");
+    expect(document.body.textContent).toContain("Check for new releases");
     expect(document.body.textContent).not.toContain("Update to:");
   });
 

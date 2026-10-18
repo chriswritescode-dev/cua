@@ -35,7 +35,7 @@ pub struct Key {
 }
 
 /// Every setting, in display order.
-pub const KEYS: [Key; 17] = [
+pub const KEYS: [Key; 16] = [
     Key {
         name: "default.on",
         env: "CUA_DEFAULT_ON",
@@ -53,12 +53,6 @@ pub const KEYS: [Key; 17] = [
         env: "CUA_DEFAULT_RUNTIME",
         default: "auto",
         description: "the runtime when --runtime is not given (auto, or an engine such as gvisor, runc, qemu)",
-    },
-    Key {
-        name: "telemetry.enabled",
-        env: "CUA_TELEMETRY",
-        default: "on",
-        description: "anonymous usage telemetry (on, off; alias `telemetry`); DO_NOT_TRACK=1 also turns it off. See `cua telemetry status`",
     },
     Key {
         name: "runtime.container",
@@ -142,7 +136,6 @@ pub const KEYS: [Key; 17] = [
 
 /// Short names `cua config` accepts for a setting.
 const ALIASES: &[(&str, &str)] = &[
-    ("telemetry", "telemetry.enabled"),
     // The per-OS runtime settings became per kind (`runtime.container`,
     // `runtime.vm`): the old names still work.
     ("runtime.linux", "runtime.container"),
@@ -649,15 +642,6 @@ pub fn normalize(key: Key, value: &str) -> Result<String, SettingsError> {
                 )));
             }
         },
-        "telemetry.enabled" => match v.to_ascii_lowercase().as_str() {
-            "1" | "true" | "yes" | "on" => "on".into(),
-            "0" | "false" | "no" | "off" => "off".into(),
-            _ => {
-                return Err(SettingsError(format!(
-                    "telemetry: expected on or off, got {v:?}"
-                )));
-            }
-        },
         _ => v.to_string(),
     })
 }
@@ -988,26 +972,5 @@ mod tests {
             (r.runtime, r.runtime_source),
             (Runtime::Runc, Source::Env("CUA_DEFAULT_RUNTIME"))
         );
-    }
-
-    /// `cua config set telemetry off` writes the `[telemetry] enabled` key
-    /// cua-telemetry reads; `CUA_TELEMETRY` overrides it.
-    #[test]
-    fn telemetry_switch_alias_and_values() {
-        let d = tempfile::tempdir().unwrap();
-        let mut s = settings(d.path(), &[]);
-        let k = key("telemetry").unwrap();
-        assert_eq!(k.name, "telemetry.enabled");
-        assert_eq!(s.entry(k).value, "on");
-        assert_eq!(s.set(k, "OFF").unwrap(), "off");
-        assert_eq!(s.set(k, "false").unwrap(), "off");
-        assert!(s.set(k, "maybe").is_err());
-        let text = std::fs::read_to_string(d.path().join("config.toml")).unwrap();
-        assert!(
-            text.contains("[telemetry]") && text.contains("enabled = \"off\""),
-            "{text}"
-        );
-        let s = settings(d.path(), &[("CUA_TELEMETRY", "1")]);
-        assert_eq!(s.entry(k).source, Source::Env("CUA_TELEMETRY"));
     }
 }

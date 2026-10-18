@@ -216,57 +216,6 @@ describe.skipIf(!wasmBuilt)("the first run (real route, wasm core)", () => {
     await waitFor(() => expect(calls.find((c) => c.op === "session.completeOnboarding")).toBeTruthy());
   });
 
-  it("counts each screen viewed and finished, a skipped one, and Skip for now, as fixed words only", async () => {
-    const calls = await mount();
-    const funnel = () =>
-      calls
-        .filter((c) => c.op === "telemetry.track")
-        .flatMap((c) => (c.args as { signals: { type: string; page: string; action: string; choice: string }[] }).signals)
-        .filter((s) => s.type === "onboarding-page" && s.action.startsWith("step_"))
-        .map((s) => `${s.page} ${s.action}${s.choice === "none" ? "" : ` ${s.choice}`}`);
-    await waitFor(() => expect(heading()).toBe("Your machines, shared by your team and its agents."));
-    click("[data-onboarding-primary]");
-    await waitFor(() => expect(heading()).toMatch(ASK));
-    click("[data-first-run-secondary]");
-    await waitFor(() => expect(heading()).toBe("Add your other machines."));
-    click("[data-first-run-secondary]");
-    await waitFor(() => expect(document.querySelector("[data-step]")?.getAttribute("data-step")).toBe("setup"));
-    click("[data-onboarding-later]");
-    await new Promise((r) => setTimeout(r, 300));
-    await waitFor(() =>
-      expect(funnel()).toEqual([
-        "welcome step_viewed",
-        "welcome step_completed",
-        "connect_agent step_viewed",
-        "connect_agent step_skipped step",
-        "sign_in step_viewed",
-        "sign_in step_skipped step",
-        "create_space step_viewed",
-        "create_space step_skipped later",
-      ]),
-    );
-  });
-
-  it("sends no funnel event while usage data is off", async () => {
-    const calls: Calls = [];
-    await testCore();
-    await mountApp("/onboarding", {
-      failsCreates: false,
-      listsGhost: false,
-      demo: { signedIn: false, onboarded: false },
-      intercept: (op, args) => {
-        calls.push({ op, args });
-        return undefined;
-      },
-      answer: (op, out) => (op === "settings.get" ? { ...(out as object), telemetry: { ...(out as { telemetry: object }).telemetry, enabled: false } } : out),
-    });
-    await waitFor(() => expect(heading()).toBe("Your machines, shared by your team and its agents."));
-    click("[data-onboarding-primary]");
-    await waitFor(() => expect(heading()).toMatch(ASK));
-    await new Promise((r) => setTimeout(r, 50));
-    expect(calls.some((c) => c.op === "telemetry.track")).toBe(false);
-  });
-
   it("Back works from every step after Welcome, all the way to Welcome, keeping what was picked", async () => {
     const calls = await mount({ agents: onlyCodex });
     await waitFor(() => expect(heading()).toBe("Your machines, shared by your team and its agents."));
@@ -499,23 +448,6 @@ describe.skipIf(!wasmBuilt)("the first run (real route, wasm core)", () => {
     expect(create.config.kind).toBe("container");
     expect(readFirstRun().extraPendingId).toBeTruthy();
     await waitFor(() => expect(primary()!.disabled).toBe(false));
-  });
-
-  it("says in plain words that usage data is on, and turns it off with one tap", async () => {
-    writeFirstRun({ step: "connect" });
-    const calls = await mount();
-    await waitFor(() => expect(heading()).toMatch(ASK));
-    const note = await waitFor(() => {
-      const n = document.querySelector("[data-first-run-usage]");
-      expect(n).toBeTruthy();
-      return n!;
-    });
-    expect(note.textContent).toMatch(/Share usage data to help improve Cua/);
-    expect(note.textContent).not.toMatch(/SPACES_CP_LINK_USAGE|telemetry|opaque/i);
-    const sw = note.querySelector<HTMLElement>('[role="switch"]')!;
-    expect(sw.getAttribute("aria-checked")).toBe("true");
-    fireEvent.click(sw);
-    await waitFor(() => expect(calls.some((c) => /telemetry|settings/.test(c.op))).toBe(true));
   });
 
   it("offers the host's runtime fix when nothing can be made here", async () => {

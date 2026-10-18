@@ -234,21 +234,15 @@ impl Teleport {
         approval: Option<Arc<dyn TeleportApproval>>,
         options: Option<TeleportOptions>,
     ) -> Result<TeleportResult> {
-        let started = std::time::Instant::now();
-        let app_id = app.clone();
-        let target = sandbox.id();
-        let r = self
-            .send_through_keyvault_inner(target, app, scope, selected_items, approval, options)
-            .await;
-        cua_sdk::support::record_teleport(
-            &app_id,
-            "full",
-            "app_with_state",
-            started,
-            &r,
-            r.as_ref().map(|r| r.sent.len() as u64).unwrap_or(0),
-        );
-        r
+        self.send_through_keyvault_inner(
+            sandbox.id(),
+            app,
+            scope,
+            selected_items,
+            approval,
+            options,
+        )
+        .await
     }
 
     async fn send_through_keyvault_inner(
@@ -373,20 +367,8 @@ impl Teleport {
         approval: Option<Arc<dyn TeleportApproval>>,
         options: TeleportOptions,
     ) -> Result<TeleportResult> {
-        let started = std::time::Instant::now();
-        let app_id = app.clone();
-        let r = self
-            .send_to_inner(env, app, scope, selected_items, approval, options)
-            .await;
-        cua_sdk::support::record_teleport(
-            &app_id,
-            "full",
-            "app_with_state",
-            started,
-            &r,
-            r.as_ref().map(|r| r.sent.len() as u64).unwrap_or(0),
-        );
-        r
+        self.send_to_inner(env, app, scope, selected_items, approval, options)
+            .await
     }
 
     async fn send_to_inner(

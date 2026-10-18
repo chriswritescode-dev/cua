@@ -100,8 +100,7 @@ fn release(dir: &Path, work: &Path, repo: &str, extra: &[&str]) -> std::process:
             "20260926-e2e0001",
         ])
         .args(extra)
-        .env("CUA_INSECURE_REGISTRIES", repo.split('/').next().unwrap())
-        .env("CUA_TELEMETRY", "0");
+        .env("CUA_INSECURE_REGISTRIES", repo.split('/').next().unwrap());
     let out = c.output().expect("cua");
     eprintln!("{}", String::from_utf8_lossy(&out.stderr));
     out

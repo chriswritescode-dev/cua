@@ -25,17 +25,22 @@ function mount(adapter: DataAdapter) {
   return hook;
 }
 
-const ready: Partial<UpdateState> = { status: "downloaded", version: "0.9.3", percent: 100, notesUrl: "https://github.com/trycua/cua/releases/tag/cua-spaces-v0.9.3" };
+const available: Partial<UpdateState> = {
+  status: "available",
+  version: "0.9.3",
+  notesUrl: "https://github.com/trycua/cua/releases/tag/cua-spaces-v0.9.3",
+  instructions: "Update by pulling the repository and rebuilding: git pull && pnpm --dir apps/cua-spaces tauri build",
+};
 
-describe("the update state (update.get, update.install, update.changed)", () => {
-  it("reads where the host's updater is", async () => {
-    const hook = mount(createDemoAdapter({ latencyMs: 0, update: ready }));
-    await waitFor(() => expect(hook.current.data?.state).toMatchObject({ status: "downloaded", version: "0.9.3" }));
-    expect(hook.current.data?.installing).toBe(false);
+describe("the update state (update.get, update.changed)", () => {
+  it("reads the newer release the host found", async () => {
+    const hook = mount(createDemoAdapter({ latencyMs: 0, update: available }));
+    await waitFor(() => expect(hook.current.data?.state).toMatchObject({ status: "available", version: "0.9.3" }));
+    expect(hook.current.data?.state.instructions).toContain("git pull");
   });
 
   it("asks again when the host says its updater moved on", async () => {
-    let state: UpdateState = { status: "downloading", currentVersion: "0.9.2", version: "0.9.3", percent: 10, notesUrl: null, message: null };
+    let state: UpdateState = { status: "checking", currentVersion: "0.9.2", version: null, notesUrl: null, message: null };
     const demo = createDemoAdapter({ latencyMs: 0 });
     let push: (e: HostEvent) => void = () => {};
     const adapter: DataAdapter = {
@@ -47,25 +52,13 @@ describe("the update state (update.get, update.install, update.changed)", () => 
       },
     } as DataAdapter;
     const hook = mount(adapter);
-    await waitFor(() => expect(hook.current.data?.state.percent).toBe(10));
-    state = { ...state, status: "downloaded", percent: 100 };
+    await waitFor(() => expect(hook.current.data?.state.status).toBe("checking"));
+    state = { ...state, status: "available", version: "0.9.3" };
     // The page is told; it does not poll every moment.
     await tick(30);
-    expect(hook.current.data?.state.status).toBe("downloading");
+    expect(hook.current.data?.state.status).toBe("checking");
     push({ type: "update.changed" });
-    await waitFor(() => expect(hook.current.data?.state).toMatchObject({ status: "downloaded", percent: 100 }));
-  });
-
-  it("restarts only when install is called, and clears the state once the host answers", async () => {
-    const demo = createDemoAdapter({ latencyMs: 0, update: ready });
-    const calls: string[] = [];
-    const adapter: DataAdapter = { ...demo, call: (op, args) => (calls.push(op), demo.call(op, args)) } as DataAdapter;
-    const hook = mount(adapter);
-    await waitFor(() => expect(hook.current.data?.state.status).toBe("downloaded"));
-    expect(calls).not.toContain("update.install");
-    await hook.current.install();
-    expect(calls).toContain("update.install");
-    await waitFor(() => expect(hook.current.data?.state.status).toBe("idle"));
+    await waitFor(() => expect(hook.current.data?.state).toMatchObject({ status: "available", version: "0.9.3" }));
   });
 
   it("is unsupported on a host with no updater (Tauri)", async () => {

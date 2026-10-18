@@ -319,8 +319,6 @@ jobs:
           CUA_DRIVER_RS_HOME: ${{ runner.temp }}/cua-driver-installer-home
           CUA_DRIVER_RS_INSTALL_DIR: ${{ runner.temp }}/cua-driver-bin
           CUA_DRIVER_RS_NO_MODIFY_PATH: "1"
-          CUA_DRIVER_RS_TELEMETRY_ENABLED: "false"
-          CUA_TELEMETRY_ENABLED: "false"
         run: |
           set -euo pipefail
           if [[ "$RUNNER_OS" == Linux ]]; then
@@ -337,7 +335,6 @@ jobs:
           $root = Join-Path $env:RUNNER_TEMP "cua-driver-installer"
           $env:CUA_DRIVER_RS_HOME = Join-Path $root "home"
           $env:CUA_DRIVER_RS_INSTALL_DIR = Join-Path $root "bin"
-          $env:CUA_DRIVER_RS_TELEMETRY_ENABLED = "false"
           & ./libs/cua-driver/scripts/install.ps1 -NoAutoStart -NoPathUpdate
           $binary = Join-Path $env:CUA_DRIVER_RS_INSTALL_DIR "cua-driver.exe"
           if (-not (Test-Path -LiteralPath $binary)) { throw "installer did not create $binary" }
@@ -488,8 +485,6 @@ jobs:
           CUA_DRIVER_RS_HOME: ${{ runner.temp }}/cua-driver-installer-home
           CUA_DRIVER_RS_INSTALL_DIR: ${{ runner.temp }}/cua-driver-bin
           CUA_DRIVER_RS_NO_MODIFY_PATH: "1"
-          CUA_DRIVER_RS_TELEMETRY_ENABLED: "false"
-          CUA_TELEMETRY_ENABLED: "false"
         run: |
           set -euo pipefail
           if [[ "$RUNNER_OS" == Linux ]]; then
@@ -506,7 +501,6 @@ jobs:
           $root = Join-Path $env:RUNNER_TEMP "cua-driver-installer"
           $env:CUA_DRIVER_RS_HOME = Join-Path $root "home"
           $env:CUA_DRIVER_RS_INSTALL_DIR = Join-Path $root "bin"
-          $env:CUA_DRIVER_RS_TELEMETRY_ENABLED = "false"
           & ./libs/cua-driver/scripts/install.ps1 -NoAutoStart -NoPathUpdate
           $binary = Join-Path $env:CUA_DRIVER_RS_INSTALL_DIR "cua-driver.exe"
           if (-not (Test-Path -LiteralPath $binary)) { throw "installer did not create $binary" }

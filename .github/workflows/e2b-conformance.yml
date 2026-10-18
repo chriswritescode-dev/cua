@@ -35,8 +35,6 @@ permissions:
 env:
   PINNED_E2B: "2.42.0 2.56.0 2.58.0"
   NEWEST_E2B: "2.58.0"
-  CUA_TELEMETRY: "0"
-  DO_NOT_TRACK: "1"
 
 jobs:
   hermetic:

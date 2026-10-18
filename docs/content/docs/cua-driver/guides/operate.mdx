@@ -1,14 +1,13 @@
 ---
 title: Operate Cua Driver
-description: Keep the Cua Driver daemon running, update it, choose a release channel, personalize the agent cursor, record what an agent did, and control telemetry.
+description: Keep the Cua Driver daemon running, update it, choose a release channel, personalize the agent cursor, and record what an agent did.
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
 
 How to run Cua Driver day to day: keep the daemon up, update it, change how
-the agent cursor looks and moves, record what an agent did, and decide what
-telemetry it sends.
+the agent cursor looks and moves, and record what an agent did.
 
 ## Keep it running
 
@@ -174,29 +173,38 @@ variable unset on a Mac someone is using.
 
 ```bash test="cli-shape" id="cua-driver-check-update"
 cua-driver check-update
-cua-driver update --apply
+cua-driver update
 ```
 
 `check-update` only checks (`--json` for scripts, `--no-cache` to skip the
-1-hour cache); `update --apply` runs the canonical installer. Then restart the
-daemon with your usual start command (`cua-driver permissions grant`,
-`cua-driver autostart kick`, or `cua-driver serve`), keeping any mode flags. The
-same check is the `check_for_update` MCP tool.
+1-hour cache). `update` performs the same check and prints the rebuild
+instruction. Installing a release build over the running installation is
+disabled; to pick up a newer release, pull the repository and rebuild from its
+root:
 
-The check reads the version the installer itself would install, so it agrees
-with `curl -fsSL https://cua.ai/driver/install.sh | bash`, and it does not spend
+```bash skip="host-install"
+git pull
+libs/cua-driver/scripts/install-local.sh
+```
+
+Then restart the daemon with your usual start command (`open -n -g -a
+CuaDriver --args serve`, `cua-driver autostart kick`, or `cua-driver serve`),
+keeping any mode flags. The same check is the `check_for_update` MCP tool.
+
+The check reads the version the installer would publish, and it does not spend
 GitHub's REST API quota for stable releases. When GitHub's API does answer with
 a rate limit (nightly lookups and fallbacks), the message says so and shows when
 the limit resets; set `GITHUB_TOKEN` or `GH_TOKEN` to use your own quota.
 
 ```bash test="cli-shape" id="cua-driver-update-2"
-if cua-driver check-update --json | jq -e '.update_available' > /dev/null; then
-  cua-driver update --apply
-fi
+cua-driver check-update --json | jq -e '.update_available' > /dev/null &&
+  git pull &&
+  libs/cua-driver/scripts/install-local.sh
 ```
 
-`mcp`, `serve`, and `doctor` print a banner when a newer release exists. Turn
-the check off for one run with `CUA_DRIVER_RS_UPDATE_CHECK=false`, or always:
+`mcp`, `serve`, and `doctor` print a banner when a newer release exists, with
+the same rebuild instruction. Turn the check off for one run with
+`CUA_DRIVER_RS_UPDATE_CHECK=false`, or always:
 
 ```bash test="cli-shape" id="cua-driver-config-set"
 cua-driver config set update_check_enabled false
@@ -293,39 +301,10 @@ Stable is the default. Nightlies are immutable builds of `main`.
 ```bash test="cli-shape" id="cua-driver-channel-set-nightly"
 cua-driver channel status
 cua-driver channel set nightly
-cua-driver update --apply
 ```
 
-`channel set` only saves the preference; `update --apply` installs. Fresh
-installs can choose the channel directly:
-
-<Tabs items={['macOS and Linux', 'Windows']}>
-  <Tab value="macOS and Linux">
-
-```bash skip="host-install"
-curl -fsSL https://cua.ai/driver/install.sh | bash -s -- --channel nightly
-```
-
-  </Tab>
-  <Tab value="Windows">
-
-```powershell skip="host-install"
-& ([scriptblock]::Create((irm https://cua.ai/driver/install.ps1))) -Channel nightly
-```
-
-  </Tab>
-</Tabs>
-
-On Windows, the installer adds its directory to your User `Path`; to skip that:
-
-```powershell test="windows" id="install-no-path-update"
-& ([scriptblock]::Create((irm https://cua.ai/driver/install.ps1))) -NoPathUpdate
-```
-
-To pin one exact nightly for a single install, set `CUA_DRIVER_RS_VERSION` to
-its full `nightly-cua-driver-rs-v…` tag from the GitHub release before running
-the installer. The pin does not change the saved channel and never falls back
-to another release.
+`channel set` only saves which release stream the update check reports; it does
+not change the binary. Rebuild from a repository checkout to switch binaries.
 
 ## Personalize the cursor
 
@@ -472,7 +451,8 @@ records nothing outside Cua-mediated actions.
 
 ```bash test="cli-shape" id="cua-driver-history-enable"
 cua-driver channel set nightly
-cua-driver update --apply
+git pull
+libs/cua-driver/scripts/install-local.sh
 cua-driver history enable
 cua-driver history status
 ```
@@ -546,31 +526,7 @@ and storage profile are specified in the
 
 <Callout type="info">
   To return to stable: `cua-driver history disable`, `cua-driver channel set stable`,
-  `cua-driver update --apply`. History is kept unless you delete it.
+  then `git pull` and `libs/cua-driver/scripts/install-local.sh`. History is kept
+  unless you delete it.
 </Callout>
 
-## Telemetry
-
-Cua Driver sends content-free, pseudonymous usage events to PostHog's EU
-endpoint, on by default. The installer shows a notice before the first event.
-
-```bash test="cli-shape" id="cua-driver-telemetry-status"
-cua-driver telemetry status --json
-cua-driver telemetry disable
-cua-driver telemetry inspect cua_driver_mcp_tool_completed --json
-cua-driver telemetry reset-id
-```
-
-`CUA_DRIVER_RS_TELEMETRY_ENABLED=false` overrides the saved setting for one
-process. The switches every Cua program shares also turn it off:
-`DO_NOT_TRACK=1`, `CUA_TELEMETRY=0` and `cua telemetry off` (see
-[Telemetry and privacy](/cua-sdk/concepts/telemetry)). `inspect` builds an event locally without sending it; `reset-id`
-creates a new installation ID (`uninstall --purge` removes local state).
-
-Events carry the product version, OS family and major version, architecture,
-transport, built-in tool names (any other tool is `other`), and bucketed
-durations and outcomes. GeoIP lookup is disabled on every event. Never collected: prompts, tool arguments or
-results, typed text, screenshots, accessibility trees, window titles, app
-names, file paths, URLs, or error messages. The update check is separate and
-not controlled by this setting. See the
-[privacy policy](https://cua.ai/privacy-policy).

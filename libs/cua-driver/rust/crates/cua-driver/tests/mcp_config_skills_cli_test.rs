@@ -45,7 +45,6 @@ impl Sandbox {
             .env("APPDATA", self.home.join("AppData/Roaming"))
             .env("CUA_DRIVER_RS_HOME", &self.driver_home)
             .env("HERMES_HOME", &self.hermes_home)
-            .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "0")
             .output()
             .expect("run cua-driver mcp-config")
     }

@@ -28,7 +28,7 @@ import { StartupModel } from "../src/model/startup";
 import { MAX_ENTRIES, TeleportCache } from "../src/model/teleport";
 import { devDirName, nativeFiles } from "../src/native/location";
 import { loadNative, type Native } from "../src/native/load";
-import { FixtureAccount, FixtureSpacesBackend, FixtureTelemetry, fixtureDevices, fixtureHost } from "./fixtures";
+import { FixtureAccount, FixtureSpacesBackend, fixtureDevices, fixtureHost } from "./fixtures";
 import {
   FakeKeyvault,
   FakeSpace,
@@ -87,7 +87,7 @@ describe.skipIf(!built)("Teleport and the Keyvault on the app core", () => {
 
   beforeAll(async () => {
     home = mkdtempSync(path.join(tmpdir(), "cua-vault-native-"));
-    Object.assign(process.env, { HOME: home, USERPROFILE: home, CUA_HOME: path.join(home, ".cua"), CUA_TELEMETRY: "0", DO_NOT_TRACK: "1", CUA_KEYCHAIN_NONINTERACTIVE: "1" });
+    Object.assign(process.env, { HOME: home, USERPROFILE: home, CUA_HOME: path.join(home, ".cua"), CUA_KEYCHAIN_NONINTERACTIVE: "1" });
     native = await loadNative(dir);
   });
 
@@ -115,7 +115,6 @@ describe.skipIf(!built)("Teleport and the Keyvault on the app core", () => {
       devices: new DevicesModel(native, () => fixtureDevices()),
       cloud: new CloudModel(native, () => backend),
       account: new FixtureAccount("ada@example.com"),
-      telemetry: new FixtureTelemetry(),
       keyvault,
       servicesIn: () => servicesIn,
       cpus: 8,

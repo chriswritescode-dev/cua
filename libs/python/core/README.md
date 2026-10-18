@@ -18,7 +18,6 @@
 
 **Cua Core** provides essential shared functionality and utilities used across the Cua ecosystem:
 
-- Privacy-focused telemetry system for transparent usage analytics
 - Common helper functions and utilities used by other Cua packages
 - Core infrastructure components shared between modules
 

@@ -536,7 +536,6 @@ def share_daemon() -> Iterator[ShareDaemon]:
             CUA_HOME=str(home),
             CUA_CREDENTIAL_STORE="file",
             CUA_RELAY_URL=relay_url,
-            CUA_TELEMETRY="0",
         )
         proc = subprocess.Popen(
             [str(binary), "daemon", "start", "--foreground", "--socket", str(sock)],

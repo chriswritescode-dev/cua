@@ -73,9 +73,4 @@ describe("Onboarding", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("sign in to Cua first");
     expect(onDone).not.toHaveBeenCalled();
   });
-
-  it("leaves the telemetry notice to Welcome", () => {
-    render(<Onboarding host={createFakeHostBridge()} onDone={vi.fn()} />);
-    expect(screen.queryByTestId("telemetry-notice")).toBeNull();
-  });
 });

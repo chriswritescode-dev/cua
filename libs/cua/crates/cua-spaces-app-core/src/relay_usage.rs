@@ -409,6 +409,30 @@ pub(crate) fn buy(account_app: &str, path: &str, from: &str) -> String {
     }
 }
 
+/// Where an upgrade link opens, as the account app's `?from=` names it.
+pub const PLAN_SURFACES: &[&str] = &[
+    "app_create",
+    "app_connect",
+    "app_meter",
+    "app_machine",
+    "app_share",
+    "app_team",
+    "app_plan_card",
+    "app_account_menu",
+    "app_onboarding",
+];
+
+/// The upgrade link `url` saying it was opened from `surface` (`?from=`),
+/// the rest of its query kept. A surface outside [`PLAN_SURFACES`] leaves it
+/// alone.
+pub fn upgrade_link(url: &str, surface: &str) -> String {
+    if PLAN_SURFACES.contains(&surface) {
+        cua_home::plan_limit::with_from(url, surface)
+    } else {
+        url.to_string()
+    }
+}
+
 /// What the notice's Upgrade opens: Free goes to Pro, Pro to Teams, a team
 /// to its billing page; a plan the relay names that this app does not know
 /// keeps the relay's own link, else the billing page.
@@ -685,20 +709,16 @@ mod tests {
         assert_eq!(primary.label, "Manage plan");
         assert_eq!(primary.url, "https://app.cua.ai/billing?from=app_plan_card");
         // Free and Teams cards do not carry it.
-        assert!(
-            !plan_card(&free(), "https://app.cua.ai")
-                .detail
-                .contains("yearly")
-        );
+        assert!(!plan_card(&free(), "https://app.cua.ai")
+            .detail
+            .contains("yearly"));
         let team = RelayUsage {
             plan: "team".into(),
             ..free()
         };
-        assert!(
-            !plan_card(&team, "https://app.cua.ai")
-                .detail
-                .contains("yearly")
-        );
+        assert!(!plan_card(&team, "https://app.cua.ai")
+            .detail
+            .contains("yearly"));
     }
 
     #[test]
@@ -732,24 +752,20 @@ mod tests {
             hours_limit: Some(200.0),
             ..free()
         };
-        assert!(
-            view_for(&pro, "https://app.cua.ai")
-                .unwrap()
-                .notice
-                .is_none()
-        );
+        assert!(view_for(&pro, "https://app.cua.ai")
+            .unwrap()
+            .notice
+            .is_none());
         // Nor a plan with no hour limit.
         let open = RelayUsage {
             hours_limit: None,
             hours_used: 500.0,
             ..free()
         };
-        assert!(
-            view_for(&open, "https://app.cua.ai")
-                .unwrap()
-                .notice
-                .is_none()
-        );
+        assert!(view_for(&open, "https://app.cua.ai")
+            .unwrap()
+            .notice
+            .is_none());
     }
 
     #[test]
@@ -872,12 +888,10 @@ mod tests {
             live_sessions: 4,
             ..u
         };
-        assert!(
-            view_for(&room, "https://app.cua.ai")
-                .unwrap()
-                .notice
-                .is_none()
-        );
+        assert!(view_for(&room, "https://app.cua.ai")
+            .unwrap()
+            .notice
+            .is_none());
     }
 
     #[test]

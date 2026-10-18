@@ -25,9 +25,9 @@ Use the CLI by default when a shell is available, or the existing MCP connection
 
 Bare MCP owns a runtime on Windows/Linux and uses the signed service identity on macOS. `cua-driver mcp --socket <endpoint>` explicitly selects a service. One-shot CLI calls are service-backed. Starting a process that serves MCP is not the same as connecting a client: use the harness's MCP integration, not independent shell writes to a dead stdin.
 
-For missing software, use the installation instructions in [README.md](README.md) with user approval. `check-update` is read-only; `update --apply` installs software. After an approved update, check both the executable and daemon. Do not interpret a nonzero updater exit as proof that nothing changed.
+For missing software, use the repository build instructions in [README.md](README.md) with user approval. `check-update` is read-only and only reports whether a newer release exists; install it by pulling the repository and running `libs/cua-driver/scripts/install-local.sh` (or `install-local.ps1` on Windows). After an approved rebuild, check both the executable and daemon. On macOS, [MACOS.md](MACOS.md#install-and-approve-permissions) covers approving Cua Driver's own Accessibility and Screen Recording prompts, including when an owner may authorize you to do it.
 
-`skills update` replaces the installed pack. Back up personal edits before refreshing. `skills install --from main` is for source validation, not proof of compatibility with a release binary. Other platform guides are installed only with `--all-platforms`.
+`skills update` replaces the installed pack from the copy bundled with the local build. Back up personal edits before refreshing. Other platform guides are installed only with `--all-platforms`.
 
 The old computer-use compatibility flag does not add a screenshot tool. Use `get_window_state` or explicitly authorized `get_desktop_state`.
 
@@ -35,7 +35,7 @@ The old computer-use compatibility flag does not add a screenshot tool. Use `get
 
 For multi-call work, prefer a short public label and pass the same label on every call that accepts it. Passing it once is not sticky: omission uses the transport's implicit session. Named CLI state is shared only within the daemon's CLI namespace, not with arbitrary MCP connections or a new daemon generation.
 
-`start_session` is optional: actions can establish the run. Use it to configure the initial cursor theme or revive a name after `end_session`. The default idle TTL is five minutes; do not assume a long human permission wait preserves handles.
+`start_session` is optional: actions can establish the run. Use it to configure the initial cursor theme or revive a name after `end_session`. There is no default idle expiry; a named session persists until it is ended explicitly or the daemon stops.
 
 ```bash
 cua-driver start_session '{"session":"run-1"}'
@@ -56,6 +56,8 @@ If foreground control is not authorized, stop with the driver's refusal instead 
 Use Cua's tools rather than shell activation/input shims. `bring_to_front` is reserved for requested persistent foreground state or a focus-proxy surface that must remain active across calls. A native menu operation can also activate temporarily; prefer an in-window control when background posture matters.
 
 ## Keep authorization separate from sessions
+
+This section is about Cua Driver's authorization profile. It is separate from the macOS privacy approvals (TCC) that the app itself needs; see [MACOS.md](MACOS.md#install-and-approve-permissions).
 
 The trusted host selects one permission profile at startup. `standard` keeps
 the normal profile behavior and residual approval requirements, `bounded`

@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'darwin'",
@@ -866,11 +866,11 @@ source = { editable = "libs/cua/python" }
 
 [package.metadata]
 requires-dist = [
-    { name = "cua-agent", extras = ["all"], marker = "python_full_version >= '3.11' and extra == 'all'", specifier = ">=0.8.0" },
-    { name = "cua-agent", extras = ["cloud"], marker = "python_full_version >= '3.11' and extra == 'agent'", specifier = ">=0.8.0" },
-    { name = "cua-agent", extras = ["ui"], marker = "python_full_version >= '3.11' and extra == 'ui'", specifier = ">=0.8.0" },
-    { name = "cua-sandbox", marker = "python_full_version >= '3.11' and extra == 'all'", specifier = ">=0.8.0" },
-    { name = "cua-sandbox", marker = "python_full_version >= '3.11' and extra == 'sandbox'", specifier = ">=0.8.0" },
+    { name = "cua-agent", extras = ["all"], marker = "python_full_version >= '3.11' and extra == 'all'", directory = "libs/python/agent" },
+    { name = "cua-agent", extras = ["cloud"], marker = "python_full_version >= '3.11' and extra == 'agent'", directory = "libs/python/agent" },
+    { name = "cua-agent", extras = ["ui"], marker = "python_full_version >= '3.11' and extra == 'ui'", directory = "libs/python/agent" },
+    { name = "cua-sandbox", marker = "python_full_version >= '3.11' and extra == 'all'", directory = "libs/python/cua-sandbox" },
+    { name = "cua-sandbox", marker = "python_full_version >= '3.11' and extra == 'sandbox'", directory = "libs/python/cua-sandbox" },
     { name = "pytest", marker = "extra == 'test'" },
 ]
 provides-extras = ["test", "sandbox", "agent", "ui", "all"]
@@ -1060,21 +1060,6 @@ requires-dist = [
 name = "cua-core"
 version = "0.3.2"
 source = { editable = "libs/python/core" }
-dependencies = [
-    { name = "posthog" },
-]
-
-[package.optional-dependencies]
-otel = [
-    { name = "opentelemetry-api" },
-    { name = "opentelemetry-exporter-otlp-proto-http" },
-    { name = "opentelemetry-sdk" },
-]
-telemetry = [
-    { name = "opentelemetry-api" },
-    { name = "opentelemetry-exporter-otlp-proto-http" },
-    { name = "opentelemetry-sdk" },
-]
 
 [package.dev-dependencies]
 dev = [
@@ -1082,16 +1067,6 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "opentelemetry-api", marker = "extra == 'otel'", specifier = ">=1.20.0" },
-    { name = "opentelemetry-api", marker = "extra == 'telemetry'", specifier = ">=1.20.0" },
-    { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'otel'", specifier = ">=1.20.0" },
-    { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'telemetry'", specifier = ">=1.20.0" },
-    { name = "opentelemetry-sdk", marker = "extra == 'otel'", specifier = ">=1.20.0" },
-    { name = "opentelemetry-sdk", marker = "extra == 'telemetry'", specifier = ">=1.20.0" },
-    { name = "posthog", specifier = ">=3.20.0" },
-]
-provides-extras = ["otel", "telemetry"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.3.5" }]
@@ -1102,7 +1077,6 @@ version = "0.9.1"
 source = { editable = "libs/python/cua-sandbox" }
 dependencies = [
     { name = "cua" },
-    { name = "cua-core" },
     { name = "grpcio" },
     { name = "httpx" },
     { name = "oras" },
@@ -1115,7 +1089,6 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "cua", editable = "libs/cua/python" },
-    { name = "cua-core", specifier = ">=0.1.18,<0.4.0" },
     { name = "cua-driver", marker = "extra == 'driver'", specifier = "==0.37.0" },
     { name = "grpcio", specifier = "==1.78.0" },
     { name = "httpx", specifier = ">=0.27.0" },

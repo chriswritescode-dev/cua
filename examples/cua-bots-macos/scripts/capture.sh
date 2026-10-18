@@ -42,7 +42,7 @@ if [[ $phone == --phone ]]; then (cd ../cua-bots-ios && swift build --product Cu
 "$mock" --listen "127.0.0.1:$port" --scripts scripts/demo-model.json >"$out/mock-llm.log" 2>&1 &
 mock_pid=$!
 
-env HOME="$scratch" CUA_HOME="$scratch/.cua" CUA_CREDENTIAL_STORE=file CUA_TELEMETRY=0 \
+env HOME="$scratch" CUA_HOME="$scratch/.cua" CUA_CREDENTIAL_STORE=file \
   CUA_BOTS_CAPTURE="$out" CUA_BOTS_SYSTEM_NOTIFICATIONS=0 \
   CUA_BOTS_APPEARANCE="${CUA_BOTS_APPEARANCE:-light}" \
   CUA_BOTS_OWNER="${CUA_BOTS_OWNER:-Maya}" CUA_BOTS_DEVICE_NAME="${CUA_BOTS_DEVICE_NAME:-maya-mbp}" \
@@ -72,7 +72,7 @@ trap cleanup EXIT
 
 if [[ $phone == --phone ]]; then
   until grep -q "tour finished" "$out/tour.log" 2>/dev/null || ! kill -0 "$app_pid" 2>/dev/null; do sleep 2; done
-  env HOME="$scratch" CUA_HOME="$scratch/.cua" CUA_CREDENTIAL_STORE=file CUA_TELEMETRY=0 \
+  env HOME="$scratch" CUA_HOME="$scratch/.cua" CUA_CREDENTIAL_STORE=file \
     CUA_BOTS_APPEARANCE="${CUA_BOTS_APPEARANCE:-light}" CUA_BOTS_PREVIEW_SPACE=local:bot-ada CUA_BOTS_PHONE_CAPTURE="$out/phone" \
     ../cua-bots-ios/.build/debug/CuaBotsPhonePreview >"$out/phone.log" 2>&1 &
   phone_pid=$!

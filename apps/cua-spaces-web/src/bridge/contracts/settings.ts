@@ -30,7 +30,6 @@ export interface AboutInput {
   /** The app updates itself. */
   updater: boolean;
   autoCheck: boolean;
-  autoInstall: boolean;
   channel: UpdateChannelId;
   /** The last check as the host formats a date; null: never. */
   lastCheck: string | null;
@@ -49,9 +48,6 @@ export interface AboutLink {
 export interface AboutUpdates {
   autoCheckLabel: string;
   autoCheck: boolean;
-  autoInstallLabel: string;
-  autoInstall: boolean;
-  autoInstallEnabled: boolean;
   channelLabel: string;
   channels: SettingsOption[];
   channelHelp: string;
@@ -71,29 +67,28 @@ export interface AboutView {
 
 /* ---- In-app updates (`update.*`) ------------------------------------------ */
 
-/** Where an update is: nothing to do, a check running, found and about to
- * download, downloading, ready to install, or the last step failed. */
-export type UpdateStatus = "idle" | "checking" | "available" | "downloading" | "downloaded" | "error";
+/** Where an update is: nothing to do, a check running, found, or the last
+ * check failed. The host notifies; it never downloads or installs. */
+export type UpdateStatus = "idle" | "checking" | "available" | "error";
 
-/** What the host's updater (Sparkle in the Mac app, electron-updater on
- * Windows and Linux) reports for the in-app indicator. The host downloads
- * on its own; it installs only on `update.install`. */
+/** What the host's updater (Sparkle in the Mac app, its own check in the
+ * Electron app) reports for the in-app indicator. */
 export interface UpdateState {
   status: UpdateStatus;
   /** The version this app runs. */
   currentVersion: string;
-  /** The version found, downloading or ready; null with none. */
+  /** The version found; null with none. */
   version: string | null;
-  /** Download progress, 0 to 100, while `downloading`; else null. */
-  percent: number | null;
   /** The GitHub release notes page for `version`; null with none. */
   notesUrl: string | null;
-  /** Why the last step failed (`error` only); else null. */
+  /** How to update by hand; null unless an update is available. */
+  instructions?: string | null;
+  /** The host's line about the update or the failed check; null otherwise. */
   message: string | null;
 }
 
 /** What `about.set` changes. */
-export type AboutSetting = { key: "autoCheck"; value: boolean } | { key: "autoInstall"; value: boolean } | { key: "channel"; value: UpdateChannelId };
+export type AboutSetting = { key: "autoCheck"; value: boolean } | { key: "channel"; value: UpdateChannelId };
 
 /* ---- Launch at login (`login_item::*`) ------------------------------------ */
 

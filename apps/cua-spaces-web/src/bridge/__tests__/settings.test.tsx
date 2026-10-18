@@ -74,7 +74,7 @@ describe.skipIf(!wasmBuilt)("Settings and Notifications through the core", () =>
     await waitFor(() => expect(hooks.about.data?.view?.versionLine).toBe("Version 0.6.0 (0.6.0.142)"));
     expect(hooks.about.data?.view?.links.map((l) => l.id)).toEqual(["acknowledgements", "privacy", "terms", "status", "issue"]);
     await hooks.about.setAbout({ autoCheck: false });
-    await waitFor(() => expect(hooks.about.data?.view?.updates?.autoInstallEnabled).toBe(false));
+    await waitFor(() => expect(hooks.about.data?.view?.updates?.autoCheck).toBe(false));
     await hooks.about.setAbout({ channel: "beta" });
     await waitFor(() => expect(hooks.about.data?.view?.updates?.channels.find((c) => c.active)?.id).toBe("beta"));
   });

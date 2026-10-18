@@ -19,8 +19,7 @@ struct MainUIRouteTests {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("cua-route-\(UUID().uuidString)")
         let m = AppModel(backend: FixtureSpacesBackend(), keyvault: KeyvaultModel(client: nil),
                          onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
-                         settingsPath: dir.appendingPathComponent("settings.json").path,
-                         telemetry: FixtureTelemetry())
+                         settingsPath: dir.appendingPathComponent("settings.json").path)
         m.settings.experiments = AppExperiments(cuaVolume: true, yourCloud: false, sharing: false, webUi: true)
         return m
     }
@@ -166,7 +165,7 @@ struct MainUIRouteTests {
         if let json { FileManager.default.createFile(atPath: path, contents: Data(json.utf8)) }
         return AppModel(backend: FixtureSpacesBackend(), keyvault: KeyvaultModel(client: nil),
                         onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
-                        settingsPath: path, telemetry: FixtureTelemetry(), appVersion: version)
+                        settingsPath: path, appVersion: version)
     }
 
     /// The migration: whatever an older build saved ("Use classic UI" on, a

@@ -74,7 +74,6 @@ export class LoginItemModel {
     private readonly choice: { get(): boolean | undefined; set(on: boolean | undefined): void },
     /** This machine provides Spaces, and runs persistent agents. */
     private readonly serves: { providesSpaces(): boolean; runsAgents(): Promise<boolean> | boolean },
-    private readonly record: (feature: string) => void = () => {},
   ) {}
 
   read(): LoginItemStatus | null {
@@ -100,7 +99,6 @@ export class LoginItemModel {
     try {
       if (on) item.register();
       else item.unregister();
-      this.record(on ? "launch_at_login_on" : "launch_at_login_off");
     } catch (error) {
       this.error = words(error);
     }

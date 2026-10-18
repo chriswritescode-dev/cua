@@ -410,7 +410,6 @@ impl cua_agent_setup::SignInVault for KeyvaultSignIns {
             .0
             .import(&c.source, &c.env, &c.label, &c.value, c.expires_ms)
             .map_err(|e| e.to_string())?;
-        cua_telemetry::global().capture(cua_telemetry::events::agent_signin_imported(&c.source));
         Ok(cua_agent_setup::ImportedSignIn {
             source: c.source.clone(),
             env: k.env,

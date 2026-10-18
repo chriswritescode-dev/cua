@@ -22,9 +22,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use cua_driver_core::protocol::{Request, Response};
-use cua_driver_core::server::{
-    handle_request_with_transport_session, tool_observation_timer, StdioExecutionPath,
-};
+use cua_driver_core::server::handle_request_with_transport_session;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tracing::{debug, info, warn};
@@ -180,33 +178,10 @@ async fn dispatch(
         Err(_) => return Some(serialize(&Response::parse_error())),
     };
     req.id.as_ref()?;
-    let initialize_metadata = req.initialize_metadata();
     apply_session_identity(&mut req, transport_session);
-    let session_context = req.tool_call().ok().and_then(|call| {
-        sdk.begin_tool_call(
-            &call.name,
-            &call.args,
-            cua_driver_core::session::SessionTransport::McpHttp,
-            cua_driver_core::session::SessionClientKind::Mcp,
-        )
-    });
     let id = req.id.clone().unwrap_or(serde_json::Value::Null);
-    let timer = http_tool_observation_timer(&req, |name| sdk.is_known_tool(name));
     let response =
         handle_request_with_transport_session(req, id, sdk.as_ref(), transport_session).await;
-    if let Some(timer) = timer {
-        let outcome = timer.finish(&response);
-        if let Some(context) = session_context {
-            context.complete(&outcome);
-        }
-        crate::telemetry::capture_tool_completed(outcome, crate::telemetry::Transport::McpHttp);
-    }
-    if let Some(metadata) = initialize_metadata {
-        crate::telemetry::capture_mcp_session_started(
-            metadata,
-            crate::telemetry::Transport::McpHttp,
-        );
-    }
     Some(serialize(&response))
 }
 
@@ -243,13 +218,6 @@ fn unsupported_protocol_error(body: &[u8], header: Option<&str>) -> Option<Strin
             "data": {"supported": ["2025-06-18"], "requested": requested}
         }
     }).to_string())
-}
-
-fn http_tool_observation_timer(
-    req: &Request,
-    is_known_tool: impl Fn(&str) -> bool,
-) -> Option<cua_driver_core::server::ToolObservationTimer> {
-    tool_observation_timer(req, is_known_tool, StdioExecutionPath::DirectDaemon)
 }
 
 fn serialize(resp: &Response) -> String {
@@ -637,22 +605,6 @@ mod tests {
         let args = req.params.unwrap();
         assert_eq!(args["arguments"]["_session_id"], "http-test");
         assert_eq!(args["arguments"]["_transport_session_id"], "http-test");
-    }
-
-    #[test]
-    fn http_observes_tool_calls_but_not_initialize_requests() {
-        let tool_call: Request = serde_json::from_value(json!({
-            "jsonrpc": "2.0", "id": 1, "method": "tools/call",
-            "params": { "name": "unknown", "arguments": {} }
-        }))
-        .unwrap();
-        assert!(http_tool_observation_timer(&tool_call, |_| false).is_some());
-
-        let initialize: Request = serde_json::from_value(json!({
-            "jsonrpc": "2.0", "id": 2, "method": "initialize", "params": {}
-        }))
-        .unwrap();
-        assert!(http_tool_observation_timer(&initialize, |_| false).is_none());
     }
 
     #[test]

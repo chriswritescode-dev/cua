@@ -2296,6 +2296,32 @@ pub fn app_onboarding_sign_in_code_text(user_code: Option<String>) -> String {
     core::onboarding::sign_in_code_text(user_code.as_deref())
 }
 
+/// The sidebar's foot: every sign-in state in one place.
+#[uniffi::export]
+pub fn app_sign_in_footer(input: AppSignInFooterInput) -> AppSignInFooter {
+    core::sign_in::footer(&input)
+}
+
+/// The failed phase for a known reason, with the error's words for Details.
+#[uniffi::export]
+pub fn app_sign_in_failed(reason: AppSignInFailure, detail: Option<String>) -> AppSignInPhase {
+    core::sign_in::failed(reason, detail.as_deref())
+}
+
+/// The failed phase for an error the shell caught: the SDK error's case
+/// (`Timeout`, `Http`, ...; empty for another error) and its words.
+#[uniffi::export]
+pub fn app_sign_in_failed_from_error(variant: String, message: String) -> AppSignInPhase {
+    core::sign_in::failed_from_error(&variant, &message)
+}
+
+/// The upgrade link `url` with `?from=<surface>` (the account app's purchase
+/// funnel reads it), its other parameters kept.
+#[uniffi::export]
+pub fn app_upgrade_link(url: String, surface: String) -> String {
+    core::relay_usage::upgrade_link(&url, &surface)
+}
+
 /// The install target's tooltip when a `cua` is already there.
 #[uniffi::export]
 pub fn app_onboarding_replaces_text(installed_version: Option<String>) -> String {
@@ -2637,198 +2663,6 @@ impl AppCliInstaller {
     }
 }
 
-// ---- Usage telemetry ------------------------------------------------------------
-
-/// The app started: attributes this process's events to `spaces_app` at
-/// `version`, links usage data to the signed-in account in the background
-/// when the Spaces API offers it, lets the app show the first-run notice itself (nothing is
-/// sent before it has been shown once), and records `app_launched` (on a
-/// first run, once the notice shows). Call once at launch, before the
-/// first `Cua`. `onboarding_eligible`: the first run is still to finish
-/// (`app_launched` carries it). Returns whether the notice was already
-/// shown here.
-#[uniffi::export]
-pub fn app_telemetry_start(version: String, onboarding_eligible: Option<bool>) -> bool {
-    let t = cua_telemetry::global();
-    t.set_product("spaces_app", &version);
-    t.set_notice_mode(cua_telemetry::NoticeMode::External);
-    // Links usage data to the signed-in account when the Spaces API offers
-    // it (CUA-1881); the SDK's sign-in does the same. Off the launch path.
-    cua_sdk::support::spawn(async {
-        cua_sdk::telemetry_sync_account().await;
-    });
-    // Crash reports for the core (no-op without CUA_CRASH_DSN or consent).
-    cua_crash::start_for_process("core");
-    core::telemetry::start_with(t, onboarding_eligible)
-}
-
-/// Records `signals` on the SDK's telemetry client (the switch, the notice
-/// and the schema apply) and marks the day active. Returns how many events
-/// were queued.
-#[uniffi::export]
-pub fn app_telemetry_record(signals: Vec<AppTelemetrySignal>) -> u32 {
-    let queued = core::telemetry::record(cua_telemetry::global(), &signals) as u32;
-    // The "Share usage data" switch may have changed: close crash reporting
-    // when consent was withdrawn.
-    cua_crash::refresh_consent();
-    queued
-}
-
-/// A Pro or Teams surface's event (`upsell_<surface>_<action>`), knowing
-/// the plan and, for the meter past a limit, its cap (`kind`): a `click`
-/// also records the upgrade link opened, the meter shown past a limit the
-/// plan limit shown.
-#[uniffi::export]
-pub fn app_telemetry_upsell(
-    surface: String,
-    action: String,
-    kind: Option<String>,
-    plan: Option<String>,
-) -> Vec<AppTelemetrySignal> {
-    core::telemetry::upsell_with(&surface, &action, kind.as_deref(), plan.as_deref())
-}
-
-/// A plan limit shown at `surface` (`action` `shown`: `app_create`,
-/// `app_connect`, `app_meter`, `app_team`, ...) or its upgrade link opened
-/// (`opened`); `kind` is the cap (none: not from a limit), `plan` the plan.
-#[uniffi::export]
-pub fn app_telemetry_plan_limit(
-    action: String,
-    surface: String,
-    kind: Option<String>,
-    plan: Option<String>,
-) -> Vec<AppTelemetrySignal> {
-    core::telemetry::plan_limit(
-        &action,
-        &surface,
-        kind.as_deref().unwrap_or_default(),
-        plan.as_deref().unwrap_or_default(),
-    )
-}
-
-/// The upgrade link `url` with `?from=<surface>` (the account app's purchase
-/// funnel reads it), its other parameters kept.
-#[uniffi::export]
-pub fn app_upgrade_link(url: String, surface: String) -> String {
-    core::telemetry::upgrade_link(&url, &surface)
-}
-
-/// The app started (`app_launched`).
-#[uniffi::export]
-pub fn app_telemetry_launched(onboarding_eligible: Option<bool>) -> Vec<AppTelemetrySignal> {
-    core::telemetry::launched(onboarding_eligible)
-}
-
-/// A Spaces app feature (a fixed name).
-#[uniffi::export]
-pub fn app_telemetry_feature(feature: String) -> Vec<AppTelemetrySignal> {
-    core::telemetry::feature_used(&feature)
-}
-
-/// The first run left Welcome with its usage-data switch at `on`: writes
-/// the machine's setting when it changed (the same as Settings and `cua
-/// telemetry off`), then records that the notice was shown. Nothing is
-/// queued or sent before; with the switch off, nothing after either.
-#[uniffi::export]
-pub fn app_telemetry_welcome_left(on: bool) -> Result<()> {
-    core::telemetry::welcome_left(cua_telemetry::global(), on)
-        .map_err(|e| CuaError::Internal(e.to_string()))
-}
-
-/// The events one first-run step means (call with the state before it).
-#[uniffi::export]
-pub fn app_telemetry_onboarding(
-    state: AppOnboardingState,
-    action: AppOnboardingAction,
-) -> Vec<AppTelemetrySignal> {
-    core::telemetry::onboarding(&state, &action)
-}
-
-/// A sign-in failed (`message`, which never leaves: only its kind) or was
-/// cancelled (none).
-#[uniffi::export]
-pub fn app_telemetry_sign_in_failed(message: Option<String>) -> Vec<AppTelemetrySignal> {
-    core::telemetry::sign_in_failed(message.as_deref())
-}
-
-/// A sign-in failed for `reason` or was cancelled (none): its kind only.
-#[uniffi::export]
-pub fn app_telemetry_sign_in_failure(reason: Option<AppSignInFailure>) -> Vec<AppTelemetrySignal> {
-    core::telemetry::sign_in_failure(reason)
-}
-
-/// The sidebar's foot: every sign-in state in one place.
-#[uniffi::export]
-pub fn app_sign_in_footer(input: AppSignInFooterInput) -> AppSignInFooter {
-    core::sign_in::footer(&input)
-}
-
-/// The failed phase for a known reason, with the error's words for Details.
-#[uniffi::export]
-pub fn app_sign_in_failed(reason: AppSignInFailure, detail: Option<String>) -> AppSignInPhase {
-    core::sign_in::failed(reason, detail.as_deref())
-}
-
-/// The failed phase for an error the shell caught: the SDK error's case
-/// (`Timeout`, `Http`, ...; empty for another error) and its words.
-#[uniffi::export]
-pub fn app_sign_in_failed_from_error(variant: String, message: String) -> AppSignInPhase {
-    core::sign_in::failed_from_error(&variant, &message)
-}
-
-/// "Start using Cua Spaces".
-#[uniffi::export]
-pub fn app_telemetry_onboarding_finished(state: AppOnboardingState) -> Vec<AppTelemetrySignal> {
-    core::telemetry::onboarding_finished(&state)
-}
-
-/// The events one step of the Spaces being created means, at `now_ms`
-/// (call with the state before it).
-#[uniffi::export]
-pub fn app_telemetry_creates(
-    state: AppCreatesState,
-    action: AppCreateAction,
-    now_ms: i64,
-) -> Vec<AppTelemetrySignal> {
-    core::telemetry::creates(&state, &action, now_ms)
-}
-
-/// The events one step of Settings, Storage means.
-#[uniffi::export]
-pub fn app_telemetry_storage(
-    input: AppStorageInput,
-    state: AppStorageState,
-    action: AppStorageAction,
-) -> Vec<AppTelemetrySignal> {
-    core::telemetry::storage(&input, &state, &action)
-}
-
-/// The events one step of the Share sheet means.
-#[uniffi::export]
-pub fn app_telemetry_share(
-    input: AppShareInput,
-    state: AppShareSheetState,
-    action: AppShareSheetAction,
-) -> Vec<AppTelemetrySignal> {
-    core::telemetry::share(&input, &state, &action)
-}
-
-/// The events of a change in Settings, Experiments (call with the switches
-/// before and after it).
-#[uniffi::export]
-pub fn app_telemetry_experiments_changed(
-    before: AppExperiments,
-    after: AppExperiments,
-) -> Vec<AppTelemetrySignal> {
-    core::telemetry::experiments_changed(&before, &after)
-}
-
-/// Which experiments are on (at launch).
-#[uniffi::export]
-pub fn app_telemetry_experiments_on(experiments: AppExperiments) -> Vec<AppTelemetrySignal> {
-    core::telemetry::experiments_on(&experiments)
-}
-
 /// Settings, Storage's state from JSON (fixtures, parity).
 #[uniffi::export]
 pub fn app_storage_state_from_json(json: String) -> Result<AppStorageState> {
@@ -2847,18 +2681,9 @@ pub fn app_enroll_state_from_json(json: String) -> Result<AppEnrollState> {
     from_json("enroll state", &json)
 }
 
-/// The events one step of the enroll sheet means.
-#[uniffi::export]
-pub fn app_telemetry_enroll(
-    state: AppEnrollState,
-    action: AppEnrollAction,
-) -> Vec<AppTelemetrySignal> {
-    core::telemetry::enroll(&state, &action)
-}
-
 // ---- Machines and the command palette -------------------------------------
 
-/// The getting-started checklist after `action`, and its usage events.
+/// The getting-started checklist after `action`.
 #[uniffi::export]
 pub fn app_checklist_reduce(
     state: AppChecklistState,

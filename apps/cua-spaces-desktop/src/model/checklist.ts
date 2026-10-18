@@ -11,7 +11,7 @@
 // so nobody loses ticked steps moving between the two apps.
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
-import type { AppChecklistAction, AppChecklistState, AppChecklistStep, AppTelemetrySignal } from "../native/generated/index";
+import type { AppChecklistAction, AppChecklistState, AppChecklistStep } from "../native/generated/index";
 import { keepDamaged } from "../damaged";
 import type { Native } from "../native/load";
 
@@ -38,8 +38,6 @@ export function checklistWords(native: Native): [AppChecklistStep, string][] {
 
 export class ChecklistModel {
   state: AppChecklistState;
-  /** Where usage events go (`checklist_<step>`, `checklist_completed`, ...). */
-  telemetry: { record(signals: AppTelemetrySignal[]): void } | null = null;
   /** The state changed (the page's `checklist.changed`). */
   onChange: () => void = () => {};
   private readonly words: [AppChecklistStep, string][];
@@ -85,13 +83,11 @@ export class ChecklistModel {
     const t = this.native.appChecklistReduce(this.state, action);
     const before = JSON.stringify(this.stored);
     this.state = t.state;
-    // A merge changes the state without events (they were recorded where
-    // the steps were ticked).
+    // A merge changes the state without events.
     if (JSON.stringify(this.stored) !== before) {
       this.save();
       this.onChange();
     }
-    if (t.signals.length) this.telemetry?.record(t.signals);
   }
 
   private read(file: string, own = true): AppChecklistState | null {

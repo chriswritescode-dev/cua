@@ -10,7 +10,6 @@ import {
   useAgentDetail,
   useAgents,
   useAgentTimeline,
-  useFeatureRecorded,
   useSession,
   type AgentRunSummary,
   type AgentsData,
@@ -77,7 +76,6 @@ function AgentsPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/agents/" });
   const { data, isLoading, error } = useAgents();
-  useFeatureRecorded("agents_page_open");
   // The page opens on the overview; a run or an agent opens its own view.
   const opened = Boolean(search.agent || (search.run && search.space));
   const selected = resolveSelection(data, search);

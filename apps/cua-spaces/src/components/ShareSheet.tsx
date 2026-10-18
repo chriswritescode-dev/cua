@@ -16,8 +16,6 @@ import {
   type ShareSheetAction,
 } from '../model/share';
 import type { ShareBridge } from '../native/share';
-import { featureSignals, shareSignals } from '../model/telemetry';
-import { telemetryBridge } from '../native/telemetry';
 import { SmallSheet } from './Devices';
 import { useT } from "../i18n";
 
@@ -51,8 +49,6 @@ export function ShareSheet({
   const [shares, setShares] = useState<ShareEntryInput[]>([]);
   // In a team that can share; null until read, or when it cannot be said.
   const [hasTeam, setHasTeam] = useState<boolean | null>(null);
-  // Sharing adoption: the sheet was opened.
-  useEffect(() => telemetryBridge().recordSignals(featureSignals('share_open')), []);
   const [state, setState] = useState(shareInitial);
   const input: ShareInput = { spaceId, spaceName, shares, signedIn, shareable };
   const v = shareView(input, state);
@@ -86,8 +82,6 @@ export function ShareSheet({
             ? await bridge.share(request.space, request.who, request.role)
             : await bridge.unshare(request.space, request.who);
         setShares(r.shares);
-        // Shared (view-only or not), unshared or a role changed: never who.
-        telemetryBridge().recordSignals(shareSignals(input, next, { type: 'done' }));
         setState((s) => reduceShare({ ...input, shares: r.shares }, s, { type: 'done' }));
       } catch (e) {
         // A refusal for who is not in the team (or no team) reads in plain words.
@@ -96,7 +90,6 @@ export function ShareSheet({
           type: 'failed',
           error: shareErrorWords(raw, request.kind === 'share' ? request.who : '') ?? raw,
         };
-        telemetryBridge().recordSignals(shareSignals(input, next, failed));
         setState((s) => reduceShare(input, s, failed));
       }
     },

@@ -1315,20 +1315,6 @@ write_mode() {
     printf '%s\n' "$mode" >"$home/spaces-install-mode"
 }
 
-# How Cua was installed, for the one-time first-run telemetry event (a fixed
-# enum value; no identifiers). Kept when another installer recorded one.
-record_install_channel() {
-    home="${CUA_HOME:-$HOME/.cua}"
-    file="$home/telemetry/install_channel"
-    if [ "$dry_run" = 1 ]; then
-        say "[dry-run] record the install channel in $file"
-        return
-    fi
-    [ -e "$file" ] && return 0
-    mkdir -p "$home/telemetry" 2>/dev/null || return 0
-    printf 'install_script\n' >"$file" 2>/dev/null || true
-}
-
 # ---------------------------------------------------------------- cua-driver
 
 # cua-driver's own release installer (it verifies each archive against the
@@ -1598,10 +1584,6 @@ main() {
         esac
         write_mode
     fi
-    record_install_channel
-    # The CLI invoked here reports the channel even before the file is read.
-    CUA_INSTALL_CHANNEL=install_script
-    export CUA_INSTALL_CHANNEL
     if [ "$sel_driver" = 1 ]; then
         tel_stage=driver
         install_driver

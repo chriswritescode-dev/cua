@@ -6,17 +6,10 @@ import Foundation
 import Sentry
 import Testing
 
-/// Crash reporting: consent, release and environment, and the privacy rules
-/// every event passes before it leaves the machine.
+/// Crash reporting: the DSN that turns it on, the release and environment,
+/// and the privacy rules every event passes before it leaves the machine.
 @Suite("Crash reporting")
 struct CrashReportingTests {
-    @Test func consentNeedsTheSwitchAndTheNotice() {
-        #expect(CrashReporting.isAllowed(enabled: true, noticeShown: true))
-        #expect(!CrashReporting.isAllowed(enabled: true, noticeShown: false))
-        #expect(!CrashReporting.isAllowed(enabled: false, noticeShown: true))
-        #expect(!CrashReporting.isAllowed(enabled: false, noticeShown: false))
-    }
-
     @Test func environmentFollowsChannelAndVersion() {
         #expect(CrashReporting.environment(channel: "local", version: "0.7.2") == "local")
         #expect(CrashReporting.environment(channel: "Local", version: "0.7.2-beta.1") == "local")
@@ -116,17 +109,20 @@ struct CrashReportingTests {
 
 @Suite("Crash reporting bridge")
 struct CrashReportingBridgeTests {
-    @Test func configCarriesConsentAndBuild() {
+    @Test func configCarriesTheBuild() {
         let info: [String: Any] = ["CuaCrashDSN": "https://k@o.test/1", "CuaVersion": "0.7.2"]
-        let c = CrashReporting.bridgeConfig(info: info, allowed: true, env: ["CUA_CRASH_TEST": "ui"])
+        let c = CrashReporting.bridgeConfig(info: info, env: ["CUA_CRASH_TEST": "ui"])
         #expect(c["allowed"] as? Bool == true)
         #expect(c["shell"] as? String == "swift")
         #expect(c["environment"] as? String == "stable")
         #expect(c["release"] as? String == "cua-spaces-desktop@0.7.2")
         #expect(c["crashTest"] == nil)
-        let l = CrashReporting.bridgeConfig(info: info.merging(["CuaChannel": "local"]) { $1 }, allowed: false,
+        let l = CrashReporting.bridgeConfig(info: info.merging(["CuaChannel": "local"]) { $1 },
                                             env: ["CUA_CRASH_TEST": "ui"])
         #expect(l["crashTest"] as? String == "ui")
-        #expect(l["allowed"] as? Bool == false)
+        #expect(l["allowed"] as? Bool == true)
+        let none = CrashReporting.bridgeConfig(info: ["CuaVersion": "0.7.2"], env: [:])
+        #expect(none["allowed"] as? Bool == false)
+        #expect(none["dsn"] as? String == "")
     }
 }

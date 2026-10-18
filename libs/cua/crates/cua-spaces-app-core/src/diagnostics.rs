@@ -76,7 +76,7 @@ pub struct CreateReport {
     pub parts: Vec<ReportPart>,
     /// "Open email".
     pub send_label: String,
-    /// The fixed failure word (`image_pull_auth`), as telemetry records it.
+    /// The fixed failure word (`image_pull_auth`), as the app records it.
     pub error_kind: String,
 }
 

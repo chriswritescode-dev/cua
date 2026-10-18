@@ -247,7 +247,6 @@ def cu_helper_env() -> dict[str, str]:
     return {
         "HOME": os.environ.get("HOME", "/tmp"),
         "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-        "DO_NOT_TRACK": "1",
     }
 
 
@@ -378,7 +377,7 @@ def load_pins() -> dict[str, Any]:
 
 
 def cua_env(home: Path) -> dict[str, str]:
-    """Environment of the Cua Driver daemon and of its MCP client: own HOME, telemetry off."""
+    """Environment of the Cua Driver daemon and of its MCP client: own HOME."""
     return desktop.desktop_env(home)
 
 
@@ -598,7 +597,7 @@ def start_cua_daemon(
     binary: Path | None = None,
     env_extra: dict[str, str] | None = None,
 ) -> subprocess.Popen[bytes]:
-    """Private daemon of the release under test: own socket, own HOME, telemetry off."""
+    """Private daemon of the release under test: own socket, own HOME."""
     return desktop.start_driver(
         binary or CUA_BIN,
         socket,

@@ -9,7 +9,7 @@
  *    which is how a dev build or a tester forces one;
  * 2. the build's default (`VITE_CUA_FLAG_<NAME>` = `1`);
  * 3. the remote value, when a source has set one (`setRemoteFlags`: the
- *    PostHog feature-flag payload, once the shells pass it in);
+ *    host's feature-flag payload, once a shell passes one in);
  * 4. the flag's default.
  *
  * A flag only decides what the UI draws. Plans and limits are enforced by the

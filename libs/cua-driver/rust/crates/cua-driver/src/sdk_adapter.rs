@@ -300,39 +300,6 @@ impl SdkAdapter {
         count
     }
 
-    pub fn begin_tool_call(
-        &self,
-        name: &str,
-        arguments: &Value,
-        transport: cua_driver_core::session::SessionTransport,
-        client_kind: cua_driver_core::session::SessionClientKind,
-    ) -> Option<cua_driver_core::session::SessionToolContext> {
-        let observed_state = arguments
-            .get("session")
-            .and_then(Value::as_str)
-            .filter(|session| !session.is_empty() && *session != "default")
-            .map(|session| self.public_session_observation_state(session));
-        cua_driver_core::session::begin_tool_call_with_state(
-            name,
-            arguments,
-            self.is_known_tool(name),
-            transport,
-            client_kind,
-            observed_state,
-        )
-    }
-
-    fn public_session_observation_state(
-        &self,
-        session: &str,
-    ) -> cua_driver_core::session::SessionObservationState {
-        let sessions = self.public_sessions.lock().unwrap();
-        cua_driver_core::session::SessionObservationState {
-            ended: sessions.ended.contains_key(session),
-            capture_scope: sessions.scopes.get(session).copied().unwrap_or_default(),
-        }
-    }
-
     pub async fn end_session(&self, session: &str) -> Result<(), String> {
         self.invoke_raw("end_session", json!({"session": session}))
             .await
@@ -450,7 +417,6 @@ fn daemon_tools_list_from(tools_list: &Value) -> Value {
         "capability_version": tools_list.get("capability_version").cloned().unwrap_or(Value::Null),
         "schema_version": tools_list.get("schema_version").cloned().unwrap_or(Value::Null),
         "enforcement_adapters": tools_list.get("enforcement_adapters").cloned().unwrap_or_else(|| json!([])),
-        "tool_observation_owner": "daemon",
     })
 }
 
@@ -528,7 +494,6 @@ mod tests {
             daemon["enforcement_adapters"][0]["id"],
             "browser_prepare.existing_profile"
         );
-        assert_eq!(daemon["tool_observation_owner"], "daemon");
     }
 
     #[tokio::test]
@@ -545,16 +510,10 @@ mod tests {
             .await
             .expect("start session");
         assert_ne!(started["isError"], true);
-        assert_eq!(
-            sdk.public_session_observation_state(session),
-            cua_driver_core::session::SessionObservationState {
-                ended: false,
-                capture_scope: CaptureScope::Window,
-            }
-        );
+        assert!(!sdk.is_session_ended(session));
 
         sdk.end_session(session).await.expect("end session");
-        assert!(sdk.public_session_observation_state(session).ended);
+        assert!(sdk.is_session_ended(session));
 
         sdk.invoke_raw(
             "start_session",
@@ -562,7 +521,7 @@ mod tests {
         )
         .await
         .expect("revive session");
-        assert!(!sdk.public_session_observation_state(session).ended);
+        assert!(!sdk.is_session_ended(session));
 
         sdk.shutdown().await.expect("shutdown");
     }
@@ -631,9 +590,9 @@ mod tests {
             &first.runtime_prefix,
         );
         assert_eq!(evicted, vec![format!("{}{session}", first.runtime_prefix)]);
-        assert!(first.public_session_observation_state(session).ended);
+        assert!(first.is_session_ended(session));
         assert!(
-            !second.public_session_observation_state(session).ended,
+            !second.is_session_ended(session),
             "a private end hook must not tombstone another runtime's same public label"
         );
 
@@ -645,9 +604,9 @@ mod tests {
             .await
             .expect("revive first session");
         assert_eq!(first.revoke_all_sessions().await, 1);
-        assert!(first.public_session_observation_state(session).ended);
+        assert!(first.is_session_ended(session));
         assert!(
-            !second.public_session_observation_state(session).ended,
+            !second.is_session_ended(session),
             "bulk revoke must remain scoped to the owning runtime"
         );
 
@@ -658,13 +617,6 @@ mod tests {
             )
             .await
             .expect("escalate second session");
-        assert_eq!(
-            second
-                .public_session_observation_state(session)
-                .capture_scope,
-            CaptureScope::Auto,
-            "capture policy remains auto while its effective scope escalates"
-        );
 
         first.shutdown().await.expect("shutdown first");
         second.shutdown().await.expect("shutdown second");
@@ -683,10 +635,10 @@ mod tests {
         .expect("start session");
 
         sdk.shutdown().await.expect("shutdown");
-        assert!(sdk.public_session_observation_state(session).ended);
+        assert!(sdk.is_session_ended(session));
         assert!(sdk.end_session(session).await.is_err());
         assert!(
-            sdk.public_session_observation_state(session).ended,
+            sdk.is_session_ended(session),
             "a failed in-band end must not erase an out-of-band tombstone"
         );
     }

@@ -58,7 +58,7 @@ describe.skipIf(!wasmBuilt)("Settings tabs (real routes, wasm core)", () => {
   it("keeps General to the everyday settings: no Keyboard shortcuts, Shared links, Storage or Runtimes", async () => {
     await mountApp("/settings/general", host);
     await waitFor(() => expect(tab("general")).not.toBeNull());
-    await waitFor(() => expect(document.querySelector('[data-setting-row="telemetry"]')).not.toBeNull());
+    await waitFor(() => expect(document.body.textContent).toContain("Start Cua Spaces when you sign in"));
     const text = tab("general")!.textContent!;
     expect(text).toContain("Start Cua Spaces when you sign in");
     expect(text).toContain("Appearance");

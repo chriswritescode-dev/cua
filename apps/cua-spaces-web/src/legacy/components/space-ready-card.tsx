@@ -5,7 +5,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { XIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import { useAgents, useFeatureRecorder, type AgentSetupRow, type Space } from "@/bridge";
+import { useAgents, type AgentSetupRow, type Space } from "@/bridge";
 import { CuaKey } from "@/components/cua-key";
 import { suggestedTask, type SuggestedTask } from "@/components/first-run-guide";
 import { Button } from "@/components/ui/button";
@@ -26,11 +26,8 @@ const read = (): Outcome | null => {
 /**
  * The offer to connect an agent after the first Space is ready. It stays
  * until the person closes it or connects an agent, then never comes back.
- * Events: `agent_offer_shown` (once per install), `agent_offer_clicked`,
- * `agent_offer_completed` (an agent got connected, or its request was copied).
  */
 export function useAgentOffer(eligible: boolean) {
-  const record = useFeatureRecorder();
   const [outcome, setOutcome] = useState<Outcome | null>(read);
   const visible = eligible && outcome === null;
   useEffect(() => {
@@ -41,8 +38,7 @@ export function useAgentOffer(eligible: boolean) {
     } catch {
       // Not kept: it may count again on the next launch.
     }
-    record("agent_offer_shown");
-  }, [visible, record]);
+  }, [visible]);
   const finish = useCallback((next: Outcome) => {
     try {
       globalThis.localStorage?.setItem(KEY, next);
@@ -53,10 +49,9 @@ export function useAgentOffer(eligible: boolean) {
   }, []);
   return {
     visible,
-    clicked: () => record("agent_offer_clicked"),
+    clicked: () => {},
     completed: () => {
       if (!visible) return;
-      record("agent_offer_completed");
       finish("done");
     },
     dismiss: () => finish("dismissed"),

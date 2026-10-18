@@ -48,7 +48,6 @@ import asyncio
 import logging
 import os
 import random
-import time
 import warnings
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
@@ -62,20 +61,6 @@ from typing import (
     Optional,
     TypeVar,
 )
-
-try:
-    from cua_core.telemetry import is_telemetry_enabled, record_event
-
-    _TELEMETRY_AVAILABLE = True
-except ImportError:
-    _TELEMETRY_AVAILABLE = False
-
-    def is_telemetry_enabled() -> bool:
-        return False
-
-    def record_event(event_name: str, properties: dict | None = None) -> None:
-        pass
-
 
 from cua_sandbox import _placement, _refs
 from cua_sandbox._ended import CloudEnded
@@ -542,62 +527,6 @@ def _pick_runtime(
     return QEMURuntime(mode="docker", **vm_shape)
 
 
-# Coarse telemetry labels for built-in runtime classes. Anything else (user
-# subclasses, contributed runtimes) is reported as "other" so a user-chosen
-# class name never leaves the machine.
-_TELEMETRY_RUNTIME_LABELS = {
-    "DockerRuntime": "docker",
-    "LumeRuntime": "lume",
-    "NativeQEMURuntime": "qemu",
-    "QEMUDockerRuntime": "qemu-docker",
-    "QEMUBaremetalRuntime": "qemu-baremetal",
-    "QEMUWSL2Runtime": "qemu-wsl2",
-    "HyperVRuntime": "hyperv",
-    "TartRuntime": "tart",
-    "AndroidEmulatorRuntime": "android-emulator",
-    "NativeRuntime": "native",
-    "ContribRuntime": "contrib",
-}
-_TELEMETRY_OS_TYPES = {"linux", "macos", "windows", "android"}
-_TELEMETRY_IMAGE_KINDS = {"container", "vm"}
-
-
-def _telemetry_runtime_label(runtime: Any) -> str:
-    cls = type(runtime)
-    label = _TELEMETRY_RUNTIME_LABELS.get(cls.__name__)
-    if label and (cls.__module__ or "").startswith("cua_sandbox."):
-        return label
-    return "other"
-
-
-def _record_sandbox_create(
-    sb: Any,
-    *,
-    image: Optional[Any],
-    local: bool,
-    ephemeral: bool,
-    t_start: float,
-) -> None:
-    """Fire a sandbox_create PostHog event if telemetry is enabled."""
-    if not sb.telemetry_enabled or not _TELEMETRY_AVAILABLE or not is_telemetry_enabled():
-        return
-    # Never send the sandbox name: it is user-chosen.
-    props: dict = {
-        "local": local,
-        "ephemeral": ephemeral,
-        "duration_seconds": round(time.monotonic() - t_start, 3),
-    }
-    if image is not None:
-        os_type = getattr(image, "os_type", None)
-        kind = getattr(image, "kind", None)
-        props["os_type"] = os_type if os_type in _TELEMETRY_OS_TYPES else "other"
-        if kind is not None:
-            props["image_kind"] = kind if kind in _TELEMETRY_IMAGE_KINDS else "other"
-    if sb._runtime is not None:
-        props["runtime_type"] = _telemetry_runtime_label(sb._runtime)
-    record_event("sandbox_create", props)
-
-
 class Sandbox:
     """A sandboxed computer environment.
 
@@ -635,7 +564,6 @@ class Sandbox:
         _runtime: Optional[Runtime] = None,
         _runtime_info: Optional[RuntimeInfo] = None,
         _ephemeral: Optional[bool] = None,
-        _telemetry_enabled: bool = True,
     ):
         self._transport = transport
         self.name = name
@@ -647,8 +575,6 @@ class Sandbox:
         self._image_info_fallback: Optional[ImageInfo] = None
         # Set for a machine reached by URL (``direct:<host:port>``).
         self._direct_url: Optional[str] = None
-        self.telemetry_enabled = _telemetry_enabled
-        """Whether this sandbox records anonymous usage events."""
         self.screen = Screen(transport)
         """Screenshots and screen size (cua-spacesd)."""
         self.mouse = Mouse(transport)
@@ -836,8 +762,6 @@ class Sandbox:
 
     async def destroy(self) -> None:
         """Disconnect and permanently delete the sandbox (VM/container)."""
-        if self.telemetry_enabled and _TELEMETRY_AVAILABLE and is_telemetry_enabled():
-            record_event("sandbox_destroy", {"ephemeral": self._ephemeral})
         # Run each cleanup step independently so a failure in one
         # (e.g. disconnect timeout) doesn't prevent the VM from being deleted.
         try:
@@ -965,7 +889,6 @@ class Sandbox:
         time_to_start: Optional[float] = None,
         request_timeout: Optional[float] = None,
         server_port: Optional[int] = None,
-        telemetry_enabled: bool = True,
         command: Optional[list[str]] = None,
         sidecars: Optional[list] = None,
         env: Optional[dict[str, str]] = None,
@@ -1078,7 +1001,6 @@ class Sandbox:
             time_to_start=time_to_start,
             request_timeout=request_timeout,
             server_port=server_port,
-            telemetry_enabled=telemetry_enabled,
             command=command,
             sidecars=sidecars,
             engine=engine,
@@ -1104,7 +1026,6 @@ class Sandbox:
         cpu: Optional[int] = None,
         memory_mb: Optional[int] = None,
         disk_gb: Optional[int] = None,
-        telemetry_enabled: bool = True,
     ) -> "_ConnectResult":
         """Connect to an existing sandbox by name.
 
@@ -1159,7 +1080,6 @@ class Sandbox:
                 cpu=cpu,
                 memory_mb=memory_mb,
                 disk_gb=disk_gb,
-                telemetry_enabled=telemetry_enabled,
             )
 
         return _ConnectResult(_factory)
@@ -1182,7 +1102,6 @@ class Sandbox:
         time_to_start: Optional[float] = None,
         request_timeout: Optional[float] = None,
         server_port: Optional[int] = None,
-        telemetry_enabled: bool = True,
         command: Optional[list[str]] = None,
         sidecars: Optional[list] = None,
         env: Optional[dict[str, str]] = None,
@@ -1240,7 +1159,6 @@ class Sandbox:
             time_to_start=time_to_start,
             request_timeout=request_timeout,
             server_port=server_port,
-            telemetry_enabled=telemetry_enabled,
             command=command,
             sidecars=sidecars,
             engine=engine,
@@ -1628,7 +1546,6 @@ class Sandbox:
         time_to_start: Optional[float] = None,
         request_timeout: Optional[float] = None,
         server_port: Optional[int] = None,
-        telemetry_enabled: bool = True,
         command: Optional[list[str]] = None,
         sidecars: Optional[list] = None,
         engine: Optional[str] = None,
@@ -1647,7 +1564,6 @@ class Sandbox:
         validate_server_port(server_port)
         auto_adapter = runtime is None
 
-        _t_start = time.monotonic()
         if ephemeral is None:
             ephemeral = bool(image)
 
@@ -1663,15 +1579,9 @@ class Sandbox:
         direct_url = url or http_url
         if direct_url and not image:
             transport = EnvTransport(url=direct_url, token=token or api_key)
-            sb = cls(
-                transport,
-                name=name or direct_url,
-                _ephemeral=False,
-                _telemetry_enabled=telemetry_enabled,
-            )
+            sb = cls(transport, name=name or direct_url, _ephemeral=False)
             sb._direct_url = direct_url
             await sb._connect()
-            _record_sandbox_create(sb, image=None, local=False, ephemeral=False, t_start=_t_start)
             return sb
 
         # Local connect by name — read state file
@@ -1706,9 +1616,8 @@ class Sandbox:
                     transport = ADBTransport(serial=adb_serial, sdk_root=sdk_root)
             else:
                 transport = await _local_state_transport(name, state)
-            sb = cls(transport, name=name, _ephemeral=False, _telemetry_enabled=telemetry_enabled)
+            sb = cls(transport, name=name, _ephemeral=False)
             await sb._connect()
-            _record_sandbox_create(sb, image=None, local=local, ephemeral=False, t_start=_t_start)
             return sb
 
         if not local:
@@ -1886,13 +1795,9 @@ class Sandbox:
             _runtime=runtime,
             _runtime_info=rt_info,
             _ephemeral=ephemeral,
-            _telemetry_enabled=telemetry_enabled,
         )
         sb._image_info_fallback = getattr(image, "_resolved", None) if image else None
         await sb._connect()
-        _record_sandbox_create(
-            sb, image=image, local=local, ephemeral=bool(ephemeral), t_start=_t_start
-        )
         return sb
 
     def __repr__(self) -> str:

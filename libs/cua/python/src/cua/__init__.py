@@ -5,12 +5,14 @@ One `Cua` object, embedded in this process or connected to a running
 
     import asyncio, cua
 
+
     async def main():
-        c = cua.embedded()                      # or cua.connect()
+        c = cua.embedded()  # or cua.connect()
         sb = await c.sandboxes().connect_url("http://10.0.0.5:3211", "token", "dev")
         env = await sb.spacesd(None)
         out = await env.sh("uname -a", None)
         print(out.stdout.decode())
+
 
     asyncio.run(main())
 
@@ -61,19 +63,8 @@ except Exception:  # noqa: BLE001 - optional convenience
 from ._native import *  # noqa: F401,F403
 from ._native import Cua, CuaConfig
 from ._native import Sandbox as SandboxHandle
-from ._native import cua_sdk_version
 
 __version__ = "0.9.0"  # x-release-please-version
-
-# Usage telemetry (anonymous, content-free; https://cua.ai/docs/cua-sdk/concepts/telemetry)
-# attributes events to this binding; `cua.telemetry` has the switches. It
-# sends nothing by itself; off with DO_NOT_TRACK=1 or CUA_TELEMETRY=0.
-try:
-    from ._native import telemetry_set_surface as _telemetry_set_surface
-
-    _telemetry_set_surface("sdk_python", cua_sdk_version())
-except Exception:  # noqa: BLE001 - telemetry never fails an import
-    pass
 
 
 # ── Sandbox refs ───────────────────────────────────────────────────────────

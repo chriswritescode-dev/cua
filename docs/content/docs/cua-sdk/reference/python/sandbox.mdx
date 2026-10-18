@@ -61,7 +61,6 @@ async with Sandbox.ephemeral(Image.linux()) as sb:
 | Attribute | Type | Description |
 | --- | --- | --- |
 | `name` | `Optional[str]` | The sandbox name. |
-| `telemetry_enabled` | `bool` | Whether this sandbox records anonymous usage events. |
 | `screen` | `Screen` | Screenshots and screen size (cua-spacesd). |
 | `mouse` | `Mouse` | Pointer input in screen pixels (cua-spacesd). |
 | `keyboard` | `Keyboard` | Typing and key presses (cua-spacesd). |
@@ -275,7 +274,6 @@ async def create(
     time_to_start: Optional[float] = None,
     request_timeout: Optional[float] = None,
     server_port: Optional[int] = None,
-    telemetry_enabled: bool = True,
     command: Optional[list[str]] = None,
     sidecars: Optional[list] = None,
     env: Optional[dict[str, str]] = None,
@@ -386,7 +384,6 @@ def connect(
     cpu: Optional[int] = None,
     memory_mb: Optional[int] = None,
     disk_gb: Optional[int] = None,
-    telemetry_enabled: bool = True,
 ) -> '_ConnectResult'
 ```
 
@@ -455,7 +452,6 @@ async def ephemeral(
     time_to_start: Optional[float] = None,
     request_timeout: Optional[float] = None,
     server_port: Optional[int] = None,
-    telemetry_enabled: bool = True,
     command: Optional[list[str]] = None,
     sidecars: Optional[list] = None,
     env: Optional[dict[str, str]] = None,

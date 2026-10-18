@@ -28,7 +28,6 @@ import type {
   MachineRow,
   OnboardingState,
   SpaceHost,
-  TelemetryView,
 } from "../contracts/host";
 import type { AgentSetupRow, PersistentAgent, SpaceAgentRun } from "../contracts/agents";
 import type { HostWindow } from "../detect";
@@ -67,7 +66,6 @@ import { THREAD_OPERATIONS } from "../ops/thread";
 import { PRESENCE_OPERATIONS } from "../ops/presence";
 import { cloudApproveTauriOps } from "../ops/cloud-approve";
 import { RUNTIME_FIX_OPERATIONS } from "../ops/runtime-fix";
-import { tauriTelemetryOps } from "../ops/telemetry";
 import { tauriStartupOps } from "../ops/startup";
 
 type Invoke = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
@@ -165,8 +163,7 @@ export function createTauriAdapter(win: HostWindow = globalThis.window as HostWi
   };
 
   const readSettings = async (): Promise<SettingsSnapshot> => {
-    const [telemetry, location, loginItem] = await Promise.all([
-      invoke<TelemetryView>("telemetry_status").catch(() => null),
+    const [location, loginItem] = await Promise.all([
       invoke<DefaultLocation>("get_default_location").catch(() => null),
       invoke<LoginItemStatus>("login_item_status").catch(() => null),
     ]);
@@ -177,14 +174,12 @@ export function createTauriAdapter(win: HostWindow = globalThis.window as HostWi
         theme: theme === "light" || theme === "dark" || theme === "system" ? (theme as AppearanceTheme) : DEFAULT_SETTINGS.theme,
         menuBar: menuBar === undefined ? DEFAULT_SETTINGS.menuBar : menuBar === "true",
         hotkey: readUi(UI_STORAGE_KEYS.hotkey) ?? DEFAULT_SETTINGS.hotkey,
-        telemetry: telemetry?.enabled ?? DEFAULT_SETTINGS.telemetry,
         defaultLocation: location?.value ?? DEFAULT_SETTINGS.defaultLocation,
         launchAtLogin: loginItemOn(loginItem),
         // The Tauri updater has one feed; there is no channel to pick.
         updateChannel: null,
       },
       defaultLocation: location,
-      telemetry,
     };
   };
 
@@ -231,9 +226,6 @@ export function createTauriAdapter(win: HostWindow = globalThis.window as HostWi
           break;
         case "hotkey":
           await writeUi(UI_STORAGE_KEYS.hotkey, String(value));
-          break;
-        case "telemetry":
-          await invoke("telemetry_set_enabled", { enabled: Boolean(value) });
           break;
         case "defaultLocation":
           await invoke("set_default_location", { on: String(value) });
@@ -313,7 +305,6 @@ export function createTauriAdapter(win: HostWindow = globalThis.window as HostWi
     ...tauriVolumeOps(invoke, win),
     ...tauriSettingsOps(invoke, { read: readUi, write: writeUi }),
     ...tauriNotificationsOps(invoke),
-    ...tauriTelemetryOps(invoke),
     ...tauriSpaceDetailOps(invoke),
     ...tauriHostSetupOps(invoke),
     ...tauriStartupOps(),

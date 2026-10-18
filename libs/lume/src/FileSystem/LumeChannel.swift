@@ -115,9 +115,8 @@ enum LumeChannel: String, CaseIterable, Sendable {
             .appendingPathComponent(self == .stable ? "lume" : "lume-local", isDirectory: true)
     }
 
-    /// Whether this Lume can update itself. A source build has no release to
-    /// update to, and the update path runs the stable installer, which would
-    /// replace the stable Lume.
+    /// Whether this Lume has a release feed to check. A source build has no
+    /// release to move to.
     var supportsSelfUpdate: Bool {
         self == .stable
     }
@@ -167,7 +166,7 @@ enum LumeChannel: String, CaseIterable, Sendable {
 ///
 /// **Local** (a binary named `lume-local`) has a home of its own, `~/.lume-local`,
 /// and `LUME_HOME` moves all of it: the VM directory, the settings file, the
-/// image cache, the release-channel file and the telemetry identity. Local
+/// image cache and the release-channel file. Local
 /// also keeps its settings file in that home and ignores `XDG_CONFIG_HOME`:
 /// that variable is shared by every Lume on the Mac, so honouring it would
 /// point Local at Stable's `config.yaml`, and with it at Stable's VMs.

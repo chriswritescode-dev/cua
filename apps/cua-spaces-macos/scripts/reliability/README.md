@@ -38,7 +38,7 @@ work directory is `~/.cache/cua-reliability/reliability`.
 Host safety:
 
 - Every process runs with its own `CUA_HOME`, the file credential store, no
-  browser, telemetry off and a throwaway teleport home.
+  browser and a throwaway teleport home.
 - The suite stops or kills only daemons that it started from its own homes.
 - It deletes only the Lume VMs its homes recorded creating, and only the
   containers that carry its run prefix.

@@ -142,8 +142,8 @@ async def _passthrough(sb, overlay):
 async def test_a_create_from_a_pool_takes_its_shape(daemon, monkeypatch):
     seen = _capture(monkeypatch)
     pool = await create_pool("ghcr.io/trycua/linux:24.04-slim", name="agents", cpu=4)
-    await pool.create(name="a1", telemetry_enabled=False)
-    await Sandbox.create(pool="agents", telemetry_enabled=False)
+    await pool.create(name="a1")
+    await Sandbox.create(pool="agents")
     for kwargs in seen:
         assert kwargs["local"] is True
         assert kwargs["local_pool"] == "agents"
@@ -156,7 +156,7 @@ async def test_a_pool_here_cannot_go_to_the_cloud(daemon, monkeypatch):
     _capture(monkeypatch)
     pool = await create_pool("python:3.12-slim", name="agents")
     with pytest.raises(InvalidArgument, match="this machine"):
-        await Sandbox.create(pool=pool, on="cloud", telemetry_enabled=False)
+        await Sandbox.create(pool=pool, on="cloud")
 
 
 async def test_a_name_no_pool_here_has_stays_a_cloud_pool(daemon):

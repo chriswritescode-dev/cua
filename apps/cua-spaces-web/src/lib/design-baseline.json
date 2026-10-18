@@ -99,9 +99,6 @@
     "partial-line": 1,
     "outlined-box": 1
   },
-  "components/shell/update-indicator.tsx": {
-    "outlined-box": 1
-  },
   "components/sign-in-link.tsx": {
     "radius": 1
   },

@@ -11,8 +11,8 @@
 #     sourceSubdir = "cua-driver/rust";
 #   };
 #
-# The source is rooted above the driver workspace because cua-driver depends
-# on libs/cua/crates/cua-telemetry by path (see flake.nix for the fileset).
+# The source is rooted above the driver workspace because platform-linux
+# embeds the GNOME Shell helper from wayland-helper.
 {
   pkgs,
   src,

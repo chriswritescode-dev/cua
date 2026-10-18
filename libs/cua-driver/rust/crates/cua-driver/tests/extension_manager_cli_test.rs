@@ -17,7 +17,6 @@ fn run(home: &Path, args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_cua-driver"))
         .args(args)
         .env("CUA_DRIVER_RS_HOME", home)
-        .env("CUA_DRIVER_CLI_TELEMETRY_CHILD", "1")
         .output()
         .expect("run cua-driver extension command")
 }

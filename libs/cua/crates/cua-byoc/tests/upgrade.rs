@@ -437,7 +437,6 @@ fn old_cua(old: &std::ffi::OsStr, home: &Path, aws_url: &str, args: &[&str]) -> 
         .env("CUA_HOME", home.join(".cua"))
         .env("CUA_CREDENTIAL_STORE", "file")
         .env("DO_NOT_TRACK", "1")
-        .env("CUA_TELEMETRY", "0")
         .env("AWS_ENDPOINT_URL", aws_url)
         .env("AWS_CONFIG_FILE", home.join("aws-config"))
         .env("AWS_SHARED_CREDENTIALS_FILE", home.join("aws-credentials"))

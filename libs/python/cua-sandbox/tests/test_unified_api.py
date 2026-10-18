@@ -95,7 +95,6 @@ async def test_local_create_passes_command_env_services_and_probes(monkeypatch):
             services={"mcp": 8765},
             wait_for=http("mcp", "/health"),
             memory="2GB",
-            telemetry_enabled=False,
         )
     [opts] = calls
     assert opts["command"] == ["python", "-m", "srv"]
@@ -128,7 +127,7 @@ async def test_local_is_the_default_with_a_one_time_notice(monkeypatch, fresh_no
             warnings.simplefilter("error", DeprecationWarning)
             with pytest.raises(_Stop):
                 await Sandbox.create(
-                    Image.linux(kind="container"), services={"web": 80}, telemetry_enabled=False
+                    Image.linux(kind="container"), services={"web": 80}
                 )
     assert len(calls) == 2, "both went to the local runtime"
     notices = [r for r in caplog.records if "defaulting to a local sandbox" in r.message]
@@ -141,7 +140,7 @@ async def test_quiet_default_hides_the_notice(monkeypatch, fresh_notice, caplog)
     monkeypatch.setattr("cua_sandbox.runtime.docker.DockerRuntime", _native_recorder([]))
     caplog.set_level("WARNING", logger="cua_sandbox.sandbox")
     with pytest.raises(_Stop):
-        await Sandbox.create(Image.linux(kind="container"), telemetry_enabled=False)
+        await Sandbox.create(Image.linux(kind="container"))
     assert not [r for r in caplog.records if "defaulting to a local" in r.message]
 
 
@@ -290,5 +289,4 @@ async def test_non_sdk_runtimes_refuse_the_portable_options():
             local=True,
             runtime=Legacy(),  # type: ignore[arg-type]
             services={"mcp": 8765},
-            telemetry_enabled=False,
         )

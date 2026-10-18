@@ -43,8 +43,6 @@ env:
   CARGO_PROFILE_DEV_DEBUG: line-tables-only
   CARGO_BUILD_JOBS: "4"
   CARGO_INCREMENTAL: "0"
-  CUA_TELEMETRY: "0"
-  DO_NOT_TRACK: "1"
 
 jobs:
   hermetic:

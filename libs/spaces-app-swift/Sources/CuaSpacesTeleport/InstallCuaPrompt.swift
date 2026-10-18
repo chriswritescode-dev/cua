@@ -3,17 +3,18 @@
 
 import Foundation
 
-/// The "Install Cua" affordance for a teleport the Keyvault refused, the same
+/// The "Build Cua" affordance for a teleport the Keyvault refused, the same
 /// as `requiresCuaApp` in `@trycua/cua/teleport`.
 ///
 /// Moving a signed-in session goes through the Cua Keyvault, which only the
 /// installed, signed Cua app hosts. An app that embeds the SDK is refused by
 /// design with the `requires_cua_app` code; this turns that refusal into a
-/// prompt (title, one line, an install button) instead of the raw error. The
-/// refusal itself is unchanged: nothing here retries or bypasses it.
+/// prompt (title, one line, a button to the repository) instead of the raw
+/// error. The refusal itself is unchanged: nothing here retries or bypasses
+/// it.
 public struct InstallCuaPrompt: Equatable, Sendable {
-    /// Where people install Cua (the CLI and the Cua app).
-    public static let installURL = URL(string: "https://cua.ai/install")!
+    /// The repository Cua is built from (the CLI and the Cua app).
+    public static let repositoryURL = URL(string: "https://github.com/trycua/cua")!
     /// Opens the Keyvault page of an installed Cua app: `cua://keyvault`, or
     /// `cua-local://keyvault` from Cua Spaces Local, whose bundle stamps its
     /// scheme as `CuaUrlScheme` (the two apps answer to different schemes).
@@ -26,7 +27,7 @@ public struct InstallCuaPrompt: Equatable, Sendable {
         return URL(string: "\(scheme.isEmpty ? "cua" : scheme)://keyvault") ?? URL(string: "cua://keyvault")!
     }
 
-    /// Cua is installed but not running (open it instead of installing).
+    /// Cua is installed but not running (open it instead of building it).
     public let installed: Bool
     public let title: String
     public let message: String
@@ -57,9 +58,11 @@ public struct InstallCuaPrompt: Equatable, Sendable {
                 url: openURL)
             : InstallCuaPrompt(
                 installed: false,
-                title: "Install Cua to teleport your session",
-                message: "The Cua app keeps your logins in its Keyvault and asks you before sharing them.",
-                actionLabel: "Install Cua",
-                url: installURL)
+                title: "Build Cua to teleport your session",
+                message: "The Cua app keeps your logins in its Keyvault and asks you before sharing them. "
+                    + "Build it from the repository: git pull && apps/cua-spaces-macos/scripts/build-release.sh (macOS), or "
+                    + "pnpm --dir apps/cua-spaces-desktop dist:mac (macOS), dist:win (Windows), dist:linux (Linux).",
+                actionLabel: "Open the repository",
+                url: repositoryURL)
     }
 }

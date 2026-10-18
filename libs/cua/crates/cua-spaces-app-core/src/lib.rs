@@ -19,7 +19,7 @@
 //!
 //! | Module | What it owns |
 //! |---|---|
-//! | [`checklist`] | the getting-started checklist: its steps, what ticks them off, its usage events |
+//! | [`checklist`] | the getting-started checklist: its steps and what ticks them off |
 //! | [`spaces`] | registry rows to Spaces, names, MRU order, the Space list state machine, sidebar and detail |
 //! | [`wizard`] | the image catalog, placement and runtime rules, the New Space wizard and its Run on menu (This Mac, your machines, your clouds) |
 //! | [`cloud_page`] | the Clouds group on Computers, each cloud's page and the approval sheet |
@@ -53,7 +53,6 @@
 //! | [`share`] | who a Space is shared with (viewer or editor) and the Share sheet |
 //! | `installer` | the "Command line" step: plan and install the bundled `cua` (feature `installer`) |
 //! | [`agents`] | coding agent runs (labels, order, filter) and the agents on this machine (Settings rows, setup summary) |
-//! | [`telemetry`] | which usage events a UI step means, and sending them (feature `telemetry`) |
 //! | [`presence`] | the name and principal id the apps join a Space's presence as |
 //! | [`paths`] | home-relative paths |
 //! | [`errors`] | the words a failed action shows (a dead daemon in plain words) |
@@ -114,7 +113,6 @@ pub mod space_menu;
 pub mod spaces;
 pub mod summon;
 pub mod teams;
-pub mod telemetry;
 pub mod teleport;
 pub mod tips;
 pub mod upsell;

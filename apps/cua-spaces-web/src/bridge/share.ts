@@ -18,7 +18,6 @@ import type { CoreClient } from "./core";
 import type { ShareEntry, ShareGate, ShareInput, ShareSheetAction, ShareSheetState, ShareSheetView } from "./contracts/share";
 import type { Space } from "./contracts/spaces";
 import type { BridgeStore } from "./store";
-import { telemetryShare, type TelemetrySignal } from "./telemetry";
 
 export const shareInitial = (core: CoreClient) => core.call<ShareSheetState>("share.initial", {});
 export const shareReduce = (core: CoreClient, input: ShareInput, state: ShareSheetState, action: ShareSheetAction) =>
@@ -51,9 +50,6 @@ export class ShareStore {
   constructor(
     readonly adapter: DataAdapter,
     readonly core: CoreClient,
-    /** Where usage events go (`BridgeStore.telemetry`): shared, unshared or
-     * a role changed, view-only or not; never who. */
-    private readonly track: (signals: TelemetrySignal[]) => void = () => {},
     /** A Space was shared with someone (the getting-started checklist). */
     private readonly onShared: () => void = () => {},
   ) {}
@@ -115,9 +111,6 @@ export class ShareStore {
     const request = state.request;
     if (wasBusy || !state.busy || !request) return;
     const spaceId = s.input.spaceId;
-    // Who it was shared with before the call (a role change or a new
-    // share), for the usage event (`ShareModel.send`).
-    const before = s.input;
     let outcome: ShareSheetAction;
     try {
       const shares =
@@ -136,7 +129,6 @@ export class ShareStore {
       const plain = this.core.tryCall<string | null>("share.errorWords", { error: words(e), who: request.who });
       outcome = { type: "failed", error: plain ?? words(e) };
     }
-    this.track(telemetryShare(this.core, before, state, outcome));
     const now = this.session;
     if (now?.input.spaceId !== spaceId) return;
     this.session = { ...now, state: shareReduce(this.core, now.input, now.state, outcome) };
@@ -157,12 +149,7 @@ const stores = new WeakMap<BridgeStore, ShareStore>();
 export function shareStore(store: BridgeStore): ShareStore {
   let s = stores.get(store);
   if (!s) {
-    s = new ShareStore(
-      store.adapter,
-      store.core,
-      (signals) => void store.telemetry.track(signals),
-      () => checklistDone(store, "share"),
-    );
+    s = new ShareStore(store.adapter, store.core, () => checklistDone(store, "share"));
     stores.set(store, s);
   }
   return s;

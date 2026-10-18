@@ -18,19 +18,15 @@ keyvault-client = ["dep:cua-keyvault", "dep:async-trait", "dep:tokio"]
 # The first-run "Command line" step (put the bundled `cua` on PATH) both
 # shells run: file writes and `cua --version`, so not for wasm.
 installer = ["dep:tokio", "tokio/process", "tokio/time", "tokio/fs"]
-# Sends the core's telemetry signals (`telemetry::record`) on a
-# cua-telemetry client: both shells enable it, the wasm build does not.
-telemetry = ["dep:cua-telemetry"]
 
 [dependencies]
 cua-home.workspace = true
-# A failed create's cause as a fixed telemetry word (no dependencies, so
-# also in the wasm build).
+# A failed create's cause as a fixed word (no dependencies, so also in the
+# wasm build).
 cua-create-failure.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 cua-keyvault = { workspace = true, optional = true }
-cua-telemetry = { workspace = true, optional = true }
 async-trait = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true, features = ["sync"] }
 

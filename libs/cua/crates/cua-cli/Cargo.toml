@@ -51,8 +51,6 @@ cua-host.workspace = true
 # `cua cloud add aws`: EC2 pool hosts through the AWS provider of the sandbox layer.
 cua-byoc = { workspace = true, optional = true, features = ["aws"] }
 # The `cluster_*` MCP tools: a client of the cluster coordinator's API.
-# Anonymous usage telemetry (`cua telemetry`, the first-run notice).
-cua-telemetry.workspace = true
 cua-crash.workspace = true
 async-trait.workspace = true
 cua-proto = { workspace = true, features = ["client", "serde"] }

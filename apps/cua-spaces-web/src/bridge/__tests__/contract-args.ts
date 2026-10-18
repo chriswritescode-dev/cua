@@ -143,7 +143,6 @@ export const DEMO_ARGS: { [K in OpName]: OpArgs<K> } = {
   "about.set": { channel: "beta" },
   "about.checkNow": {},
   "update.get": {},
-  "update.install": {},
   "experiments.get": {},
   "experiments.set": { experiments: { cuaVolume: true } },
   "loginItem.get": {},
@@ -167,9 +166,6 @@ export const DEMO_ARGS: { [K in OpName]: OpArgs<K> } = {
   "notifications.list": {},
   "notifications.markAllRead": {},
   "notifications.markRead": { ids: ["n1"] },
-  "telemetry.track": { signals: [{ type: "step", step: "app_launched", ok: true }] },
-  "telemetry.linkNotice": {},
-  "telemetry.acknowledgeLinkNotice": {},
   "crashReporting.config": {},
   "spaces.usage": { spaceId: SPACE },
   "spaces.windows": { spaceId: SPACE },
@@ -188,6 +184,7 @@ export const DEMO_ARGS: { [K in OpName]: OpArgs<K> } = {
 
 /** Operations the demo host refuses on purpose, and why. */
 export const DEMO_REFUSES: Partial<Record<OpName, string>> = {
+  "crashReporting.config": "the demo host has no crash reporting",
   "spaces.openStream": "the demo host has no video; the page keeps its drawn thumbnail",
   "presence.join": "the demo host has no video to draw cursors over",
   "presence.publish": "the demo host has no video to draw cursors over",

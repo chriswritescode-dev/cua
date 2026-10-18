@@ -68,7 +68,7 @@ cua-spacesd-client = { path = "../../../libs/cua/crates/cua-spacesd-client" }
 cua-teleport = { path = "../../../libs/cua/crates/cua-teleport" }
 # The app core: every view model and state machine this app and the SwiftUI
 # app share (Spaces list, New Space, teleport, Keyvault, onboarding, notch).
-cua-spaces-app-core = { path = "../../../libs/cua/crates/cua-spaces-app-core", features = ["keyvault-client", "installer", "telemetry"] }
+cua-spaces-app-core = { path = "../../../libs/cua/crates/cua-spaces-app-core", features = ["keyvault-client", "installer"] }
 # The Keyvault page: a first-party client of the broker `cua daemon` hosts on
 # `$CUA_HOME/keyvault.sock` (items, consent, grants, audit, the kill switch).
 cua-keyvault = { path = "../../../libs/cua/crates/cua-keyvault" }
@@ -82,8 +82,6 @@ cua-host = { path = "../../../libs/cua/crates/cua-host" }
 cua-agent-setup = { path = "../../../libs/cua/crates/cua-agent-setup" }
 # "Sign in to Cua" and the credential store shared with the CLI and daemon.
 cua-auth = { path = "../../../libs/cua/crates/cua-auth" }
-# Usage telemetry (the SDK core).
-cua-telemetry = { path = "../../../libs/cua/crates/cua-telemetry" }
 tokio = { version = "1", features = ["net", "rt", "rt-multi-thread", "sync", "macros", "time", "process"] }
 # User "Sign in to Cua" device-authorization grant (src/auth.rs): the device
 # and token endpoint calls. `async-trait` serves the app's async host, device

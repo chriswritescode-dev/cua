@@ -26,7 +26,6 @@ import type {
   SpacePowerReport,
   CancelOutcome,
   CreateProgress,
-  TelemetryView,
   RuntimesInput,
 } from "./contracts/host";
 import type { AgentEventsPage, AgentMessageSent, AgentSetupRow, AgentStarted, AgentStartRequest, ConnectionReport, ConnectResult, PersistentAgent, SpaceAgentRun } from "./contracts/agents";
@@ -56,8 +55,8 @@ import { CLI_OPERATIONS, type CliOps } from "./ops/cli";
 import { THREAD_OPERATIONS, type ThreadOps } from "./ops/thread";
 import { PRESENCE_OPERATIONS, type PresenceOps } from "./ops/presence";
 import { CLOUD_APPROVE_OPERATIONS, type CloudApproveOps } from "./ops/cloud-approve";
+import { CRASH_REPORTING_OPERATIONS, type CrashReportingOps } from "./ops/crash-reporting";
 import { RUNTIME_FIX_OPERATIONS, type RuntimeFixOps } from "./ops/runtime-fix";
-import { TELEMETRY_OPERATIONS, type TelemetryOps } from "./ops/telemetry";
 import type { TipsState } from "./contracts/spaces-page";
 import { STARTUP_EVENTS, STARTUP_OPERATIONS, type StartupHostEvent, type StartupOps } from "./ops/startup";
 
@@ -73,9 +72,7 @@ export interface SettingsValues {
   menuBar: boolean;
   /** The global hotkey, as glyphs (`⌘⇧Space`). */
   hotkey: string;
-  /** Usage telemetry (`$CUA_HOME/config.toml`, same as `cua telemetry`). */
-  telemetry: boolean;
-  /** Where New Space starts: `local`, `host:<id>`, or a cloud word. */
+  /** Where New Space starts: `local`, `cloud`, `host:<id>`, or a cloud word. */
   defaultLocation: string;
   /** The app opens at login, as the system reports it (`login_item::LoginItemStatus`
    * is `enabled` or `requiresApproval`). Null: this host can't say. */
@@ -107,8 +104,6 @@ export interface SettingsSnapshot {
   values: SettingsValues;
   /** Where `defaultLocation` comes from (env-locked or not), when known. */
   defaultLocation: DefaultLocation | null;
-  /** The telemetry switch with its source, when known. */
-  telemetry: TelemetryView | null;
   /** Settings only some hosts have (the SwiftUI app), as its Settings page
    * laid them out; each absent or null one is not this host's, and the page
    * leaves its row out. Changed with `settings.choose`. */
@@ -154,8 +149,6 @@ export interface HostSettings {
   keyvaultAutoWipe?: boolean | null;
   /** The Keyvault explains unattended access before allowing it (off after "Never ask again"). */
   keyvaultUnlockPrompt?: boolean | null;
-  /** The Keyvault loads site icons the browser had none for. */
-  keyvaultSiteIcons?: boolean | null;
   /** The Keyvault's protection facts, as the host's Settings lists them. */
   keyvaultProtection?: { label: string; value: string }[] | null;
 }
@@ -164,7 +157,6 @@ export const DEFAULT_SETTINGS: SettingsValues = {
   theme: "system",
   menuBar: false,
   hotkey: "⌘⇧Space",
-  telemetry: true,
   defaultLocation: "local",
   launchAtLogin: null,
   updateChannel: null,
@@ -219,7 +211,6 @@ export interface HostOperations
     ShareOperations,
     SettingsOperations,
     NotificationsOperations,
-    TelemetryOps,
     SpaceDetailOps,
     HostSetupOps,
     StartupOps,
@@ -234,6 +225,7 @@ export interface HostOperations
     ThreadOps,
     PresenceOps,
     CloudApproveOps,
+    CrashReportingOps,
     RuntimeFixOps {
   "spaces.list": { args: Record<string, never>; result: SpaceRow[] };
   /** `os`: the plan's OS, for a host that draws its own pending row (the SwiftUI app's notch). */
@@ -388,7 +380,7 @@ export const OPERATIONS = [
   ...RUNTIME_FIX_OPERATIONS,
   ...SETTINGS_OPERATIONS,
   ...NOTIFICATIONS_OPERATIONS,
-  ...TELEMETRY_OPERATIONS,
+  ...CRASH_REPORTING_OPERATIONS,
   "spaces.usage",
   "spaces.windows",
   "stream.pip",
@@ -412,7 +404,7 @@ export type HostEvent =
   | { type: "spaces.createProgress"; progress: CreateProgress }
   | { type: "machines.changed" }
   | { type: "settings.changed" }
-  /** The host's updater moved on (found, downloading, ready): ask `update.get` again. */
+  /** The host's updater moved on (a release found, or a failed check): ask `update.get` again. */
   | { type: "update.changed" }
   | { type: "keyvault.changed" }
   /** Tauri `auth:signed-in`. */

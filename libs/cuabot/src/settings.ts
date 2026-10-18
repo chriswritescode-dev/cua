@@ -11,7 +11,6 @@ const SETTINGS_FILE = join(CONFIG_DIR, 'settings.json');
 
 export interface Settings {
   defaultAgent?: string;
-  telemetryEnabled?: boolean;
   aliasIgnored?: boolean;
 }
 
@@ -80,53 +79,6 @@ export function getDefaultAgent(): string | undefined {
 export function setDefaultAgent(agent: string): void {
   const settings = loadSettings();
   settings.defaultAgent = agent;
-  saveSettings(settings);
-}
-
-/** Global Cua opt-outs that override cuabot's own opt-in. */
-function globallyOptedOut(): boolean {
-  const norm = (v: string | undefined) => (v ?? '').trim().toLowerCase();
-  const dnt = norm(process.env.DO_NOT_TRACK);
-  if (dnt !== '' && dnt !== '0') return true;
-  const off = new Set(['0', 'false', 'no', 'off']);
-  if (off.has(norm(process.env.CUA_TELEMETRY))) return true;
-  if (off.has(norm(process.env.CUA_TELEMETRY_ENABLED))) return true;
-  if (['1', 'true', 'yes', 'on'].includes(norm(process.env.CUA_TELEMETRY_DISABLED))) return true;
-  return false;
-}
-
-/**
- * cuabot telemetry (usage events and prompt sharing) is opt-in: off unless the
- * user chose "Yes" in onboarding or set CUABOT_TELEMETRY=true. DO_NOT_TRACK and
- * CUA_TELEMETRY=0 always turn it off.
- */
-export function getTelemetryEnabled(): boolean {
-  if (globallyOptedOut()) return false;
-  const settings = loadSettings();
-  const envValue = process.env.CUABOT_TELEMETRY?.toLowerCase() === 'true';
-  const envFalse = process.env.CUABOT_TELEMETRY?.toLowerCase() === 'false';
-
-  // If any source is explicitly false, return false
-  if (settings.telemetryEnabled === false || envFalse) {
-    return false;
-  }
-  // If any source is true, return true
-  if (settings.telemetryEnabled === true || envValue) {
-    return true;
-  }
-  // Default to false
-  return false;
-}
-
-export function isTelemetryConfigured(): boolean {
-  const settings = loadSettings();
-  // Telemetry is configured if it's been explicitly set to true or false
-  return settings.telemetryEnabled !== undefined;
-}
-
-export function setTelemetryEnabled(enabled: boolean): void {
-  const settings = loadSettings();
-  settings.telemetryEnabled = enabled;
   saveSettings(settings);
 }
 

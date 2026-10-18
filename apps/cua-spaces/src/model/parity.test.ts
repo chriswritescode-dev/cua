@@ -69,15 +69,7 @@ import { rowToSpace, type SpaceRow } from './spaces';
 import { launchPlan } from './loginItem';
 import { reduceShare, shareInitial, shareView } from './share';
 import { cloudConnectInitial, cloudConnectView, reduceCloudConnect } from './cloudConnect';
-import { chooseExperiment, experimentsChangedSignals, experimentsPage, settingsWithStorage } from './experiments';
-import {
-  createsSignals,
-  enrollSignals,
-  onboardingFinishedSignals,
-  onboardingSignals,
-  shareSignals,
-  storageSignals,
-} from './telemetry';
+import { chooseExperiment, experimentsPage, settingsWithStorage } from './experiments';
 import {
   agentsInitial,
   agentsView,
@@ -135,7 +127,6 @@ const MODEL: Record<string, (a: Args) => unknown> = {
   'experiments.page': (a) => experimentsPage(a.experiments),
   'experiments.choose': (a) => chooseExperiment(a.experiments, a.row, a.option),
   'settings.withStorage': (a) => settingsWithStorage(a.page, a.storage, a.experiments),
-  'telemetry.experimentsChanged': (a) => experimentsChangedSignals(a.before, a.after),
   'sidebar.detailCopy': () => detailCopy(),
   'sidebar.deleteFailedText': (a) => deleteFailedText(a.name, a.error),
   'sidebar.streamSection': (a) => streamSection(a.input),
@@ -191,12 +182,6 @@ const MODEL: Record<string, (a: Args) => unknown> = {
   'storage.requestText': (a) => storageRequestText(a.request),
   'notifications.plan': (a) => notificationsPlan(a.feed, a.seenMs),
   'notifications.view': (a) => notificationsView(a.feed, a.nowMs),
-  'telemetry.onboarding': (a) => onboardingSignals(a.state, a.action),
-  'telemetry.onboardingFinished': (a) => onboardingFinishedSignals(a.state),
-  'telemetry.creates': (a) => createsSignals(a.state, a.action, a.now),
-  'telemetry.storage': (a) => storageSignals(a.input, a.state, a.action),
-  'telemetry.share': (a) => shareSignals(a.input, a.state, a.action),
-  'telemetry.enroll': (a) => enrollSignals(a.state, a.action),
 };
 
 function host(method: string, args: string): string {
@@ -241,7 +226,6 @@ describe('app core parity flows (webview)', () => {
       'about',
       'agent-keys',
       'your-cloud',
-      'telemetry-funnel',
       'launch-at-login',
       'experiments',
       'placement-picker',

@@ -901,8 +901,8 @@ export const PAGES: PageSpec[] = [
   },
   {
     slug: 'auth',
-    title: 'Auth and telemetry',
-    description: 'Sign-in, the credential store the SDK, the CLI and the daemon share, and the telemetry switches.',
+    title: 'Auth',
+    description: 'Sign-in and the credential store the SDK, the CLI and the daemon share.',
     intro: '`cua.auth()` signs in and reads the shared session. Cloud calls use it when no client credentials are configured.',
     items: ['Auth', 'LoginAttempt'],
     modules: ['auth'],
@@ -928,14 +928,6 @@ export const PAGES: PageSpec[] = [
     items: ['AgentSetup'],
     modules: ['agent_setup'],
   },
-  {
-    slug: 'telemetry',
-    title: 'Telemetry',
-    description: 'Anonymous usage telemetry switches.',
-    intro: 'What is collected and never collected: [Telemetry and privacy](/cua-sdk/concepts/telemetry). These calls read and change the same switches as `cua telemetry`; the SDK records its own events.',
-    items: ['telemetry_status', 'telemetry_set_enabled', 'telemetry_show_last', 'telemetry_schema_json', 'telemetry_reset_id'],
-    modules: ['telemetry'],
-  },
 ];
 
 /**
@@ -957,7 +949,6 @@ export const MERGED: Record<string, string> = {
   'spaces/volume-sync': 'spaces/volume',
   'spaces/devices': 'spaces/host',
   'spaces/machine-health': 'spaces/host',
-  telemetry: 'auth',
 };
 
 /** The pages that get a file: those no other page absorbs. */
@@ -994,9 +985,6 @@ export const MAX_BYTES = 60_000;
 /** docs/scripts/page-budget.test.ts: highlighted blocks and Tabs per page. */
 export const MAX_FENCES = 150;
 export const MAX_TABS = 30;
-
-/** Concept pages listed at the end of the reference sidebar; they live outside the generated folder, so the index page does not list them. */
-const TELEMETRY_CONCEPTS = ['../concepts/telemetry', '../concepts/telemetry-events', '../concepts/telemetry-counting', '../concepts/telemetry-error-kinds'];
 
 /** Groups of the reference sidebar; folders other generators own are listed by name. */
 const NAV: Array<[label: string, pages: string[]]> = [
@@ -2232,7 +2220,6 @@ function navFiles(pages: PageSpec[], outputDir: string): Map<string, string> {
   // `index` is left out: each folder's index is the folder's own link, not a child.
   const root: string[] = [];
   for (const [label, slugs] of navGroups(pages)) root.push(`---${label}---`, ...slugs);
-  root.push('---Telemetry---', ...TELEMETRY_CONCEPTS);
   files.set(path.join(outputDir, 'meta.json'), metaJson('Reference', root));
   for (const folder of pageFolders(pages)) {
     const home = pages.find((p) => p.slug === folder);

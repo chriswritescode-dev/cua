@@ -29,7 +29,7 @@ struct MachinesPaletteTests {
         let m = AppModel(backend: FixtureSpacesBackend(), keyvault: KeyvaultModel(client: nil),
                          onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
                          settingsPath: dir.appendingPathComponent("settings.json").path,
-                         telemetry: FixtureTelemetry(), devices: FixtureDevices())
+                         devices: FixtureDevices())
         await m.refresh()
         m.devices.signedIn = true
         await m.devices.refresh()

@@ -22,7 +22,6 @@ import { createBridge, type Bridge } from "../src/bridge";
 import { runtimeWord } from "../src/model/backend";
 import type { BridgeEvent } from "../src/bridge/host";
 import { createOptions } from "../src/bridge/spaces";
-import { hostRecorded, telemetrySignal } from "../src/bridge/telemetry";
 import { AppModel } from "../src/model/app-model";
 import { CloudModel } from "../src/model/cloud";
 import { DevicesModel } from "../src/model/devices";
@@ -30,7 +29,7 @@ import { HostModel } from "../src/model/host";
 import { StartupModel, startupState } from "../src/model/startup";
 import { devDirName, nativeFiles } from "../src/native/location";
 import { loadNative, type Native } from "../src/native/load";
-import { FixtureAccount, FixtureSpacesBackend, FixtureTelemetry, fixtureDevices, fixtureHost } from "./fixtures";
+import { FixtureAccount, FixtureSpacesBackend, fixtureDevices, fixtureHost } from "./fixtures";
 import { AGENT_METHODS } from "./agents-fixtures";
 import { HOST_METHODS, HOST_OPS, sdkError } from "./host-fixtures";
 import { NOT_YET } from "./not-yet";
@@ -71,7 +70,6 @@ describe.skipIf(!built)("the bridge on the app core", () => {
   const saved = { ...process.env };
   let backend: FixtureSpacesBackend;
   let account: FixtureAccount;
-  let telemetry: FixtureTelemetry;
   let model: AppModel;
   let bridge: Bridge;
   let events: BridgeEvent[];
@@ -82,7 +80,7 @@ describe.skipIf(!built)("the bridge on the app core", () => {
 
   beforeAll(async () => {
     home = mkdtempSync(path.join(tmpdir(), "cua-bridge-native-"));
-    Object.assign(process.env, { HOME: home, USERPROFILE: home, CUA_HOME: path.join(home, ".cua"), CUA_TELEMETRY: "0", DO_NOT_TRACK: "1", CUA_KEYCHAIN_NONINTERACTIVE: "1" });
+    Object.assign(process.env, { HOME: home, USERPROFILE: home, CUA_HOME: path.join(home, ".cua"), CUA_KEYCHAIN_NONINTERACTIVE: "1" });
     native = await loadNative(dir);
   });
 
@@ -94,7 +92,6 @@ describe.skipIf(!built)("the bridge on the app core", () => {
   beforeEach(async () => {
     backend = new FixtureSpacesBackend(native);
     account = new FixtureAccount("ada@example.com");
-    telemetry = new FixtureTelemetry();
     const settingsPath = path.join(mkdtempSync(path.join(home, "app-")), "app-settings.json");
     model = new AppModel({
       native,
@@ -105,7 +102,6 @@ describe.skipIf(!built)("the bridge on the app core", () => {
       devices: new DevicesModel(native, () => fixtureDevices()),
       cloud: new CloudModel(native, () => backend),
       account,
-      telemetry,
       servicesIn: () => true,
       cpus: 8,
     });
@@ -154,9 +150,6 @@ describe.skipIf(!built)("the bridge on the app core", () => {
       ["spaces.rename", { spaceId: space, name: "design-review" }],
       ["machines.list", {}],
       ["host.status", {}],
-      ["telemetry.track", { signals: [{ type: "step", step: "app_launched", ok: true }] }],
-      ["telemetry.linkNotice", {}],
-      ["telemetry.acknowledgeLinkNotice", {}],
       ["window.setBackgroundColor", { color: "#16181c" }],
       ["window.setDragRegions", { rects: [{ x: 78, y: 0, width: 400, height: 38 }] }],
       ["window.setDropTargets", { targets: [{ spaceId: space, x: 20, y: 60, width: 232, height: 180 }] }],
@@ -351,8 +344,6 @@ describe.skipIf(!built)("the bridge on the app core", () => {
       },
       signInUrl: null,
     });
-    const kinds = telemetry.recorded.flatMap((s) => (s.tag === "SignInFailed" ? [s.inner.errorKind] : []));
-    expect(kinds.at(-1)).toBe("transport");
   });
 
   it("answers the Machines page from the host and the relay's devices", async () => {
@@ -363,72 +354,6 @@ describe.skipIf(!built)("the bridge on the app core", () => {
     expect((m.devices as { rows: unknown[] }).rows.length).toBe(2);
     expect(m.host).toMatchObject({ configured: false, machineId: null, progress: null });
     expect(m.thisMachine).toMatchObject({ id: "this-mac" });
-  });
-
-  it("records the page's usage events through the switch, word by word", async () => {
-    await call("telemetry.track", {
-      signals: [
-        { type: "feature", feature: "space_open" },
-        { type: "feature", feature: "Not A Word" },
-        { type: "space-wizard", action: "opened" },
-      ],
-    });
-    const after = telemetry.recorded.slice(-2);
-    expect(after.map((s) => (s as unknown as { tag: string }).tag)).toEqual(["Feature", "SpaceWizard"]);
-    telemetry.current = { ...telemetry.current, enabled: false };
-    const before = telemetry.recorded.length;
-    await call("telemetry.track", { signals: [{ type: "feature", feature: "space_open" }] });
-    expect(telemetry.recorded.length).toBe(before);
-    expect(await code("telemetry.track", {})).toBe("bad_args");
-    expect(telemetrySignal(native, { type: "experiments-on", experiments: ["cua_volume", "BAD"] })).toBeNull();
-    expect(telemetrySignal(native, { type: "space-create", location: "local", guestOs: "linux", kind: "container", outcome: "ready", failedPhase: "none", stalled: false, elapsedMs: 1200, gpu: false })).toBeNull();
-    expect(telemetrySignal(native, { type: "launched", onboardingEligible: null })).not.toBeNull();
-    // CUA-1881: plan limits and upgrade links, fixed words only.
-    expect(telemetrySignal(native, { type: "plan-limit-shown", surface: "app_create", kind: "sessions", plan: "free" })).not.toBeNull();
-    expect(telemetrySignal(native, { type: "upgrade-link-opened", surface: "app_meter", kind: "none", plan: "pro" })).not.toBeNull();
-    expect(telemetrySignal(native, { type: "upgrade-link-opened", surface: "app_meter", kind: "hours", plan: "alice@example.com" })).toBeNull();
-  });
-
-  it("answers the one-time linking notice from the host's telemetry, and records that it was closed", async () => {
-    telemetry.linkNoticeDue = true;
-    const notice = (await call("telemetry.linkNotice")) as Record<string, unknown>;
-    expect(notice).toMatchObject({ due: true, title: "We've updated how usage data works", okLabel: "Got it", turnOffLabel: "Turn off usage data", detailsLabel: "What is collected", docsUrl: "https://cua.ai/docs/cua-sdk/concepts/telemetry" });
-    const before = telemetry.linkNoticeAcknowledged;
-    expect(await call("telemetry.acknowledgeLinkNotice")).toBeNull();
-    expect(telemetry.linkNoticeAcknowledged).toBe(before + 1);
-    expect(((await call("telemetry.linkNotice")) as { due: boolean }).due).toBe(false);
-  });
-
-  it("leaves a create's signals to the host, which records them from the create it runs", async () => {
-    const before = telemetry.recorded.length;
-    await call("telemetry.track", {
-      signals: [
-        { type: "feature", feature: "space_create_local" },
-        { type: "space-create-started", location: "local", guestOs: "linux", kind: "container", gpu: false },
-        { type: "step", step: "first_space_created", ok: true },
-        { type: "space-create", location: "local", guestOs: "linux", kind: "container", outcome: "error", failedPhase: "preparing", stalled: false, elapsedMs: 900, gpu: false, errorVariant: "" },
-        { type: "step", step: "first_space_ready", ok: true },
-      ],
-    });
-    expect(telemetry.recorded.length).toBe(before);
-    // The page's other signals still count.
-    await call("telemetry.track", { signals: [{ type: "feature", feature: "space_open" }, { type: "step", step: "onboarding_shown", ok: true }] });
-    expect(telemetry.recorded.length).toBe(before + 2);
-    expect(hostRecorded({ type: "feature", feature: "space_create_cloud" })).toBe(true);
-    expect(hostRecorded({ type: "step", step: "checklist_create_space", ok: true })).toBe(false);
-    expect(hostRecorded(null)).toBe(false);
-  });
-
-  it("records that the usage notice was seen once the first run leaves Welcome", async () => {
-    telemetry.current = { enabled: true, lockedBy: undefined, noticeShown: false };
-    const before = telemetry.acknowledged;
-    await call("telemetry.track", { signals: [{ type: "step", step: "onboarding_shown", ok: true }, { type: "onboarding-page", page: "welcome", action: "shown", choice: "none" }] });
-    expect(telemetry.acknowledged).toBe(before);
-    await call("telemetry.track", { signals: [{ type: "onboarding-page", page: "welcome", action: "completed", choice: "none" }, { type: "onboarding-page", page: "signin", action: "shown", choice: "none" }] });
-    expect(telemetry.acknowledged).toBe(before + 1);
-    // "Set up later" from Welcome counts too.
-    await call("telemetry.track", { signals: [{ type: "step", step: "onboarding_skipped", ok: true }] });
-    expect(telemetry.acknowledged).toBe(before + 2);
   });
 
   it("sets the calling window's background, and checks the drag regions", async () => {
@@ -556,7 +481,6 @@ describe.skipIf(!built)("the bridge on the app core", () => {
       devices: new DevicesModel(native, () => fixtureDevices()),
       cloud: new CloudModel(native, () => backend),
       account,
-      telemetry,
       servicesIn: () => true,
       cpus: 8,
     });
@@ -587,7 +511,6 @@ describe.skipIf(!built)("the bridge on the app core", () => {
       "spaces.rename": { spaceId: "local:aurora", name: "design-review" },
       "spaces.open": { spaceId: "local:aurora" },
       "spaces.cancelCreate": { pendingId: "pending:none" },
-      "telemetry.track": { signals: [{ type: "feature", feature: "space_open" }] },
       "startup.act": { action: "tryAgain" },
       "spaces.usage": { spaceId: "local:aurora" },
       "spaces.windows": { spaceId: "local:aurora" },

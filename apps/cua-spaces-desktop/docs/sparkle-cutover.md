@@ -87,11 +87,11 @@ Those are the rehearsal below.
    turned them off in Settings → About or had turned them off in the Swift
    app (`swiftMigration.found` with `sparkleAutomaticChecks === false`; the
    Swift app's Info.plist turns Sparkle's checks on, so the key is only saved
-   when the user changed it). Found updates download in the background and
-   show the in-app "Restart to update" indicator; nothing restarts without a
-   click. A channel carried over from the Swift app that isn't served to the
-   Electron app on macOS (Stable, before `STABLE_FEED`) falls back to the
-   build's channel.
+   when the user changed it). Found updates are reported with the command
+   that pulls the repository and rebuilds (`src/update-state.ts`); nothing is
+   downloaded or installed by the app. A channel carried over from the Swift
+   app that isn't served to the Electron app on macOS (Stable, before
+   `STABLE_FEED`) falls back to the build's channel.
 4. electron-builder sets `generateUpdatesFilesForAllChannels: true` from the
    cutover on. Stable releases then also write `beta*.yml`, so betas move
    on to the stable release.
@@ -180,7 +180,7 @@ CI holds the same signing secrets) without publishing anything:
   is `X.Y.Z.<run>`. `sparkle:edSignature` passes `verify-appcast.sh --electron`.
 - `accepts.sh` against an installed Swift app passes.
 - One real update on a test Mac (rehearsal step 4), then watch the crash
-  and telemetry reports for `spaces_app` launches from the new version.
+  reports for `spaces_app` launches from the new version.
 
 ## Rollback
 

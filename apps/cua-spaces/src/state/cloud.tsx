@@ -30,8 +30,6 @@ import {
   type CreatesState,
 } from "../model/creates";
 import { withThisMachine } from "../model/host";
-import { createsSignals } from "../model/telemetry";
-import { telemetryBridge } from "../native/telemetry";
 import { rowToSpace, SPACES_CONFIG, type SpaceRow } from "../model/spaces";
 import type { HostStatus } from "../native/host";
 import type { Location, Space, SpaceKind, SpaceOs } from "../model/types";
@@ -156,9 +154,6 @@ export function useSpacesSync(
 
   const sendCreate = useCallback(
     (action: CreateAction) => {
-      // A create started, reached ready or failed: the usage events the app
-      // core derives (the SwiftUI app sends the same ones).
-      telemetryBridge().recordSignals(createsSignals(createsRef.current, action, now()));
       createsRef.current = reduceCreates(createsRef.current, action);
       setCreating(createsRunning(createsRef.current));
       publish();

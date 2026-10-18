@@ -36,7 +36,7 @@ import { useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore 
 import { BridgeContext } from "./BridgeProvider";
 import type { CoreClient } from "./core";
 import type { AgentSetupRow, ConnectionReport } from "./contracts/agents";
-import type { HostStatus, SignInFailure } from "./contracts/host";
+import type { HostStatus } from "./contracts/host";
 import type {
   CliInstallPlan,
   FirstRunAgent,
@@ -55,8 +55,7 @@ import type {
 import { useSession, useSettings, useSpaces } from "./hooks";
 import { hostOs } from "./host-os";
 import { useFirstSpaceOffers } from "./new-space-hooks";
-import { onboardingInitial, onboardingTelemetry, onboardingView, readSavedOnboarding, writeSavedOnboarding } from "./onboarding";
-import type { OnboardingFlowState } from "./contracts/onboarding";
+import { readSavedOnboarding, writeSavedOnboarding } from "./onboarding";
 import { useRelayUsage } from "./relay-usage";
 import { useAgentKeys } from "./agent-keys";
 import { newPendingId } from "./store";
@@ -407,65 +406,15 @@ export function useFirstRunSaved(): FirstRunSaved {
   return useSyncExternalStore(subscribe, readFirstRun, readFirstRun);
 }
 
-/** Usage events never get in the way of the flow. */
-function track(send: () => void): void {
-  try {
-    send();
-  } catch {
-    // An older core that reads the state differently: no event.
-  }
-}
-
 /* ---- The hook ---------------------------------------------------------------------- */
 
 /** How often the first run reads the agent setup and this computer. */
 export const FIRST_RUN_POLL_MS = 2_500;
 
-/** The usage-data note and switch on Pick your agent: the words are the app
- * core's (the old Welcome's), on by default, off with one tap. */
-export interface FirstRunUsage {
-  notice: string;
-  linkLabel: string;
-  linkUrl: string;
-  label: string;
-  on: boolean;
-  enabled: boolean;
-  help: string | null;
-}
-
-/** The usage data's name for each screen (`schema::FIRST_RUN_STEPS`). */
-export const FUNNEL_STEP: Record<FirstRunStep, string> = {
-  welcome: "welcome",
-  connect: "connect_agent",
-  cli: "terminal",
-  devices: "sign_in",
-  permissions: "permissions",
-  setup: "create_space",
-};
-
-/** When "Skip for now" was last pressed (the page may mount again as it leaves, under a second later). */
-let leftAtMs = 0;
-
-/** A sign-in's failure as the funnel's reason (`sign_in::error_kind`). */
-const SIGN_IN_REASON: Record<SignInFailure, string> = {
-  notConfirmed: "timeout",
-  declined: "permission_denied",
-  codeRejected: "unauthenticated",
-  offline: "transport",
-  serviceUnavailable: "http",
-  couldNotSave: "internal",
-  unknown: "other",
-};
-
 const STEPS: FirstRunStep[] = ["welcome", "connect", "cli", "devices", "permissions", "setup"];
 
 export interface FirstRunHook {
   view: FirstRunView;
-  /** The usage-data note and switch (Pick your agent only; none until the host says what the setting is). */
-  usage: FirstRunUsage | null;
-  setUsage(on: boolean): Promise<void>;
-  /** "What is collected". */
-  openUsageLink(): void;
   input: FirstRunInput;
   saved: FirstRunSaved;
   /** Every agent the setup knows. */
@@ -596,7 +545,6 @@ export function useFirstRun(active = true, pollMs = FIRST_RUN_POLL_MS): FirstRun
   const agentKeys = useAgentKeys();
   const keysInput = agentKeys.unsupported || agentKeys.isLoading ? null : agentKeys.input;
   const [tick, setTick] = useState(0);
-  const shownRef = useRef(false);
   // The app's bundled CLI: its install plan (read once a run shows), and Install's progress.
   const cli = useCliInstall(active);
 
@@ -750,38 +698,6 @@ export function useFirstRun(active = true, pollMs = FIRST_RUN_POLL_MS): FirstRun
   const input: FirstRunInput = { ...baseInput, agentUsedAt: usedMs ? clockTime(usedMs) : null };
   const view = withExtraFix(firstRunView(core, input), extra.fix ?? null);
 
-  const welcome = settings.data?.telemetry
-    ? onboardingView(core, { ...onboardingInitial(core, null), step: "welcome", telemetry: onboardingTelemetry(settings.data.telemetry) })
-    : null;
-  const usageNote: FirstRunUsage | null =
-    step === "connect" && welcome?.usage && welcome.notice && welcome.noticeLinkLabel && welcome.noticeLinkUrl
-      ? {
-          notice: welcome.notice,
-          linkLabel: welcome.noticeLinkLabel,
-          linkUrl: welcome.noticeLinkUrl,
-          label: welcome.usage.label,
-          on: welcome.usage.on,
-          enabled: welcome.usage.enabled,
-          help: welcome.usage.help ?? null,
-        }
-      : null;
-
-  // The run starts (once a page shows): the usage event the old Welcome sent.
-  useEffect(() => {
-    const t = settings.data?.telemetry;
-    if (!active || shownRef.current || !store || !t) return;
-    shownRef.current = true;
-    track(() => store.trackOnboarding({ ...onboardingInitial(core, null), telemetry: onboardingTelemetry(t) }, { type: "start" }));
-  }, [active, store, settings.data?.telemetry]);
-
-  // The funnel's events, in the old flow's shape: started on the first two screens, left on the last two.
-  const telemetryState = (): OnboardingFlowState => ({
-    ...onboardingInitial(core, session.data?.identity ?? null),
-    step: step === "welcome" || step === "connect" ? "welcome" : "agents",
-    runCounted: true,
-    telemetry: settings.data?.telemetry ? onboardingTelemetry(settings.data.telemetry) : null,
-  });
-
   const refresh = () => setTick((n) => n + 1);
 
   const go = (next: FirstRunStep) => {
@@ -790,42 +706,9 @@ export function useFirstRun(active = true, pollMs = FIRST_RUN_POLL_MS): FirstRun
   // The screens this run shows (the core's): the CLI's only while it is missing.
   const shown = view.steps?.length ? view.steps : firstRunSteps(input);
   const at = Math.max(shown.indexOf(view.step), 0);
-  const funnel = (action: string, detail = "none", of: FirstRunStep = view.step) => {
-    if (active && store) track(() => store.trackFirstRunStep(FUNNEL_STEP[of], action, detail));
-  };
-  const forward = (how: "completed" | "skipped" = "completed") => {
-    if (how === "completed") funnel("step_completed");
-    else funnel("step_skipped", "step");
+  const forward = () => {
     go(shown[Math.min(at + 1, shown.length - 1)]!);
   };
-
-  // Each screen is counted when it shows (once per arrival).
-  useEffect(() => {
-    // Leaving with "Skip for now" can mount the page again as it goes, within a second or two: not a view.
-    if (Date.now() - leftAtMs < 2_000) return;
-    if (active && store) track(() => store.trackFirstRunStep(FUNNEL_STEP[view.step], "step_viewed"));
-  }, [active, store, view.step]);
-
-  // A screen's failure is counted once each time it appears.
-  const signInPhase = session.data?.signIn;
-  const on = view.step;
-  const failure: { step: FirstRunStep; reason: string } | null =
-    on === "devices" && signInPhase?.kind === "failed"
-      ? { step: on, reason: SIGN_IN_REASON[signInPhase.reason ?? "unknown"] ?? "other" }
-      : on === "cli" && cli.state.error
-        ? { step: on, reason: "install_failed" }
-        : on === "connect" && (connectError || signInError)
-          ? { step: on, reason: "connect_failed" }
-          : (on === "devices" || on === "permissions" || on === "setup") && setupError
-            ? { step: on, reason: "setup_failed" }
-            : on === "setup" && extra.phase === "failed"
-              ? { step: on, reason: "create_failed" }
-              : null;
-  const failureKey = failure ? `${failure.step}:${failure.reason}` : "";
-  useEffect(() => {
-    if (failure) funnel("step_failed", failure.reason, failure.step);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [failureKey]);
 
   const setUpThisComputer = async () => {
     if (!store || settingUp) return;
@@ -922,7 +805,7 @@ export function useFirstRun(active = true, pollMs = FIRST_RUN_POLL_MS): FirstRun
       await spaces.cancelCreate(s.extraPendingId).catch(() => {});
       writeFirstRun({ extraPendingId: null, extraOs: null });
     } else if (id === "not-now") {
-      funnel("step_skipped", "step");
+
       writeFirstRun({ extraNotNow: true });
     } else if (id === "add") {
       writeFirstRun({ extraNotNow: false, extraPendingId: null, extraOs: null });
@@ -942,11 +825,6 @@ export function useFirstRun(active = true, pollMs = FIRST_RUN_POLL_MS): FirstRun
 
   return {
     view,
-    usage: usageNote,
-    setUsage: (on) => settings.updateSetting("telemetry", on),
-    openUsageLink: () => {
-      if (usageNote) void session.openExternal(usageNote.linkUrl).catch(() => {});
-    },
     input,
     saved: s,
     agents: agents ?? [],
@@ -964,7 +842,7 @@ export function useFirstRun(active = true, pollMs = FIRST_RUN_POLL_MS): FirstRun
           break;
         case "skip":
         case "not-now":
-          forward("skipped");
+          forward();
           break;
         case "advanced":
         case "simple":
@@ -1003,16 +881,10 @@ export function useFirstRun(active = true, pollMs = FIRST_RUN_POLL_MS): FirstRun
       refresh();
     },
     async finish() {
-      // "Not now" on the first Space card already counted that screen as skipped.
-      if (extra.phase !== "not-now") funnel("step_completed");
-      if (store) track(() => store.trackOnboardingFinished(telemetryState()));
       await session.completeOnboarding(host?.configured ? "host" : "client");
       writeFirstRun({ finishedLater: false, todosClosed: false });
     },
     later() {
-      funnel("step_skipped", "later");
-      leftAtMs = Date.now();
-      if (store) track(() => store.trackOnboardingSkipped(telemetryState()));
       store?.cancelSignIn();
       // The shell stops opening it (the sidebar offers it again).
       writeSavedOnboarding({ ...readSavedOnboarding(), skipped: true });

@@ -1,10 +1,10 @@
 ---
 title: How Lume works
-description: 'Offline unattended setup, SIP through paired Recovery, macOS disk growth with rollback, and what Lume telemetry collects.'
+description: 'Offline unattended setup, SIP through paired Recovery, macOS disk growth with rollback, and how Lume checks for updates.'
 ---
 
-This page explains what Lume does behind a few commands, and what its
-telemetry collects.
+This page explains what Lume does behind a few commands, and how it checks for
+updates.
 
 ## Unattended setup
 
@@ -59,28 +59,18 @@ after a crash). Unfamiliar layouts and FileVault guests are refused. Linux
 images have no RecoveryOS: Lume grows the image and the guest grows its
 filesystem.
 
-## Telemetry
+## Updates
 
-Lume sends content-free, pseudonymous events to PostHog EU, on by default,
-after a first-run notice.
-
-```bash test="cli-shape" id="lume-config-telemetry-status"
-lume config telemetry status
-lume config telemetry disable
-lume config telemetry enable
-lume config telemetry reset-id
-```
-
-`LUME_TELEMETRY_ENABLED` overrides the setting per process. Events carry a
-fixed name and bounded fields (Lume version, host OS major version and arch,
-CI flag, transport, allowlisted operation, success, error class, duration
-bucket), capped at 1,000 per process per hour. They never include VM or image
-names, paths, URLs, arguments, MCP payloads, SSH commands or output, VNC
-credentials, screenshots or raw errors. GeoIP is disabled.
-
-The update check (`lume check-update`, `lume update`) is a separate request to
-GitHub Releases, cached for 20 hours, without the telemetry id:
+Lume checks for updates (`lume check-update`, `lume update`) with a request to
+GitHub Releases, cached for 20 hours:
 
 ```bash test="cli-shape,lume" id="lume-check-update"
 LUME_UPDATE_CHECK=false lume check-update
+```
+
+Lume never installs release builds. When a newer version is reported, update a
+source checkout from the repository root:
+
+```bash skip="host-install"
+git pull && libs/lume/scripts/build/build-release.sh
 ```

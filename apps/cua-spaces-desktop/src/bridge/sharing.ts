@@ -8,9 +8,9 @@
 // them; empty when signed out or from a server that predates it). The
 // SDK's `Space.shares`, `share` and `unshare`, as the SwiftUI host calls
 // them for its Share sheet. Who it is shared with comes back as the core's
-// share rows; the sheet's words, the experiment gate and the usage events
-// are the page's (`bridge/share.ts`). Sharing asks for presence in the
-// daemon before anything reaches the relay.
+// share rows; the sheet's words and the experiment gate are the page's
+// (`bridge/share.ts`). Sharing asks for presence in the daemon before
+// anything reaches the relay.
 import { string } from "./args";
 import type { BridgeContext } from "./context";
 import type { Handlers } from "./host";

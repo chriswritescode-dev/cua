@@ -1989,35 +1989,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cookie"
-version = "0.18.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a373e3602691c3cdea496d2f0ee5935151e6168fe87739483c463db1b2f2f87"
-dependencies = [
- "percent-encoding",
- "time",
- "version_check",
-]
-
-[[package]]
-name = "cookie_store"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15b2c103cf610ec6cae3da84a766285b42fd16aad564758459e6ecf128c75206"
-dependencies = [
- "cookie",
- "document-features",
- "idna",
- "indexmap",
- "log",
- "serde",
- "serde_derive",
- "serde_json",
- "time",
- "url",
-]
-
-[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2484,7 +2455,6 @@ dependencies = [
  "cua-sdk",
  "cua-spaces",
  "cua-spacesd-client",
- "cua-telemetry",
  "cua-vmm",
  "flate2",
  "futures-util",
@@ -2623,7 +2593,6 @@ dependencies = [
 name = "cua-crash"
 version = "0.9.0"
 dependencies = [
- "cua-telemetry",
  "sentry",
  "serde_json",
 ]
@@ -2632,7 +2601,6 @@ dependencies = [
 name = "cua-create-failure"
 version = "0.9.0"
 dependencies = [
- "cua-telemetry",
  "serde",
  "serde_json",
 ]
@@ -2801,7 +2769,6 @@ dependencies = [
  "base64 0.22.1",
  "core-foundation 0.10.1",
  "cua-home",
- "cua-telemetry",
  "hex",
  "keyring",
  "libc",
@@ -3031,7 +2998,6 @@ dependencies = [
  "cua-sandbox-core",
  "cua-spaces",
  "cua-spacesd-client",
- "cua-telemetry",
  "flate2",
  "futures-util",
  "hex",
@@ -3125,7 +3091,6 @@ dependencies = [
  "cua-agents",
  "cua-auth",
  "cua-cluster",
- "cua-create-failure",
  "cua-disk",
  "cua-home",
  "cua-host",
@@ -3138,7 +3103,6 @@ dependencies = [
  "cua-snapshot-sync",
  "cua-spaces-contract",
  "cua-spacesd-client",
- "cua-telemetry",
  "cua-vmm",
  "futures-util",
  "globset",
@@ -3180,7 +3144,6 @@ dependencies = [
  "cua-create-failure",
  "cua-home",
  "cua-keyvault",
- "cua-telemetry",
  "serde",
  "serde_json",
  "tempfile",
@@ -3298,7 +3261,6 @@ dependencies = [
  "cua-spaces",
  "cua-spaces-contract",
  "cua-spacesd-client",
- "cua-telemetry",
  "cua-teleport",
  "cua-teleport-bundle",
  "cua-volume",
@@ -3330,7 +3292,6 @@ version = "0.9.0"
 dependencies = [
  "base64 0.22.1",
  "cua-chromium-storage",
- "cua-crash",
  "cua-daemon",
  "cua-home",
  "cua-host",
@@ -3344,7 +3305,6 @@ dependencies = [
  "cua-spaces-app-core",
  "cua-spaces-ext",
  "cua-spacesd-client",
- "cua-telemetry",
  "cua-teleport",
  "cua-teleport-bundle",
  "futures-util",
@@ -3434,20 +3394,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cua-telemetry"
-version = "0.9.0"
-dependencies = [
- "hex",
- "rand 0.9.5",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "tempfile",
- "toml_edit",
- "ureq",
-]
-
-[[package]]
 name = "cua-teleport"
 version = "0.9.0"
 dependencies = [
@@ -3520,7 +3466,6 @@ dependencies = [
  "cua-media-protocol",
  "cua-media-transport",
  "cua-proto",
- "cua-telemetry",
  "futures-util",
  "objc2 0.5.2",
  "objc2 0.6.4",
@@ -9708,13 +9653,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a7ac20be9b7726e0bbdbf974c059676d9acb1cd414961f570a4e8231cacd7fc"
 dependencies = [
  "base64 0.23.1",
- "cookie_store",
  "log",
  "percent-encoding",
  "rustls",
  "rustls-pki-types",
- "serde",
- "serde_json",
  "ureq-proto",
  "utf8-zero",
  "webpki-roots 1.0.10",

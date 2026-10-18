@@ -543,8 +543,8 @@ pub struct SpacesdClient {
     /// expire.
     #[cfg_attr(not(feature = "media"), allow(dead_code))]
     pub(crate) ws_refresh: Option<WsHeaderRefresh>,
-    /// Where the spacesd runs (`local`, `direct`, `relay`, your cloud), for
-    /// agent-run telemetry. `direct` (reached by address) unless set.
+    /// Where the spacesd runs (`local`, `direct`, `relay`, your cloud), as
+    /// `route` reports it. `direct` (reached by address) unless set.
     pub(crate) location: String,
     /// The Space's live route, for a client a Space handed out.
     pub(crate) route: Option<RouteSource>,

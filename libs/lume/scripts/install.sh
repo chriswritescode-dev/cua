@@ -38,7 +38,8 @@ INSTALL_BACKGROUND_SERVICE=true
 
 # Deprecated auto-updater flags are still accepted for compatibility, but
 # scheduled self-updates are no longer installed. Updates are explicit:
-# `lume check-update` and `lume update --apply`.
+# `lume check-update`. Lume never installs release builds; updates come from
+# pulling the repository and rebuilding it.
 INSTALL_AUTO_UPDATER=false
 UPDATE_ON_LOGIN=false
 
@@ -88,7 +89,7 @@ while [ "$#" -gt 0 ]; do
       INSTALL_AUTO_UPDATER=false
       ;;
     --update-on-login)
-      echo "${YELLOW}Warning: --update-on-login is deprecated; use 'lume update --apply' for explicit updates.${NORMAL}"
+      echo "${YELLOW}Warning: --update-on-login is deprecated; use 'lume check-update' to check for newer releases.${NORMAL}"
       UPDATE_ON_LOGIN=true
       ;;
     --help)
@@ -101,7 +102,7 @@ while [ "$#" -gt 0 ]; do
       echo "  --no-background-service   Do not setup the Lume background service (LaunchAgent)"
       echo "  --channel CHANNEL         Persist and install the latest stable or nightly release"
       echo "  --no-auto-updater         Deprecated no-op; scheduled auto-updates are no longer installed"
-      echo "  --update-on-login         Deprecated no-op; use 'lume update --apply'"
+      echo "  --update-on-login         Deprecated no-op; use 'lume check-update'"
       echo "  --help                    Display this help message"
       echo ""
       echo "Examples:"
@@ -486,29 +487,6 @@ cleanup_deprecated_auto_updater() {
   fi
 }
 
-# Record consent-aware installation and per-version release events through
-# the installed binary so identity, preference precedence, request timeouts,
-# and 2xx-only marker semantics stay in one implementation. This happens
-# before the LaunchAgent can start Lume and race first-run registration.
-record_installation_telemetry() {
-  echo ""
-  echo "${BLUE}Telemetry defaults to enabled for new installations; saved preferences and environment overrides are honored.${NORMAL}"
-  echo "${BLUE}When enabled, Lume collects a pseudonymous installation ID and bounded, content-free usage metadata.${NORMAL}"
-  echo "  No prompts, VM/image names, file paths, or VM contents are collected."
-  echo "  Disable persistently at any time: $INSTALL_DIR/lume config telemetry disable"
-
-  INSTALL_CHANNEL="${LUME_INSTALL_CHANNEL:-install_script}"
-  case "$INSTALL_CHANNEL" in
-    install_script|update_apply|first_run) ;;
-    *) INSTALL_CHANNEL="install_script" ;;
-  esac
-
-  # `--version` is a side-effect-free command after the registration preflight.
-  # Telemetry failure must never turn a successful install into a failure.
-  LUME_INSTALL_CHANNEL="$INSTALL_CHANNEL" \
-    "$INSTALL_DIR/lume" --version >/dev/null 2>&1 || true
-}
-
 # Main installation flow
 main() {
   check_permissions
@@ -517,7 +495,6 @@ main() {
   download_release
   persist_release_channel
   install_binary
-  record_installation_telemetry
 
   echo ""
   echo "${GREEN}${BOLD}Lume has been successfully installed!${NORMAL}"
@@ -623,8 +600,8 @@ EOF
   echo ""
   echo "Updates are explicit. To check later, run:"
   echo "  ${BOLD}lume check-update${NORMAL}"
-  echo "To update, run:"
-  echo "  ${BOLD}lume update --apply${NORMAL}"
+  echo "Lume never installs release builds. To update a source checkout, run:"
+  echo "  ${BOLD}git pull && libs/lume/scripts/build/build-release.sh${NORMAL}"
 }
 
 # Run the installation

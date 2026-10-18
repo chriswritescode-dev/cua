@@ -134,8 +134,6 @@ impl LoginAttempt {
             let creds = pending.complete().await?;
             let who = self.session.install(creds).await?;
             enroll_after_sign_in(&self.session).await;
-            #[cfg(feature = "host")]
-            super::telemetry::sync_account(&self.session).await;
             Ok(who.into())
         })
         .await
@@ -156,37 +154,11 @@ async fn enroll_after_sign_in(session: &Arc<cua_auth::Session>) {
         return;
     };
     let auth = auth.with_pending_file(cua_host::device_pending_file(&home));
-    let r = tokio::time::timeout(
+    let _ = tokio::time::timeout(
         std::time::Duration::from_secs(15),
         auth.enroll_after_sign_in(),
     )
     .await;
-    record_sign_in_enrollment(&r);
-}
-
-/// `cua_device_enroll` for a sign-in that enrolled this device: `rekey`
-/// when it replaced this machine's other key, `sign_in` otherwise. A
-/// device that still waits for an approval records nothing.
-#[cfg(feature = "host")]
-pub(crate) fn record_sign_in_enrollment<E>(
-    r: &std::result::Result<std::result::Result<cua_host::relay::Enrollment, cua_host::Error>, E>,
-) {
-    use cua_telemetry::Outcome;
-    let (method, outcome) = match r {
-        Ok(Ok(e)) if e.device.state == cua_host::relay::DeviceState::Enrolled => (
-            if e.superseded.is_empty() {
-                "sign_in"
-            } else {
-                "rekey"
-            },
-            Outcome::Ok,
-        ),
-        Ok(Ok(_)) => return,
-        _ => ("sign_in", Outcome::Error),
-    };
-    if let Some(e) = cua_telemetry::events::device_enroll(method, outcome) {
-        cua_telemetry::capture(e);
-    }
 }
 
 /// Without relay support there is no device to re-register.
@@ -278,8 +250,6 @@ impl Auth {
         .await?;
         let session = self.session.clone();
         let existed = run(async move { Ok(session.logout().await?.0) }).await?;
-        // Signed out: usage data goes back to a new anonymous install id.
-        let _ = cua_telemetry::global().forget_account();
         Ok(existed)
     }
 }

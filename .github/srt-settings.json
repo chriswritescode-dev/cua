@@ -9,7 +9,6 @@
       "bedrock.us-west-2.amazonaws.com",
       "sts.amazonaws.com",
       "sts.us-west-2.amazonaws.com",
-      "otel.cua.ai",
       "files.pythonhosted.org",
       "pypi.org",
       "registry.npmjs.org"

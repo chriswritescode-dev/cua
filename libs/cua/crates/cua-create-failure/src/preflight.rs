@@ -141,7 +141,7 @@ pub enum IssueKind {
 }
 
 impl IssueKind {
-    /// The telemetry word (`cua_telemetry::schema::ERROR_KINDS`).
+    /// The cause word ([`crate::TEXT_KINDS`]).
     pub fn error_kind(self) -> &'static str {
         match self {
             Self::InsufficientDisk => "insufficient_disk",
@@ -153,8 +153,8 @@ impl IssueKind {
         }
     }
 
-    /// The finer telemetry word under [`Self::error_kind`]
-    /// (`cua_telemetry::schema::ERROR_SUBCLASSES`), where there is one.
+    /// The finer cause word under [`Self::error_kind`]
+    /// ([`crate::retry::SUBCLASSES`]), where there is one.
     pub fn error_subclass(self) -> Option<&'static str> {
         match self {
             Self::LocalNetwork => Some(crate::local_network::DENIED),

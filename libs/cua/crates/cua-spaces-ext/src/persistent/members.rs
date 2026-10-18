@@ -568,7 +568,7 @@ impl Persistent {
                     i += 1;
                     continue;
                 }
-                match self.deliver(&free[i], store, &task, "thread").await? {
+                match self.deliver(&free[i], store, &task).await? {
                     Delivered::Yes(_) => {
                         free.remove(i);
                         out.push(task.seq);
@@ -594,7 +594,6 @@ impl Persistent {
         rec: &AgentRecord,
         store: &ThreadStore,
         task: &TaskInfo,
-        entry: &str,
     ) -> Result<Delivered> {
         let base = match self.current_turn(rec).await {
             Some(Some(turn)) => turn,
@@ -632,7 +631,7 @@ impl Persistent {
                 },
             )
         };
-        match self.send_session(rec, &framed, entry).await {
+        match self.send_session(rec, &framed).await {
             Ok(d) => {
                 let base = if d.started { 0 } else { base };
                 if d.started {
@@ -815,7 +814,7 @@ impl Persistent {
             Some(Some(t)) => t,
             _ => 0,
         };
-        let d = self.send_from(name, text, "persistent").await?;
+        let d = self.send_from(name, text).await?;
         let rec = self.get(name)?;
         let store = self.thread_store(&rec.space);
         let mut draft = Draft::new(self.author_for(caller), EntryKind::Message, text);
@@ -993,7 +992,7 @@ impl Persistent {
             .get(&e.seq)
             .cloned()
             .ok_or_else(|| Error::invalid("the task vanished"))?;
-        match self.deliver(&target, &store, &task, "routine").await? {
+        match self.deliver(&target, &store, &task).await? {
             Delivered::Yes(d) => Ok(Ok(d)),
             Delivered::Busy | Delivered::Taken => {
                 store.release(

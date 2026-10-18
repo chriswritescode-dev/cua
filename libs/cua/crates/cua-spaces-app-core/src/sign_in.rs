@@ -330,7 +330,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_reason_has_plain_short_words_and_a_telemetry_kind() {
+    fn every_reason_has_plain_short_words_and_a_failure_kind() {
         for r in SignInFailure::ALL {
             let line = failure_line(r);
             assert!(line.starts_with("Sign-in didn't finish."), "{r:?}: {line}");

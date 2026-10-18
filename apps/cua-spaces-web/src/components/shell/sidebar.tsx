@@ -9,7 +9,7 @@ import { Loader2Icon, TriangleAlertIcon } from "lucide-react";
 import type { SignInFooter, Space } from "@/bridge";
 import { spokenName } from "@/bridge/space-names";
 
-import { signInFooter, useBridge, useFeatureRecorded, useMachines, useNotifications, useSession, useSpaces } from "@/bridge";
+import { signInFooter, useBridge, useMachines, useNotifications, useSession, useSpaces } from "@/bridge";
 import { CuaKey } from "@/components/cua-key";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
@@ -85,7 +85,7 @@ export function Sidebar() {
       <SidebarTip />
       {/* Free only: "Run more Spaces at once with Pro", right above the account line. */}
       <ProBanner />
-      {/* A ready update is a compact button at the end of the account line. */}
+      {/* A found release is a compact button at the end of the account line. */}
       <AccountFooter trailing={<SidebarUpdateButton />} />
       <ResizeHandle />
     </aside>
@@ -145,7 +145,6 @@ export function AccountFooter({ trailing }: { trailing?: ReactNode }) {
   // A browser sign-in that has not come back for a while: offer a code.
   const waitingOnBrowser = footer?.state === "waiting" && !footer.code;
   const stuck = useAfter(waitingOnBrowser, STILL_WAITING_MS);
-  useFeatureRecorded("sign_in_still_waiting", stuck);
   // The last attempt used a code: another code would not help.
   const triedCode = useRef(false);
   if (footer?.state === "waiting" && footer.code) triedCode.current = true;

@@ -862,7 +862,7 @@ Options applied when an imported session is committed.
 | `close_running_app` | 2 | `bool` | Close the app (gracefully, then forcefully after 5 seconds) if it is running. |
 | `launch_after` | 3 | `bool` | Launch the app after importing. |
 | `expires_at_ms` | 4 | `uint64` | Unix time in milliseconds at which the guest wipes the import on its own, as `WipeImport` would. 0 means no expiry. Checked every 60 seconds and when the guest daemon starts, so an expiry survives restarts. |
-| `broker_grant` | 5 | `string` | Set by the Cua Keyvault broker when it delivers a session it authorized (a consent grant, an unattended rule or a first-party approval), to `keyvault`; empty for a direct SDK send. Not a secret and not verified by the guest. cua-spacesd counts deliveries with and without it (present or absent) in its opt-in aggregate telemetry; nothing else reads it. |
+| `broker_grant` | 5 | `string` | Set by the Cua Keyvault broker when it delivers a session it authorized (a consent grant, an unattended rule or a first-party approval), to `keyvault`; empty for a direct SDK send. Not a secret and not verified by the guest; nothing else reads it. |
 
 ### ImportSessionRequest
 

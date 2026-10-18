@@ -766,12 +766,12 @@ async fn agents_setup_cua_driver_adds_the_driver_skill_and_server() {
         ])
         .await;
     o.ok();
-    // The install one-liner is PowerShell's `-Only` on Windows, sh's `--only`
-    // elsewhere.
+    // The hint points at the repository's local installer, not a remote
+    // one-liner.
     let hint = if cfg!(windows) {
-        "-Only cua-driver"
+        "install-local.ps1"
     } else {
-        "--only cua-driver"
+        "install-local.sh"
     };
     assert!(o.stdout.contains(hint), "{o:?}");
 

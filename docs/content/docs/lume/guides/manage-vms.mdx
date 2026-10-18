@@ -121,17 +121,19 @@ See [how SIP changes work](/lume/concepts/how-lume-works#sip).
 
 ```bash test="cli-shape" id="lume-check-update"
 lume check-update
-lume update --apply
-lume channel set stable     # or nightly; takes effect on the next update
+lume update                 # the same check, without installing
+lume channel set stable     # or nightly; takes effect on the next check
 ```
+
+Lume never installs release builds. When `check-update` reports a newer
+version, update a source checkout from the repository root:
 
 ```bash skip="host-install"
-curl -fsSL https://cua.ai/lume/install.sh | bash -s -- --channel nightly
-curl -fsSL https://cua.ai/lume/install.sh | \
-  LUME_VERSION=nightly-lume-v0.5.4-nightly.20260812.123456789 bash   # pin one nightly
+git pull && libs/lume/scripts/build/build-release.sh
 ```
 
-Stable is the default. A pinned nightly does not change the saved channel.
+Stable is the default. Changing the channel changes which releases Lume
+reports; a rebuild keeps the saved channel.
 
 ## Drive Lume from scripts and AI clients
 

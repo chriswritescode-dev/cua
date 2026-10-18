@@ -680,25 +680,19 @@ export function settingsPage(
   /** Settings, AI agents: the coding agents read from the host (null: not yet, an empty section). */
   agents?: Pick<SettingsInput, "agents" | "agentsBusy" | "agentsPending">,
 ): SettingsPage | null {
+  const loc = settings.values.defaultLocation;
   const input: SettingsInput = {
     identity: session?.account.identity ?? null,
     apiKeyClient: session?.account.authMode === "client-credentials" ? (session.account.clientId ?? null) : null,
     signIn: signIn ?? { kind: "idle" },
     canSignOut: session?.account.authMode === "user",
     menuBar: settings.values.menuBar,
-    telemetry: settings.telemetry
-      ? {
-          enabled: settings.telemetry.enabled,
-          lockedBy: ["do_not_track", "env", "legacy_env", "ci"].includes(settings.telemetry.sourceKind)
-            ? settings.telemetry.source
-            : null,
-        }
-      : null,
+    defaultLocation: loc === "cloud" ? "cloud" : loc === "local" ? "local" : loc.startsWith("host:") ? "host" : "yours",
+    locationLockedBy: settings.defaultLocation?.source === "env" ? (settings.defaultLocation.env ?? null) : null,
     // The host's own settings (the SwiftUI app's): the core lays out the
     // Runtimes section, auto-connect and the Keyvault's auto-wipe as there.
     keyvaultAutoWipe: settings.hostSettings?.keyvaultAutoWipe ?? null,
     keyvaultUnlockPrompt: settings.hostSettings?.keyvaultUnlockPrompt ?? null,
-    keyvaultSiteIcons: settings.hostSettings?.keyvaultSiteIcons ?? true,
     keyvaultProtection: settings.hostSettings?.keyvaultProtection ?? [],
     autoConnect: settings.hostSettings?.autoConnect ?? null,
     overflow: settings.hostSettings?.overflow ?? null,

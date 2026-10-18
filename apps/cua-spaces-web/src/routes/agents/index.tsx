@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { useAgentChats, useFeatureRecorded, useSession } from "@/bridge";
+import { useAgentChats, useSession } from "@/bridge";
 import { AgentDmView, AgentList, AgentPage, AgentsEmpty, NewAgentSheet } from "@/components/agents/agent-chat";
 import type { AddAgentStage } from "@/components/add-agent/add-agent-sheet";
 import { useFlag } from "@/bridge/flags";
@@ -44,7 +44,6 @@ function useNow(ms = 30_000): number {
  * routines and runs are one click away ("Show all").
  */
 function AgentsChatPage() {
-  useFeatureRecorded("agents_page_open");
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/agents/" });
   const { data: session } = useSession();

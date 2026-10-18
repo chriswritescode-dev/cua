@@ -412,8 +412,8 @@ if (-not (Test-Path -LiteralPath $releaseBinary -PathType Leaf)) {
     Write-Host "  Existing MCP clients configured for 'cua-driver' will not use this local build." -ForegroundColor Yellow
     Write-Host "  To configure Codex for the local build, run:"
     Write-Host "    $installedBinary mcp-config --client codex"
-    Write-Host "  To restore the published product instead, run:"
-    Write-Host "    irm https://cua.ai/driver/install.ps1 | iex"
+    Write-Host "  To rebuild and reinstall from this checkout, run:"
+    Write-Host "    libs\cua-driver\scripts\install-local.ps1"
 }
 
 # Windows-specific autostart hint (kept inline; per-shell natural location).

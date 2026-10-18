@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: FSL-1.1-MIT
 // Copyright (c) 2026 Cua AI, Inc.
 
-import { useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { BridgeMode, DataAdapter } from "./adapter";
 import { BridgeContext, type BridgeContextValue } from "./BridgeProvider";
 import type { CoreClient } from "./core";
@@ -28,7 +28,6 @@ import {
   onboardingCopy,
   onboardingInitial,
   onboardingReduce,
-  onboardingTelemetry,
   onboardingView,
   permissionRows,
   readSavedOnboarding,
@@ -80,32 +79,6 @@ function useResource<T>(name: ResourceName): Resource<T> & { refresh: () => Prom
 function useAction(): <R>(f: (s: BridgeStore) => Promise<R> | R) => Promise<R> {
   const { ready } = useBridgeContext();
   return (f) => ready.then(f);
-}
-
-/**
- * Records a Spaces app feature (a fixed name such as `agents_page_open`) once
- * each time `when` turns true, as the SwiftUI and Tauri apps do when the page
- * or sheet opens. The host and the machine's telemetry switch decide whether
- * anything is sent.
- */
-export function useFeatureRecorded(feature: string, when = true): void {
-  // Not an error without a provider: a screen drawn on its own records nothing.
-  const ready = useContext(BridgeContext)?.ready;
-  useEffect(() => {
-    if (!when || !ready) return;
-    void ready.then((s) => s.telemetry.track([{ type: "feature", feature }]));
-  }, [ready, feature, when]);
-}
-
-/** Records one named feature now, for a click or a step rather than a page opening. */
-export function useFeatureRecorder(): (feature: string) => void {
-  const ready = useContext(BridgeContext)?.ready;
-  return useCallback(
-    (feature: string) => {
-      void ready?.then((s) => s.telemetry.track([{ type: "feature", feature }]));
-    },
-    [ready],
-  );
 }
 
 /** The host, the app core and the raw adapter. */
@@ -468,8 +441,8 @@ export interface OnboardingHook {
   /** Done's "Launch at login" checkbox, where the host applies it (the
    * Electron shell; the core lays it out on Done). */
   launchAtLogin: OnboardingCheckbox | null;
-  /** Sends an action through the core. The usage-data switch and the Menu
-   * bar choice also write the machine's setting (telemetry, `menuBar`). */
+  /** Sends an action through the core. The Menu bar choice also writes the
+   * machine's setting (`menuBar`). */
   send(action: OnboardingAction): void;
   /** A fix on Done's to-do list: opens its page (Cua Volume turns its
    * experiment on first); leaving the page comes back to Done. */
@@ -491,7 +464,7 @@ export function useOnboarding(): OnboardingHook {
   const [hints, setHints] = useState<{ permissions: PermissionHint[]; configured: boolean } | null>(null);
 
   const identity = session?.signedIn ? (session.account.identity ?? null) : null;
-  const ctx = { menuBar: settings?.values.menuBar ?? false, observe: store ? store.trackOnboarding.bind(store) : undefined };
+  const ctx = { menuBar: settings?.values.menuBar ?? false };
   const state = saved.state;
 
   // Finished here: don't start over while the page is still up.
@@ -501,14 +474,6 @@ export function useOnboarding(): OnboardingHook {
   useEffect(() => {
     if (!state && session && !finished.current) writeSavedOnboarding({ state: onboardingInitial(core, identity), skipped: saved.skipped });
   }, [state, session, core, identity, saved.skipped]);
-
-  // Welcome's switch starts from the machine's setting.
-  useEffect(() => {
-    if (state && !state.telemetry && settings?.telemetry) {
-      const next = onboardingReduce(core, state, { type: "telemetry-loaded", telemetry: onboardingTelemetry(settings.telemetry) }, ctx);
-      writeSavedOnboarding({ ...readSavedOnboarding(), state: next });
-    }
-  });
 
   // Follow the account: a sign-in anywhere shows here, a sign-out clears it.
   useEffect(() => {
@@ -560,32 +525,8 @@ export function useOnboarding(): OnboardingHook {
     if (missing.some((p) => !(p.id in shown))) setShown((cur) => ({ ...cur, ...Object.fromEntries(missing.map((p) => [p.id, p.label])) }));
   }, [hints, shown]);
 
-  // Done counts the coding agents set up before (from the CLI or
-  // Settings), not only the ones this run set up.
-  const onDone = state?.step === "done";
-  useEffect(() => {
-    if (!onDone || !adapter) return;
-    let live = true;
-    adapter.call("agents.setup", {}).then(
-      (rows) => {
-        const names = rows.filter((r) => r.installed && r.configured).map((r) => r.name);
-        const cur = readSavedOnboarding().state;
-        const known = Array.isArray(cur?.agents) ? (cur.agents as string[]) : [];
-        if (!live || !cur || names.every((n) => known.includes(n))) return;
-        writeSavedOnboarding({ ...readSavedOnboarding(), state: onboardingReduce(core, cur, { type: "agents-detected", configured: names }, ctx) });
-      },
-      () => undefined,
-    );
-    return () => {
-      live = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onDone, adapter, core]);
-
   const drawn = state ? onboardingView(core, state) : null;
-  // No switch until the host has said what the setting is: an "on" it
-  // could not write would not be true.
-  const view = drawn && !settings?.telemetry ? { ...drawn, usage: null } : drawn;
+  const view = drawn;
   const signIn = session?.signIn;
   const signInText = !state
     ? null
@@ -603,12 +544,6 @@ export function useOnboarding(): OnboardingHook {
     // Skipping Sign in leaves the browser login behind: stop waiting for it.
     if (action.type === "signin-done") store?.cancelSignIn();
     const next = onboardingReduce(core, current, action, ctx);
-    // The switch writes the setting at once, so what it shows is what the
-    // machine does even if the flow is skipped from Welcome. (The SwiftUI
-    // app writes it on leaving Welcome; the web can be left from any page.)
-    if (action.type === "usage-data-toggled" && next.telemetry?.enabled === action.on && settings?.telemetry) {
-      void updateSetting("telemetry", action.on);
-    }
     // The Menu bar choice is the "Spaces tab in the notch" setting, written
     // at once as the SwiftUI page does.
     if (action.type === "presentation-picked" && next.menuBar === action.menuBar && settings && settings.values.menuBar !== action.menuBar) {
@@ -640,15 +575,11 @@ export function useOnboarding(): OnboardingHook {
       send({ type: "todo-chosen", id });
     },
     skip: () => {
-      const current = readSavedOnboarding().state;
-      if (current) store?.trackOnboardingSkipped(current);
       store?.cancelSignIn();
       writeSavedOnboarding({ ...readSavedOnboarding(), skipped: true });
     },
     finish: async () => {
       finished.current = true;
-      const last = readSavedOnboarding().state;
-      if (last) store?.trackOnboardingFinished(last);
       const done = readSavedOnboarding().state;
       // Done's checkbox (ticked unless unticked), where this host draws it.
       const login = mode === "electron" && view?.launchAtLogin ? done?.launchAtLogin !== false : undefined;

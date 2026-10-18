@@ -376,44 +376,12 @@ pub struct AgentArtifact {
 #[derive(uniffi::Object)]
 pub struct Agents {
     inner: ca::Agents,
-    /// The sandbox's location word (`local`, `cloud`, ...), for telemetry.
-    location: String,
 }
 
 impl Agents {
-    pub(crate) async fn over(
-        guest: cua_spacesd_client::SpacesdClient,
-        location: &str,
-    ) -> Result<Arc<Agents>> {
+    pub(crate) async fn over(guest: cua_spacesd_client::SpacesdClient) -> Result<Arc<Agents>> {
         let inner = run(async move { Ok(ca::Agents::new(guest).await?) }).await?;
-        Ok(Arc::new(Agents {
-            inner,
-            location: location.to_string(),
-        }))
-    }
-}
-
-// Agent-run telemetry (`cua_telemetry::agent_runs`): this install records
-// the runs it starts, and the end of each once, when any status read here
-// (or by another Cua program of this install) first sees it.
-
-/// Where a run was started from: the `cua agent` CLI or an SDK.
-fn entry() -> &'static str {
-    if cua_telemetry::global().product() == "cli" {
-        "cli"
-    } else {
-        "sdk"
-    }
-}
-
-/// Records the end of `info` if this install started it and it ended.
-fn observe(info: &ca::RunInfo) {
-    if let Some((outcome, variant)) = cua_telemetry::events::agent_run_end(
-        info.status.as_str(),
-        info.stop_reason.as_deref(),
-        info.error.as_deref(),
-    ) {
-        cua_telemetry::global().agent_run_finished(&info.run_id, outcome, variant);
+        Ok(Arc::new(Agents { inner }))
     }
 }
 
@@ -514,38 +482,9 @@ impl Agents {
         options: Option<AgentRunOptions>,
     ) -> Result<Arc<AgentRun>> {
         let inner = self.inner.clone();
-        let opts = match run_options(options.unwrap_or_default()) {
-            Ok(o) => o,
-            Err(e) => {
-                cua_telemetry::global().agent_run_start_failed(
-                    &harness,
-                    &self.location,
-                    entry(),
-                    Some(e.variant()),
-                );
-                return Err(e);
-            }
-        };
+        let opts = run_options(options.unwrap_or_default())?;
         let h = harness.clone();
-        let started = run(async move { Ok(inner.start(&h, &prompt, opts).await?) }).await;
-        let started = match started {
-            Ok(s) => s,
-            Err(e) => {
-                cua_telemetry::global().agent_run_start_failed(
-                    &harness,
-                    &self.location,
-                    entry(),
-                    Some(e.variant()),
-                );
-                return Err(e);
-            }
-        };
-        cua_telemetry::global().agent_run_started(
-            &started.run_id,
-            &started.harness,
-            &self.location,
-            entry(),
-        );
+        let started = run(async move { Ok(inner.start(&h, &prompt, opts).await?) }).await?;
         Ok(Arc::new(AgentRun {
             inner: self.inner.clone(),
             run_id: started.run_id,
@@ -558,7 +497,6 @@ impl Agents {
         let inner = self.inner.clone();
         let id = run_id.clone();
         let info = run(async move { Ok(inner.status(&id).await?) }).await?;
-        observe(&info);
         Ok(Arc::new(AgentRun {
             inner: self.inner.clone(),
             run_id,
@@ -571,7 +509,6 @@ impl Agents {
         let inner = self.inner.clone();
         run(async move {
             let runs = inner.list().await?;
-            runs.iter().for_each(observe);
             Ok(runs.into_iter().map(Into::into).collect())
         })
         .await
@@ -619,12 +556,7 @@ impl AgentRun {
 
     pub async fn status(&self) -> Result<AgentRunInfo> {
         let (a, id) = (self.inner.clone(), self.run_id.clone());
-        run(async move {
-            let info = a.status(&id).await?;
-            observe(&info);
-            Ok(info.into())
-        })
-        .await
+        run(async move { Ok(a.status(&id).await?.into()) }).await
     }
 
     /// Events after `cursor` (0: from the start), at most `max`.
@@ -657,37 +589,13 @@ impl AgentRun {
     /// Stops the run and verifies its process is gone.
     pub async fn stop(&self) -> Result<AgentRunInfo> {
         let (a, id) = (self.inner.clone(), self.run_id.clone());
-        run(async move {
-            // An end it already reached is not a cancel.
-            if cua_telemetry::global().agent_run_pending(&id)
-                && let Ok(info) = a.status(&id).await
-            {
-                observe(&info);
-            }
-            let info = a.stop(&id).await?;
-            cua_telemetry::global().agent_run_finished(
-                &id,
-                cua_telemetry::Outcome::Cancelled,
-                None,
-            );
-            Ok(info.into())
-        })
-        .await
+        run(async move { Ok(a.stop(&id).await?.into()) }).await
     }
 
     /// The last turn's outcome.
     pub async fn result(&self) -> Result<AgentRunResult> {
         let (a, id) = (self.inner.clone(), self.run_id.clone());
-        run(async move {
-            let r = a.result(&id).await?;
-            if r.status != ca::RunStatus::Running
-                && let Ok(info) = a.status(&id).await
-            {
-                observe(&info);
-            }
-            Ok(r.into())
-        })
-        .await
+        run(async move { Ok(a.result(&id).await?.into()) }).await
     }
 
     /// Waits until no turn is running (at most `timeout_ms`), then returns
@@ -695,15 +603,7 @@ impl AgentRun {
     pub async fn wait(&self, timeout_ms: Option<u64>) -> Result<AgentRunResult> {
         let (a, id) = (self.inner.clone(), self.run_id.clone());
         let t = Duration::from_millis(timeout_ms.unwrap_or(30 * 60 * 1000));
-        run(async move {
-            let r = a.wait(&id, t).await?;
-            // `wait` returns once the run is not running: read that status.
-            if let Ok(info) = a.status(&id).await {
-                observe(&info);
-            }
-            Ok(r.into())
-        })
-        .await
+        run(async move { Ok(a.wait(&id, t).await?.into()) }).await
     }
 
     /// Files the run created or changed in its working directory.
@@ -734,6 +634,6 @@ impl AgentRun {
 impl SpacesdClient {
     /// Coding agents in this guest.
     pub async fn agents(&self) -> Result<Arc<Agents>> {
-        Agents::over(self.client.clone(), &self.location).await
+        Agents::over(self.client.clone()).await
     }
 }

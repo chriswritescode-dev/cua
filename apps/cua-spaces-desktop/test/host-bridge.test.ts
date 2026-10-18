@@ -28,7 +28,7 @@ import { HostModel } from "../src/model/host";
 import { StartupModel } from "../src/model/startup";
 import { devDirName, nativeFiles } from "../src/native/location";
 import { loadNative, type Native } from "../src/native/load";
-import { FixtureAccount, FixtureSpacesBackend, FixtureTelemetry } from "./fixtures";
+import { FixtureAccount, FixtureSpacesBackend } from "./fixtures";
 import { FixtureAgentSetup } from "./agents-fixtures";
 import { FakeAccountTokens, FixtureDevices, FixtureHost, FixtureSystem, HOST_METHODS, HOST_OPS, sdkError } from "./host-fixtures";
 import { NOT_YET } from "./not-yet";
@@ -111,7 +111,7 @@ describe.skipIf(!built)("This machine, Devices and Settings on the app core", ()
 
   beforeAll(async () => {
     home = mkdtempSync(path.join(tmpdir(), "cua-host-bridge-"));
-    Object.assign(process.env, { HOME: home, USERPROFILE: home, CUA_HOME: path.join(home, ".cua"), CUA_TELEMETRY: "0", DO_NOT_TRACK: "1", CUA_KEYCHAIN_NONINTERACTIVE: "1" });
+    Object.assign(process.env, { HOME: home, USERPROFILE: home, CUA_HOME: path.join(home, ".cua"), CUA_KEYCHAIN_NONINTERACTIVE: "1" });
     native = await loadNative(dir);
   });
 
@@ -136,7 +136,6 @@ describe.skipIf(!built)("This machine, Devices and Settings on the app core", ()
       devices: new DevicesModel(native, () => relay.like),
       cloud: new CloudModel(native, () => backend),
       account: o.account === null ? null : new FixtureAccount("ada@example.com"),
-      telemetry: new FixtureTelemetry(),
       servicesIn: () => servicesIn,
       cpus: 8,
       agentSetup: (agentSetup = new FixtureAgentSetup()),
@@ -181,7 +180,6 @@ describe.skipIf(!built)("This machine, Devices and Settings on the app core", ()
       ["about.set", { channel: "beta" }],
       ["about.checkNow", {}],
       ["update.get", {}],
-      ["update.install", {}],
       ["loginItem.get", {}],
       ["loginItem.set", { on: true }],
       ["loginItem.openSettings", {}],
@@ -205,7 +203,7 @@ describe.skipIf(!built)("This machine, Devices and Settings on the app core", ()
       ["host.action", { action: "provide-spaces" }],
       ["host.openSettings", { url: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture" }],
       ["settings.get", {}],
-      ["settings.choose", { row: "telemetry", option: "off" }],
+      ["settings.choose", { row: "auto-connect", option: "off" }],
       ["settings.update", { tips: { off: false, done: ["try-agent"] } }],
     ];
     const problems: string[] = [];
@@ -241,7 +239,7 @@ describe.skipIf(!built)("This machine, Devices and Settings on the app core", ()
       "host.setUp": { request: { mode: "direct", direct: "0.0.0.0:3211" } } as never,
       "host.action": { action: "provide-spaces" } as never,
       "host.openSettings": { url: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility" },
-      "settings.set": { key: "telemetry", value: false },
+      "settings.set": { key: "menuBar", value: true },
       "settings.choose": { row: "auto-connect", option: "off" },
       "experiments.set": { experiments: { cuaVolume: true } } as never,
       "session.completeOnboarding": { mode: "client" },
@@ -521,14 +519,14 @@ describe.skipIf(!built)("This machine, Devices and Settings on the app core", ()
 
   // MARK: Settings
 
-  it("lays out General with Teams, Welcome and What is collected, and the runtimes", async () => {
+  it("lays out General with Teams, Welcome and the runtimes", async () => {
     const s = (await call("settings.get")) as {
       page: { sections: { id: string; rows: { id: string }[] }[] };
       updateChannel: unknown;
       globalShortcut: unknown;
     };
     const rows = s.page.sections.flatMap((x) => x.rows.map((r) => r.id));
-    expect(rows).toEqual(expect.arrayContaining(["account", "notch", "auto-connect", "welcome", "teams", "teams-manage", "teams-billing", "telemetry", "telemetry-note", "launch-at-login"]));
+    expect(rows).toEqual(expect.arrayContaining(["account", "notch", "auto-connect", "welcome", "teams", "teams-manage", "teams-billing", "launch-at-login"]));
     // One runtime row per kind, on every system.
     expect(rows).toEqual(expect.arrayContaining(["runtime:container", "runtime:vm", "runtime:microvm"]));
     expect(s.updateChannel).toBe("stable");
@@ -553,8 +551,6 @@ describe.skipIf(!built)("This machine, Devices and Settings on the app core", ()
     expect(model.settings.autoConnect).toBe(false);
     await call("settings.choose", { row: "team-current", option: "org-2" });
     expect(model.settings.currentTeamId).toBe("org-2");
-    await call("settings.choose", { row: "telemetry", option: "off" });
-    expect(model.telemetry?.status().enabled).toBe(false);
     await call("settings.choose", { row: "launch-at-login", option: "on" });
     expect(system.loginItem.calls).toEqual(["register"]);
     expect(model.settings.launchAtLogin).toBe(true);
@@ -699,52 +695,23 @@ describe.skipIf(!built)("This machine, Devices and Settings on the app core", ()
     expect(await code("about.checkNow")).toBe("unsupported");
   });
 
-  it("the update indicator reads the updater, installs only when asked, and the page hears of each change", async () => {
-    expect(await call("update.get")).toMatchObject({ status: "idle", version: null, percent: null });
-    system.updater.report({ type: "available", version: "0.9.3" }, "found");
-    system.updater.report({ type: "progress", percent: 40 });
-    await tick(5);
-    expect(await call("update.get")).toMatchObject({ status: "downloading", version: "0.9.3", percent: 40 });
-    // Nothing is installed while it downloads, or when the page asks early.
-    await call("update.install");
-    await tick(5);
-    expect(system.updater.installs).toBe(0);
-    system.updater.report({ type: "downloaded", version: "0.9.3" }, "downloaded");
+  it("the update indicator reports a found release with the rebuild command, and installs nothing", async () => {
+    expect(await call("update.get")).toMatchObject({ status: "idle", version: null, instructions: null });
+    system.updater.report({ type: "available", version: "0.9.3" });
     await tick(5);
     expect(events.some((e) => e.event === "update.changed")).toBe(true);
-    expect(await call("update.get")).toMatchObject({ status: "downloaded", version: "0.9.3", percent: 100, notesUrl: "https://github.com/trycua/cua/releases/tag/cua-spaces-v0.9.3" });
-    expect(system.updater.installs).toBe(0);
-    const answer = await call("update.install");
-    expect((answer as { status: string }).status).toBe("downloaded");
-    await tick(5);
-    expect(system.updater.installs).toBe(1);
-  });
-
-  it("records found, downloaded and installed as updater steps", async () => {
-    const telemetry = model.telemetry as FixtureTelemetry;
-    const before = telemetry.recorded.length;
-    system.updater.report({ type: "available", version: "0.9.3" }, "found");
-    system.updater.report({ type: "downloaded", version: "0.9.3" }, "downloaded");
-    system.updater.installNow();
-    const actions = telemetry.recorded.slice(before).map((s) => (s as unknown as { inner: { action: string } }).inner.action);
-    expect(actions).toEqual(["checked", "found", "downloaded", "installed"]);
+    expect(await call("update.get")).toMatchObject({
+      status: "available",
+      version: "0.9.3",
+      notesUrl: "https://github.com/trycua/cua/releases/tag/cua-spaces-v0.9.3",
+      instructions: expect.stringContaining("git pull && pnpm --dir apps/cua-spaces-desktop dist:"),
+    });
+    expect(await code("update.install")).toBe("unimplemented");
   });
 
   it("About carries the bundle's build, for \"Version 0.7.2 (0.7.2.41)\" as the SwiftUI app shows it", async () => {
     await make({ build: "1.2.3.41" });
     expect(((await call("about.get")) as Record<string, unknown>).build).toBe("1.2.3.41");
-  });
-
-  it("records what each check found", async () => {
-    const telemetry = model.telemetry as FixtureTelemetry;
-    const before = telemetry.recorded.length;
-    await call("about.checkNow");
-    await tick(5);
-    const tags = telemetry.recorded.slice(before).map((s) => (s as unknown as { inner: { action: string; trigger: string } }).inner);
-    expect(tags).toEqual([
-      { action: "checked", channel: "stable", trigger: "user" },
-      { action: "not_found", channel: "stable", trigger: "user" },
-    ]);
   });
 
   it("launch at login is the system's, with what this machine serves", async () => {
@@ -863,8 +830,6 @@ describe.skipIf(!built)("This machine, Devices and Settings on the app core", ()
     events.length = 0;
     expect(await call("onboarding.complete", { mode: "host", launchAtLogin: true })).toEqual({ completed: true, mode: "host" });
     expect(asked).toBe(1);
-    // Done is past Welcome's usage notice.
-    expect((model.telemetry as FixtureTelemetry).acknowledged).toBe(1);
     expect(system.loginItem.calls).toEqual(["register"]);
     expect(model.settings.launchAtLogin).toBe(true);
     expect(events.some((e) => e.event === "session.changed")).toBe(true);

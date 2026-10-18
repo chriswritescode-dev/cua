@@ -59,10 +59,6 @@ ENV HOST=0.0.0.0
 ENV DOCS_DB_PATH=/data/docs_db
 ENV CODE_DB_PATH=/data/code_db
 
-# OpenTelemetry configuration
-ENV OTEL_ENDPOINT=https://otel.cua.ai
-ENV OTEL_SERVICE_NAME=cua-docs-mcp
-
 # Create data directory
 RUN mkdir -p /data && chown appuser:appuser /data
 

@@ -21,7 +21,7 @@ import { StartupModel } from "../src/model/startup";
 import { StreamRows, type PipSpec } from "../src/model/streams";
 import { devDirName, nativeFiles } from "../src/native/location";
 import { loadNative, type Native } from "../src/native/load";
-import { FixtureAccount, FixtureSpacesBackend, FixtureTelemetry, fixtureDevices, fixtureHost } from "./fixtures";
+import { FixtureAccount, FixtureSpacesBackend, fixtureDevices, fixtureHost } from "./fixtures";
 
 const dir = path.resolve(__dirname, "../native", devDirName(process.platform, process.arch));
 const built = existsSync(nativeFiles(dir, process.platform).library);
@@ -31,7 +31,6 @@ describe.skipIf(!built)("a Space's detail, files, sharing and clouds on the app 
   let native: Native;
   const saved = { ...process.env };
   let backend: FixtureSpacesBackend;
-  let telemetry: FixtureTelemetry;
   let model: AppModel;
   let bridge: Bridge;
   let picked: string[] | null;
@@ -40,7 +39,7 @@ describe.skipIf(!built)("a Space's detail, files, sharing and clouds on the app 
 
   beforeAll(async () => {
     home = mkdtempSync(path.join(tmpdir(), "cua-bridge-spaces-"));
-    Object.assign(process.env, { HOME: home, USERPROFILE: home, CUA_HOME: path.join(home, ".cua"), CUA_TELEMETRY: "0", DO_NOT_TRACK: "1", CUA_KEYCHAIN_NONINTERACTIVE: "1" });
+    Object.assign(process.env, { HOME: home, USERPROFILE: home, CUA_HOME: path.join(home, ".cua"), CUA_KEYCHAIN_NONINTERACTIVE: "1" });
     native = await loadNative(dir);
   });
 
@@ -51,7 +50,6 @@ describe.skipIf(!built)("a Space's detail, files, sharing and clouds on the app 
 
   beforeEach(async () => {
     backend = new FixtureSpacesBackend(native);
-    telemetry = new FixtureTelemetry();
     model = new AppModel({
       native,
       backend,
@@ -61,7 +59,6 @@ describe.skipIf(!built)("a Space's detail, files, sharing and clouds on the app 
       devices: new DevicesModel(native, () => fixtureDevices()),
       cloud: new CloudModel(native, () => backend),
       account: new FixtureAccount("ada@example.com"),
-      telemetry,
       servicesIn: () => true,
       cpus: 8,
     });
@@ -193,12 +190,11 @@ describe.skipIf(!built)("a Space's detail, files, sharing and clouds on the app 
   });
 
   describe("the drop well", () => {
-    it("sends files picked with the native picker, and records it", async () => {
+    it("sends files picked with the native picker", async () => {
       expect(await call("spaces.chooseFiles")).toEqual(picked);
       const sent = await call("spaces.sendFiles", { spaceId: aurora, paths: ["/Users/ada/Desktop/report.pdf"] });
       expect(sent).toEqual([{ name: "report.pdf", dest: "/home/cua/Desktop/report.pdf", bytes: 1024 }]);
       expect(backend.sent).toEqual([{ id: aurora, paths: ["/Users/ada/Desktop/report.pdf"] }]);
-      expect(telemetry.recorded.some((s) => JSON.stringify(s).includes("file_send"))).toBe(true);
       picked = null;
       expect(await call("spaces.chooseFiles")).toEqual([]);
     });

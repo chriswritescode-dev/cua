@@ -9,7 +9,7 @@ import { Loader2Icon, LogOutIcon, TriangleAlertIcon } from "lucide-react";
 import type { SignInFooter, Space } from "@/bridge";
 import { spokenName } from "@/bridge/space-names";
 
-import { signInFooter, useBridge, useFeatureRecorded, useMachines, useNotifications, useRelayUsageView, useSession, useSpaces, useTrackPlanClick } from "@/bridge";
+import { signInFooter, useBridge, useMachines, useNotifications, useRelayUsageView, useSession, useSpaces } from "@/bridge";
 import { CuaKey } from "@/components/cua-key";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
@@ -126,7 +126,6 @@ export function AccountFooter({ trailing }: { trailing?: ReactNode }) {
   const { core } = useBridge();
   const { data: session, signIn, signOut, cancelSignIn, openExternal } = useSession();
   const plan = useRelayUsageView()?.planCard;
-  const trackPlanClick = useTrackPlanClick();
   const [details, setDetails] = useState(false);
   const footer = session
     ? signInFooter(core, {
@@ -141,7 +140,6 @@ export function AccountFooter({ trailing }: { trailing?: ReactNode }) {
   // A browser sign-in that has not come back for a while: offer a code.
   const waitingOnBrowser = footer?.state === "waiting" && !footer.code;
   const stuck = useAfter(waitingOnBrowser, STILL_WAITING_MS);
-  useFeatureRecorded("sign_in_still_waiting", stuck);
   // The last attempt used a code: another code would not help.
   const triedCode = useRef(false);
   if (footer?.state === "waiting" && footer.code) triedCode.current = true;
@@ -187,10 +185,7 @@ export function AccountFooter({ trailing }: { trailing?: ReactNode }) {
                 type="button"
                 data-account-plan={plan.plan}
                 className="block max-w-full truncate text-left text-2xs text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  trackPlanClick("account_menu");
-                  void openExternal(plan.primary!.url.replace("from=app_plan_card", "from=app_account_menu")).catch(() => {});
-                }}
+                onClick={() => void openExternal(plan.primary!.url.replace("from=app_plan_card", "from=app_account_menu")).catch(() => {})}
               >
                 {plan.label}
                 {plan.plan === "free" ? " · Upgrade" : ""}

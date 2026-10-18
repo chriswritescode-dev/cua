@@ -22,8 +22,6 @@ import {
   type UnconfirmedMachine,
 } from "../model/devices";
 import type { DevicesBridge } from "../native/devices";
-import { enrollSignals } from "../model/telemetry";
-import { telemetryBridge } from "../native/telemetry";
 import { relativeTime } from "./ThisMachinePanel";
 import { useT } from "../i18n";
 
@@ -304,13 +302,10 @@ export function EnrollSheet({
   const t = useT("devices");
   const [state, setState] = useState(enrollInitial);
   const stateRef = useRef(state);
-  // Every step goes through here: the core's reducer, and the usage events
-  // it means (enrolled by a sign-in or an approval, or failed).
+  // Every step goes through here: the core's reducer.
   const send = useCallback((action: EnrollAction) => {
-    const before = stateRef.current;
-    stateRef.current = reduceEnroll(before, action);
+    stateRef.current = reduceEnroll(stateRef.current, action);
     setState(stateRef.current);
-    telemetryBridge().recordSignals(enrollSignals(before, action));
   }, []);
   const v = enrollView(state);
 

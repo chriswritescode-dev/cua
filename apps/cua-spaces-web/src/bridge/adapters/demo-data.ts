@@ -8,7 +8,7 @@
  * five apps. All synthetic; example.com identities only.
  */
 
-import type { HostStatus, MachineRow, TelemetryView } from "../contracts/host";
+import type { HostStatus, MachineRow } from "../contracts/host";
 import type { KeyvaultOverview, KvItem, KvStatus } from "../contracts/keyvault";
 import type { SpaceRow } from "../contracts/spaces";
 import { demoMachine, MAC_DEMO_PLATFORM, type DemoPlatform } from "./demo/platform";
@@ -291,17 +291,6 @@ export function demoHostStatus(now = Date.now(), firstRun = false): HostStatus {
       { atMs: now - 4 * 60_000, via: "relay", who: DEMO_IDENTITY, what: "DesktopService" },
       { atMs: now - 52 * 60_000, via: "relay", who: DEMO_IDENTITY, what: "MCP" },
     ],
-  };
-}
-
-export function demoTelemetry(enabled: boolean): TelemetryView {
-  return {
-    enabled,
-    source: "config ~/.cua/config.toml",
-    sourceKind: "config",
-    noticeShown: true,
-    noticeText: "Cua collects usage data, like which features you use and when something goes wrong. When you're signed in, it's linked to your account through a random ID. Never your files, what you type or your screen.",
-    docsUrl: "https://cua.ai/docs/cua-sdk/concepts/telemetry",
   };
 }
 

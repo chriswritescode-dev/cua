@@ -17,9 +17,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::preflight::IssueKind;
 
-/// The telemetry subclass for missing Local Network access.
+/// The subclass word for missing Local Network access.
 pub const DENIED: &str = "local_network_denied";
-/// The telemetry subclass for a VPN or firewall that blocks the VM network.
+/// The subclass word for a VPN or firewall that blocks the VM network.
 pub const VPN: &str = "local_network_vpn";
 
 /// The network macOS VMs get on this Mac (`192.168.64.0/24`).

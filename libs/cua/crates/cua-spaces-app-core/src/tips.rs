@@ -22,8 +22,7 @@
 //! "Don't show tips" turns them all off; Settings, General turns them back
 //! on (the ones not done come back) and Reset tips starts them over. The
 //! state lives in the app settings ([`crate::settings::AppSettings::tips`]),
-//! so every shell agrees. Tips send no usage events: the telemetry schema
-//! has no words for them.
+//! so every shell agrees.
 
 use serde::{Deserialize, Serialize};
 

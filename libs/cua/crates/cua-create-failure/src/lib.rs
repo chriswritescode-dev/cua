@@ -1,13 +1,11 @@
 //! Why a create failed, as a fixed word: the error text a failed create
 //! shows is read here, inside the process, and only a word from
-//! `cua_telemetry::schema::ERROR_KINDS` (or the caller's own enum case)
-//! comes out. The text itself never leaves.
+//! [`TEXT_KINDS`] (or the caller's own enum case) comes out. The text
+//! itself never leaves.
 //!
-//! One mapping serves `cua_space_create` (the Spaces app core, also in its
-//! wasm build), `cua_sandbox_created` (the SDK) and
-//! `cua_host_space_provided` (a host's daemon), so the three events name
-//! the same cause the same way. Callers pass the result through
-//! `cua_telemetry::events::error_kind`, which keeps only schema words.
+//! One mapping serves the Spaces app core (also in its wasm build) and the
+//! SDK, so every place that names a failed create's cause names it the
+//! same way.
 
 pub mod local_network;
 pub mod preflight;
@@ -25,8 +23,7 @@ const GENERIC: &[&str] = &[
 ///
 /// Local Network failures come out as their subclass
 /// (`local_network_denied`, `local_network_vpn`; [`local_network`]), which
-/// `cua_telemetry::events::error_kind` reads as the kind `local_network`
-/// and `cua_telemetry::events::error_subclass` as the subclass.
+/// [`kind_of`] rolls up to the kind `local_network`.
 ///
 /// - `message`: the error's text (read here, never returned).
 /// - `phase`: the create phase it failed in (`preparing`, `pulling`,
@@ -390,6 +387,15 @@ fn image_pull(l: &str, phase: &str) -> Option<&'static str> {
     .then_some("image_pull")
 }
 
+/// The kind a word rolls up to: a Local Network subclass is the kind
+/// `local_network`; every other word is its own kind.
+pub fn kind_of(word: &str) -> &str {
+    match word {
+        local_network::DENIED | local_network::VPN => "local_network",
+        w => w,
+    }
+}
+
 /// Every cause word [`create_failure_kind`] can return from the text or
 /// the phase (the rest are the caller's enum cases).
 pub const TEXT_KINDS: &[&str] = &[
@@ -427,26 +433,23 @@ mod tests {
     }
 
     #[test]
-    fn every_cause_word_is_in_the_telemetry_schema() {
+    fn every_cause_word_is_a_kind_or_a_local_network_subclass() {
         for k in TEXT_KINDS
             .iter()
             .chain(&["quota_exceeded", "cloud_ended", "other"])
         {
-            // A subclass word is sent as its kind plus the subclass.
-            let kind = cua_telemetry::events::error_kind(k);
+            // A subclass word rolls up to its kind.
+            let kind = kind_of(k);
+            assert!(!kind.is_empty() && !kind.contains(' '), "{k}");
+            assert_eq!(retry::snake(k), *k, "{k} is not snake case");
             assert!(
-                kind != "other" || *k == "other",
-                "{k} missing from ERROR_KINDS"
-            );
-            assert!(
-                cua_telemetry::schema::ERROR_KINDS.contains(&kind),
-                "{k} missing from ERROR_KINDS"
+                kind == *k
+                    || matches!(kind, "local_network")
+                    || TEXT_KINDS.contains(&kind),
+                "{k} rolls up to {kind}"
             );
         }
-        assert_eq!(
-            cua_telemetry::events::error_kind(local_network::DENIED),
-            "local_network"
-        );
+        assert_eq!(kind_of(local_network::DENIED), "local_network");
         assert_eq!(
             retry::subclass(local_network::VPN, ""),
             retry::Subclass::LocalNetworkVpn
@@ -781,7 +784,7 @@ mod tests {
         let secret =
             "pull ghcr.io/me/private: token ghp_abc123 for maya@example.com at /Users/maya";
         let k = kind(secret, "pulling", "");
-        assert!(cua_telemetry::schema::ERROR_KINDS.contains(&k));
+        assert!(TEXT_KINDS.contains(&k) || k == "other", "{k}");
         assert!(!k.contains("maya"));
     }
 }

@@ -26,7 +26,6 @@ jobs:
         # Keep in sync with requires-python and the classifiers in pyproject.toml.
         python-version: ["3.11", "3.12", "3.13"]
     env:
-      CUA_TELEMETRY_ENABLED: "false"
       HF_DATASETS_OFFLINE: "1"
       HF_HUB_OFFLINE: "1"
       PYTHONHASHSEED: "0"
@@ -156,7 +155,6 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 20
     env:
-      CUA_TELEMETRY_ENABLED: "false"
       HF_DATASETS_OFFLINE: "1"
       HF_HUB_OFFLINE: "1"
       PYTHONHASHSEED: "0"

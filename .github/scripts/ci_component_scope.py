@@ -68,7 +68,7 @@ LANES = {
                     "cua-chromium-storage", "cua-home", "cua-hotspot", "cua-logging",
                     "cua-machine-seal", "cua-media-codec", "cua-media-protocol",
                     "cua-media-transport", "cua-mesh", "cua-spacesd-client",
-                    "cua-spacesd-html5", "cua-telemetry", "cua-teleport-bundle", "cua-volume",
+                    "cua-spacesd-html5", "cua-teleport-bundle", "cua-volume",
                 )
             ),
             r"libs/images/windows-2022/(enable-volume|volume-diagnostics)\.ps1",

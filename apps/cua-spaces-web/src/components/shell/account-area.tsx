@@ -24,7 +24,6 @@ import {
   useRelayUsageView,
   useSession,
   useSettings,
-  useTrackPlanClick,
   type AccountMenuItem,
 } from "@/bridge";
 import { Button } from "@/components/ui/button";
@@ -39,12 +38,10 @@ function usePlanLink(): { plan: string; open(): void } {
   const view = useRelayUsageView();
   const usage = useRelayUsage();
   const accountUrl = useSettings().data?.accountUrl ?? null;
-  const trackPlanClick = useTrackPlanClick();
   const url = view?.planCard.primary?.url ?? usage?.upgradeUrl ?? accountUrl;
   return {
     plan: usage?.plan ?? "",
     open: () => {
-      trackPlanClick("account_menu");
       if (url) void openExternal(upgradeLink(core, url, "app_account_menu")).catch(() => {});
     },
   };

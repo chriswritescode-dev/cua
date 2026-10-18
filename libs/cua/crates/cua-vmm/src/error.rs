@@ -113,9 +113,9 @@ pub enum VmmError {
     Other(String),
 }
 
-/// Why a local create failed, as a bounded word for telemetry (never the
-/// message): `runtime_missing`, `runtime_not_running`,
-/// `runtime_permission`, `image_pull`, else `None`.
+/// Why a local create failed, as a stable category (never the message):
+/// `runtime_missing`, `runtime_not_running`, `runtime_permission`,
+/// `image_pull`, else `None`.
 pub fn failure_kind(message: &str) -> Option<&'static str> {
     let m = message.to_ascii_lowercase();
     if m.contains("container engine: pull ")

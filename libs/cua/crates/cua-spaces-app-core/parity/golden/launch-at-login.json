@@ -11,8 +11,6 @@
         "driveStorage": null,
         "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
         "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Start using Cua Spaces",
         "prompts": [
@@ -32,8 +30,7 @@
           "[ ] Account ~Reach your machines from any machine. -> Sign in",
           "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
           "[ ] Cua Volume ~Shared folder: files your agents can share across your machines. -> Turn on (optional)"
-        ],
-        "usage": null
+        ]
       },
       "launchAtLogin": true,
       "onboarding": "mode-chosen"
@@ -48,8 +45,6 @@
         "driveStorage": null,
         "launchAtLogin": "[ ] Launch at login ~Keeps your Spaces and agents available after a restart.",
         "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Start using Cua Spaces",
         "prompts": [
@@ -69,8 +64,7 @@
           "[ ] Account ~Reach your machines from any machine. -> Sign in",
           "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
           "[ ] Cua Volume ~Shared folder: files your agents can share across your machines. -> Turn on (optional)"
-        ],
-        "usage": null
+        ]
       },
       "launchAtLogin": false,
       "onboarding": "launch-at-login-toggled"
@@ -85,8 +79,6 @@
         "driveStorage": null,
         "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
         "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Start using Cua Spaces",
         "prompts": [
@@ -106,8 +98,7 @@
           "[ ] Account ~Reach your machines from any machine. -> Sign in",
           "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
           "[ ] Cua Volume ~Shared folder: files your agents can share across your machines. -> Turn on (optional)"
-        ],
-        "usage": null
+        ]
       },
       "launchAtLogin": true,
       "onboarding": "launch-at-login-toggled"
@@ -122,8 +113,6 @@
         "driveStorage": null,
         "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
         "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Start using Cua Spaces",
         "prompts": [
@@ -143,8 +132,7 @@
           "[ ] Account ~Reach your machines from any machine. -> Sign in",
           "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
           "[ ] Cua Volume ~Shared folder: files your agents can share across your machines. -> Turn on (optional)"
-        ],
-        "usage": null
+        ]
       },
       "launchAtLogin": true,
       "onboarding": "mode-chosen"
@@ -159,8 +147,6 @@
         "driveStorage": null,
         "launchAtLogin": "[ ] Launch at login ~Keeps your Spaces and agents available after a restart.",
         "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Start using Cua Spaces",
         "prompts": [
@@ -180,8 +166,7 @@
           "[ ] Account ~Reach your machines from any machine. -> Sign in",
           "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
           "[ ] Cua Volume ~Shared folder: files your agents can share across your machines. -> Turn on (optional)"
-        ],
-        "usage": null
+        ]
       },
       "launchAtLogin": false,
       "onboarding": "launch-at-login-toggled"

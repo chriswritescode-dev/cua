@@ -1591,8 +1591,6 @@ impl Server {
             .await?
             .id;
         let kv: &dyn ts::Broker = self.keyvault.as_ref();
-        let started = std::time::Instant::now();
-        let first_call = a["request_id"].as_str().is_none_or(str::is_empty);
         let out = match a["request_id"].as_str().filter(|r| !r.is_empty()) {
             None => {
                 crate::browse::register_space(&self.cua, &sb).await?;
@@ -1608,7 +1606,6 @@ impl Server {
             }
             Some(id) => ts::complete(kv, &sb, app, &sites, id).await,
         };
-        ts::record_telemetry(app, first_call, &out, started, sites.len());
         match out {
             Ok(v) => jtext(v),
             Err(e) => Err(CuaError::TeleportRefused(format!(

@@ -2965,10 +2965,6 @@ public struct AppAboutInput: Equatable, Hashable {
      */
     public var autoCheck: Bool
     /**
-     * The updater downloads and installs on its own.
-     */
-    public var autoInstall: Bool
-    /**
      * The chosen channel.
      */
     public var channel: AppUpdateChannel
@@ -3004,9 +3000,6 @@ public struct AppAboutInput: Equatable, Hashable {
          * The updater checks on its own.
          */autoCheck: Bool,
         /**
-         * The updater downloads and installs on its own.
-         */autoInstall: Bool,
-        /**
          * The chosen channel.
          */channel: AppUpdateChannel,
         /**
@@ -3021,7 +3014,6 @@ public struct AppAboutInput: Equatable, Hashable {
         self.os = os
         self.updater = updater
         self.autoCheck = autoCheck
-        self.autoInstall = autoInstall
         self.channel = channel
         self.lastCheck = lastCheck
         self.checking = checking
@@ -3049,7 +3041,6 @@ public struct FfiConverterTypeAppAboutInput: FfiConverterRustBuffer {
                 os: FfiConverterString.read(from: &buf),
                 updater: FfiConverterBool.read(from: &buf),
                 autoCheck: FfiConverterBool.read(from: &buf),
-                autoInstall: FfiConverterBool.read(from: &buf),
                 channel: FfiConverterTypeAppUpdateChannel.read(from: &buf),
                 lastCheck: FfiConverterOptionString.read(from: &buf),
                 checking: FfiConverterBool.read(from: &buf)
@@ -3063,7 +3054,6 @@ public struct FfiConverterTypeAppAboutInput: FfiConverterRustBuffer {
         FfiConverterString.write(value.os, into: &buf)
         FfiConverterBool.write(value.updater, into: &buf)
         FfiConverterBool.write(value.autoCheck, into: &buf)
-        FfiConverterBool.write(value.autoInstall, into: &buf)
         FfiConverterTypeAppUpdateChannel.write(value.channel, into: &buf)
         FfiConverterOptionString.write(value.lastCheck, into: &buf)
         FfiConverterBool.write(value.checking, into: &buf)
@@ -3164,25 +3154,13 @@ public func FfiConverterTypeAppAboutLink_lower(_ value: AppAboutLink) -> RustBuf
 
 public struct AppAboutUpdates: Equatable, Hashable {
     /**
-     * "Check for and download updates automatically".
+     * "Check for updates automatically".
      */
     public var autoCheckLabel: String
     /**
      * Checked.
      */
     public var autoCheck: Bool
-    /**
-     * "Install a downloaded update when Cua Spaces quits".
-     */
-    public var autoInstallLabel: String
-    /**
-     * Checked.
-     */
-    public var autoInstall: Bool
-    /**
-     * It can be used (only with automatic checks).
-     */
-    public var autoInstallEnabled: Bool
     /**
      * "Update to:".
      */
@@ -3212,20 +3190,11 @@ public struct AppAboutUpdates: Equatable, Hashable {
     // declare one manually.
     public init(
         /**
-         * "Check for and download updates automatically".
+         * "Check for updates automatically".
          */autoCheckLabel: String,
         /**
          * Checked.
          */autoCheck: Bool,
-        /**
-         * "Install a downloaded update when Cua Spaces quits".
-         */autoInstallLabel: String,
-        /**
-         * Checked.
-         */autoInstall: Bool,
-        /**
-         * It can be used (only with automatic checks).
-         */autoInstallEnabled: Bool,
         /**
          * "Update to:".
          */channelLabel: String,
@@ -3246,9 +3215,6 @@ public struct AppAboutUpdates: Equatable, Hashable {
          */lastCheck: String) {
         self.autoCheckLabel = autoCheckLabel
         self.autoCheck = autoCheck
-        self.autoInstallLabel = autoInstallLabel
-        self.autoInstall = autoInstall
-        self.autoInstallEnabled = autoInstallEnabled
         self.channelLabel = channelLabel
         self.channels = channels
         self.channelHelp = channelHelp
@@ -3275,9 +3241,6 @@ public struct FfiConverterTypeAppAboutUpdates: FfiConverterRustBuffer {
             try AppAboutUpdates(
                 autoCheckLabel: FfiConverterString.read(from: &buf),
                 autoCheck: FfiConverterBool.read(from: &buf),
-                autoInstallLabel: FfiConverterString.read(from: &buf),
-                autoInstall: FfiConverterBool.read(from: &buf),
-                autoInstallEnabled: FfiConverterBool.read(from: &buf),
                 channelLabel: FfiConverterString.read(from: &buf),
                 channels: FfiConverterSequenceTypeAppSettingsOption.read(from: &buf),
                 channelHelp: FfiConverterString.read(from: &buf),
@@ -3290,9 +3253,6 @@ public struct FfiConverterTypeAppAboutUpdates: FfiConverterRustBuffer {
     public static func write(_ value: AppAboutUpdates, into buf: inout [UInt8]) {
         FfiConverterString.write(value.autoCheckLabel, into: &buf)
         FfiConverterBool.write(value.autoCheck, into: &buf)
-        FfiConverterString.write(value.autoInstallLabel, into: &buf)
-        FfiConverterBool.write(value.autoInstall, into: &buf)
-        FfiConverterBool.write(value.autoInstallEnabled, into: &buf)
         FfiConverterString.write(value.channelLabel, into: &buf)
         FfiConverterSequenceTypeAppSettingsOption.write(value.channels, into: &buf)
         FfiConverterString.write(value.channelHelp, into: &buf)
@@ -7436,7 +7396,7 @@ public struct AppChecklistState: Equatable, Hashable {
      */
     public var dismissed: Bool
     /**
-     * It was on screen once (`checklist_shown` was recorded).
+     * It was on screen once.
      */
     public var shown: Bool
     /**
@@ -7456,7 +7416,7 @@ public struct AppChecklistState: Equatable, Hashable {
          * Closed with ×; Getting Started opens it again.
          */dismissed: Bool,
         /**
-         * It was on screen once (`checklist_shown` was recorded).
+         * It was on screen once.
          */shown: Bool,
         /**
          * Steps skipped ("Skip"), each once, in checklist order: they count as
@@ -7521,22 +7481,14 @@ public struct AppChecklistTransition: Equatable, Hashable {
      * The new state (save it when it changed).
      */
     public var state: AppChecklistState
-    /**
-     * `cua_onboarding_step` events to record (`checklist_<event>`).
-     */
-    public var signals: [AppTelemetrySignal]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
     public init(
         /**
          * The new state (save it when it changed).
-         */state: AppChecklistState,
-        /**
-         * `cua_onboarding_step` events to record (`checklist_<event>`).
-         */signals: [AppTelemetrySignal]) {
+         */state: AppChecklistState) {
         self.state = state
-        self.signals = signals
     }
 
 
@@ -7555,14 +7507,12 @@ public struct FfiConverterTypeAppChecklistTransition: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AppChecklistTransition {
         return
             try AppChecklistTransition(
-                state: FfiConverterTypeAppChecklistState.read(from: &buf),
-                signals: FfiConverterSequenceTypeAppTelemetrySignal.read(from: &buf)
+                state: FfiConverterTypeAppChecklistState.read(from: &buf)
         )
     }
 
     public static func write(_ value: AppChecklistTransition, into buf: inout [UInt8]) {
         FfiConverterTypeAppChecklistState.write(value.state, into: &buf)
-        FfiConverterSequenceTypeAppTelemetrySignal.write(value.signals, into: &buf)
     }
 }
 
@@ -22068,7 +22018,7 @@ public struct AppLocalNetworkStep: Equatable, Hashable {
     public var settingsUrl: String?
     /**
      * For Fail: the create's error variant (`local_network_denied`,
-     * `local_network_vpn`; telemetry's `error_subclass`).
+     * `local_network_vpn`; [`crate::retry::SUBCLASSES`]).
      */
     public var errorVariant: String
 
@@ -22092,7 +22042,7 @@ public struct AppLocalNetworkStep: Equatable, Hashable {
          */settingsUrl: String?,
         /**
          * For Fail: the create's error variant (`local_network_denied`,
-         * `local_network_vpn`; telemetry's `error_subclass`).
+         * `local_network_vpn`; [`crate::retry::SUBCLASSES`]).
          */errorVariant: String) {
         self.kind = kind
         self.title = title
@@ -28359,23 +28309,10 @@ public struct AppOnboardingState: Equatable, Hashable {
      */
     public var launchAtLogin: Bool
     /**
-     * The usage-data switch on Welcome: the machine's telemetry setting
-     * (Settings' "Share usage data to help improve Cua", `cua telemetry off`), none
-     * until the shell read it (then it shows on).
-     */
-    public var telemetry: AppTelemetryInput?
-    /**
      * Settings, Experiments: the Cua Volume page (and its Done line) only
      * while Cua Volume is on. Off until the shell says otherwise.
      */
     public var experiments: AppExperiments
-    /**
-     * The run's start was counted (`onboarding_shown`, Welcome shown):
-     * when Welcome showed on a machine whose usage notice was already
-     * shown, else when Welcome was left. Once per run, however often
-     * Welcome shows again (Back).
-     */
-    public var runCounted: Bool
     /**
      * A page opened from Done's to-do list: leaving it (Continue, Skip or
      * Back) comes back to Done.
@@ -28455,20 +28392,9 @@ public struct AppOnboardingState: Equatable, Hashable {
          * shell applies it when the first run finishes.
          */launchAtLogin: Bool,
         /**
-         * The usage-data switch on Welcome: the machine's telemetry setting
-         * (Settings' "Share usage data to help improve Cua", `cua telemetry off`), none
-         * until the shell read it (then it shows on).
-         */telemetry: AppTelemetryInput?,
-        /**
          * Settings, Experiments: the Cua Volume page (and its Done line) only
          * while Cua Volume is on. Off until the shell says otherwise.
          */experiments: AppExperiments,
-        /**
-         * The run's start was counted (`onboarding_shown`, Welcome shown):
-         * when Welcome showed on a machine whose usage notice was already
-         * shown, else when Welcome was left. Once per run, however often
-         * Welcome shows again (Back).
-         */runCounted: Bool,
         /**
          * A page opened from Done's to-do list: leaving it (Continue, Skip or
          * Back) comes back to Done.
@@ -28495,9 +28421,7 @@ public struct AppOnboardingState: Equatable, Hashable {
         self.storagePicked = storagePicked
         self.storage = storage
         self.launchAtLogin = launchAtLogin
-        self.telemetry = telemetry
         self.experiments = experiments
-        self.runCounted = runCounted
         self.revisit = revisit
     }
 
@@ -28539,9 +28463,7 @@ public struct FfiConverterTypeAppOnboardingState: FfiConverterRustBuffer {
                 storagePicked: FfiConverterBool.read(from: &buf),
                 storage: FfiConverterTypeAppStorageState.read(from: &buf),
                 launchAtLogin: FfiConverterBool.read(from: &buf),
-                telemetry: FfiConverterOptionTypeAppTelemetryInput.read(from: &buf),
                 experiments: FfiConverterTypeAppExperiments.read(from: &buf),
-                runCounted: FfiConverterBool.read(from: &buf),
                 revisit: FfiConverterBool.read(from: &buf)
         )
     }
@@ -28569,9 +28491,7 @@ public struct FfiConverterTypeAppOnboardingState: FfiConverterRustBuffer {
         FfiConverterBool.write(value.storagePicked, into: &buf)
         FfiConverterTypeAppStorageState.write(value.storage, into: &buf)
         FfiConverterBool.write(value.launchAtLogin, into: &buf)
-        FfiConverterOptionTypeAppTelemetryInput.write(value.telemetry, into: &buf)
         FfiConverterTypeAppExperiments.write(value.experiments, into: &buf)
-        FfiConverterBool.write(value.runCounted, into: &buf)
         FfiConverterBool.write(value.revisit, into: &buf)
     }
 }
@@ -28755,25 +28675,6 @@ public struct AppOnboardingView: Equatable, Hashable {
      */
     public var prompts: [String]
     /**
-     * The first-run telemetry notice (the Welcome page, so the first run
-     * itself can be measured): nothing is sent before it has been shown
-     * once.
-     */
-    public var notice: String?
-    /**
-     * Its link: label.
-     */
-    public var noticeLinkLabel: String?
-    /**
-     * Its link: URL.
-     */
-    public var noticeLinkUrl: String?
-    /**
-     * Welcome's usage-data switch, next to the notice: nothing is sent
-     * before the user leaves Welcome, and nothing at all while it is off.
-     */
-    public var usage: AppUsageToggle?
-    /**
      * The Cua Volume page's card.
      */
     public var drive: AppDriveCard?
@@ -28834,21 +28735,6 @@ public struct AppOnboardingView: Equatable, Hashable {
          * coding agent. Each copies to the clipboard on click.
          */prompts: [String],
         /**
-         * The first-run telemetry notice (the Welcome page, so the first run
-         * itself can be measured): nothing is sent before it has been shown
-         * once.
-         */notice: String?,
-        /**
-         * Its link: label.
-         */noticeLinkLabel: String?,
-        /**
-         * Its link: URL.
-         */noticeLinkUrl: String?,
-        /**
-         * Welcome's usage-data switch, next to the notice: nothing is sent
-         * before the user leaves Welcome, and nothing at all while it is off.
-         */usage: AppUsageToggle?,
-        /**
          * The Cua Volume page's card.
          */drive: AppDriveCard?,
         /**
@@ -28872,10 +28758,6 @@ public struct AppOnboardingView: Equatable, Hashable {
         self.choices = choices
         self.presentations = presentations
         self.prompts = prompts
-        self.notice = notice
-        self.noticeLinkLabel = noticeLinkLabel
-        self.noticeLinkUrl = noticeLinkUrl
-        self.usage = usage
         self.drive = drive
         self.launchAtLogin = launchAtLogin
         self.todos = todos
@@ -28910,10 +28792,6 @@ public struct FfiConverterTypeAppOnboardingView: FfiConverterRustBuffer {
                 choices: FfiConverterSequenceTypeAppModeChoice.read(from: &buf),
                 presentations: FfiConverterSequenceTypeAppPresentationCard.read(from: &buf),
                 prompts: FfiConverterSequenceString.read(from: &buf),
-                notice: FfiConverterOptionString.read(from: &buf),
-                noticeLinkLabel: FfiConverterOptionString.read(from: &buf),
-                noticeLinkUrl: FfiConverterOptionString.read(from: &buf),
-                usage: FfiConverterOptionTypeAppUsageToggle.read(from: &buf),
                 drive: FfiConverterOptionTypeAppDriveCard.read(from: &buf),
                 launchAtLogin: FfiConverterOptionTypeAppOnboardingCheckbox.read(from: &buf),
                 todos: FfiConverterSequenceTypeAppOnboardingTodo.read(from: &buf)
@@ -28934,10 +28812,6 @@ public struct FfiConverterTypeAppOnboardingView: FfiConverterRustBuffer {
         FfiConverterSequenceTypeAppModeChoice.write(value.choices, into: &buf)
         FfiConverterSequenceTypeAppPresentationCard.write(value.presentations, into: &buf)
         FfiConverterSequenceString.write(value.prompts, into: &buf)
-        FfiConverterOptionString.write(value.notice, into: &buf)
-        FfiConverterOptionString.write(value.noticeLinkLabel, into: &buf)
-        FfiConverterOptionString.write(value.noticeLinkUrl, into: &buf)
-        FfiConverterOptionTypeAppUsageToggle.write(value.usage, into: &buf)
         FfiConverterOptionTypeAppDriveCard.write(value.drive, into: &buf)
         FfiConverterOptionTypeAppOnboardingCheckbox.write(value.launchAtLogin, into: &buf)
         FfiConverterSequenceTypeAppOnboardingTodo.write(value.todos, into: &buf)
@@ -35423,12 +35297,6 @@ public struct AppSettings: Equatable, Hashable {
      */
     public var dismissedAccess: [String]
     /**
-     * Keyvault rows may load a site's icon from Google's favicon service
-     * when the source browser had none (Settings, Keyvault; on by default).
-     * Off, only icons read locally are shown.
-     */
-    public var keyvaultSiteIcons: Bool
-    /**
      * The sites the user sent to each Space last time, per app
      * ([`crate::teleport::review::remember`]): the review starts from them.
      */
@@ -35504,11 +35372,6 @@ public struct AppSettings: Equatable, Hashable {
          * ([`crate::keyvault::view::prune_dismissed`] forgets the gone ones).
          */dismissedAccess: [String],
         /**
-         * Keyvault rows may load a site's icon from Google's favicon service
-         * when the source browser had none (Settings, Keyvault; on by default).
-         * Off, only icons read locally are shown.
-         */keyvaultSiteIcons: Bool,
-        /**
          * The sites the user sent to each Space last time, per app
          * ([`crate::teleport::review::remember`]): the review starts from them.
          */teleportChoices: [AppRememberedChoice],
@@ -35538,7 +35401,6 @@ public struct AppSettings: Equatable, Hashable {
         self.experiments = experiments
         self.newUi = newUi
         self.dismissedAccess = dismissedAccess
-        self.keyvaultSiteIcons = keyvaultSiteIcons
         self.teleportChoices = teleportChoices
         self.autoConnect = autoConnect
         self.currentTeamId = currentTeamId
@@ -35573,7 +35435,6 @@ public struct FfiConverterTypeAppSettings: FfiConverterRustBuffer {
                 experiments: FfiConverterTypeAppExperiments.read(from: &buf),
                 newUi: FfiConverterOptionBool.read(from: &buf),
                 dismissedAccess: FfiConverterSequenceString.read(from: &buf),
-                keyvaultSiteIcons: FfiConverterBool.read(from: &buf),
                 teleportChoices: FfiConverterSequenceTypeAppRememberedChoice.read(from: &buf),
                 autoConnect: FfiConverterBool.read(from: &buf),
                 currentTeamId: FfiConverterOptionString.read(from: &buf),
@@ -35594,7 +35455,6 @@ public struct FfiConverterTypeAppSettings: FfiConverterRustBuffer {
         FfiConverterTypeAppExperiments.write(value.experiments, into: &buf)
         FfiConverterOptionBool.write(value.newUi, into: &buf)
         FfiConverterSequenceString.write(value.dismissedAccess, into: &buf)
-        FfiConverterBool.write(value.keyvaultSiteIcons, into: &buf)
         FfiConverterSequenceTypeAppRememberedChoice.write(value.teleportChoices, into: &buf)
         FfiConverterBool.write(value.autoConnect, into: &buf)
         FfiConverterOptionString.write(value.currentTeamId, into: &buf)
@@ -35641,10 +35501,6 @@ public struct AppSettingsInput: Equatable, Hashable {
      */
     public var menuBar: Bool
     /**
-     * The telemetry switch (none until read).
-     */
-    public var telemetry: AppTelemetryInput?
-    /**
      * Coding agents (none while detecting).
      */
     public var agents: [AppAgentSettingsRow]?
@@ -35680,11 +35536,6 @@ public struct AppSettingsInput: Equatable, Hashable {
      * again"); none until the broker told it.
      */
     public var keyvaultUnlockPrompt: Bool?
-    /**
-     * Load site icons from Google when the browser had none
-     * ([`AppSettings::keyvault_site_icons`]).
-     */
-    public var keyvaultSiteIcons: Bool
     /**
      * The Keyvault's protection facts (Touch ID, the daemon's signature),
      * shown in the section.
@@ -35732,9 +35583,6 @@ public struct AppSettingsInput: Equatable, Hashable {
          * entry point).
          */menuBar: Bool,
         /**
-         * The telemetry switch (none until read).
-         */telemetry: AppTelemetryInput?,
-        /**
          * Coding agents (none while detecting).
          */agents: [AppAgentSettingsRow]?,
         /**
@@ -35763,10 +35611,6 @@ public struct AppSettingsInput: Equatable, Hashable {
          * again"); none until the broker told it.
          */keyvaultUnlockPrompt: Bool?,
         /**
-         * Load site icons from Google when the browser had none
-         * ([`AppSettings::keyvault_site_icons`]).
-         */keyvaultSiteIcons: Bool,
-        /**
          * The Keyvault's protection facts (Touch ID, the daemon's signature),
          * shown in the section.
          */keyvaultProtection: [AppFact],
@@ -35792,7 +35636,6 @@ public struct AppSettingsInput: Equatable, Hashable {
         self.signIn = signIn
         self.canSignOut = canSignOut
         self.menuBar = menuBar
-        self.telemetry = telemetry
         self.agents = agents
         self.agentsBusy = agentsBusy
         self.agentsPending = agentsPending
@@ -35801,7 +35644,6 @@ public struct AppSettingsInput: Equatable, Hashable {
         self.experiments = experiments
         self.keyvaultAutoWipe = keyvaultAutoWipe
         self.keyvaultUnlockPrompt = keyvaultUnlockPrompt
-        self.keyvaultSiteIcons = keyvaultSiteIcons
         self.keyvaultProtection = keyvaultProtection
         self.autoConnect = autoConnect
         self.overflow = overflow
@@ -35830,7 +35672,6 @@ public struct FfiConverterTypeAppSettingsInput: FfiConverterRustBuffer {
                 signIn: FfiConverterTypeAppSignInPhase.read(from: &buf),
                 canSignOut: FfiConverterBool.read(from: &buf),
                 menuBar: FfiConverterBool.read(from: &buf),
-                telemetry: FfiConverterOptionTypeAppTelemetryInput.read(from: &buf),
                 agents: FfiConverterOptionSequenceTypeAppAgentSettingsRow.read(from: &buf),
                 agentsBusy: FfiConverterBool.read(from: &buf),
                 agentsPending: FfiConverterSequenceString.read(from: &buf),
@@ -35839,7 +35680,6 @@ public struct FfiConverterTypeAppSettingsInput: FfiConverterRustBuffer {
                 experiments: FfiConverterTypeAppExperiments.read(from: &buf),
                 keyvaultAutoWipe: FfiConverterOptionBool.read(from: &buf),
                 keyvaultUnlockPrompt: FfiConverterOptionBool.read(from: &buf),
-                keyvaultSiteIcons: FfiConverterBool.read(from: &buf),
                 keyvaultProtection: FfiConverterSequenceTypeAppFact.read(from: &buf),
                 autoConnect: FfiConverterOptionBool.read(from: &buf),
                 overflow: FfiConverterOptionBool.read(from: &buf),
@@ -35854,7 +35694,6 @@ public struct FfiConverterTypeAppSettingsInput: FfiConverterRustBuffer {
         FfiConverterTypeAppSignInPhase.write(value.signIn, into: &buf)
         FfiConverterBool.write(value.canSignOut, into: &buf)
         FfiConverterBool.write(value.menuBar, into: &buf)
-        FfiConverterOptionTypeAppTelemetryInput.write(value.telemetry, into: &buf)
         FfiConverterOptionSequenceTypeAppAgentSettingsRow.write(value.agents, into: &buf)
         FfiConverterBool.write(value.agentsBusy, into: &buf)
         FfiConverterSequenceString.write(value.agentsPending, into: &buf)
@@ -35863,7 +35702,6 @@ public struct FfiConverterTypeAppSettingsInput: FfiConverterRustBuffer {
         FfiConverterTypeAppExperiments.write(value.experiments, into: &buf)
         FfiConverterOptionBool.write(value.keyvaultAutoWipe, into: &buf)
         FfiConverterOptionBool.write(value.keyvaultUnlockPrompt, into: &buf)
-        FfiConverterBool.write(value.keyvaultSiteIcons, into: &buf)
         FfiConverterSequenceTypeAppFact.write(value.keyvaultProtection, into: &buf)
         FfiConverterOptionBool.write(value.autoConnect, into: &buf)
         FfiConverterOptionBool.write(value.overflow, into: &buf)
@@ -41894,86 +41732,6 @@ public func FfiConverterTypeAppTeamsInput_lower(_ value: AppTeamsInput) -> RustB
 }
 
 
-public struct AppTelemetryInput: Equatable, Hashable {
-    /**
-     * Usage data is shared.
-     */
-    public var enabled: Bool
-    /**
-     * The environment decides (`DO_NOT_TRACK`, `CUA_TELEMETRY`, CI): who.
-     */
-    public var lockedBy: String?
-    /**
-     * The first-run usage notice was already shown on this machine (by
-     * `cua`, or an earlier run of the app): events may be sent before
-     * Welcome is left.
-     */
-    public var noticeShown: Bool
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(
-        /**
-         * Usage data is shared.
-         */enabled: Bool,
-        /**
-         * The environment decides (`DO_NOT_TRACK`, `CUA_TELEMETRY`, CI): who.
-         */lockedBy: String?,
-        /**
-         * The first-run usage notice was already shown on this machine (by
-         * `cua`, or an earlier run of the app): events may be sent before
-         * Welcome is left.
-         */noticeShown: Bool) {
-        self.enabled = enabled
-        self.lockedBy = lockedBy
-        self.noticeShown = noticeShown
-    }
-
-
-
-
-}
-
-#if compiler(>=6)
-extension AppTelemetryInput: Sendable {}
-#endif
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public struct FfiConverterTypeAppTelemetryInput: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AppTelemetryInput {
-        return
-            try AppTelemetryInput(
-                enabled: FfiConverterBool.read(from: &buf),
-                lockedBy: FfiConverterOptionString.read(from: &buf),
-                noticeShown: FfiConverterBool.read(from: &buf)
-        )
-    }
-
-    public static func write(_ value: AppTelemetryInput, into buf: inout [UInt8]) {
-        FfiConverterBool.write(value.enabled, into: &buf)
-        FfiConverterOptionString.write(value.lockedBy, into: &buf)
-        FfiConverterBool.write(value.noticeShown, into: &buf)
-    }
-}
-
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeAppTelemetryInput_lift(_ buf: RustBuffer) throws -> AppTelemetryInput {
-    return try FfiConverterTypeAppTelemetryInput.lift(buf)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeAppTelemetryInput_lower(_ value: AppTelemetryInput) -> RustBuffer {
-    return FfiConverterTypeAppTelemetryInput.lower(value)
-}
-
-
 public struct AppTeleportConsent: Equatable, Hashable {
     /**
      * Confirmed.
@@ -43637,92 +43395,6 @@ public func FfiConverterTypeAppUnconfirmedMachine_lift(_ buf: RustBuffer) throws
 #endif
 public func FfiConverterTypeAppUnconfirmedMachine_lower(_ value: AppUnconfirmedMachine) -> RustBuffer {
     return FfiConverterTypeAppUnconfirmedMachine.lower(value)
-}
-
-
-public struct AppUsageToggle: Equatable, Hashable {
-    /**
-     * "Share usage data to help improve Cua".
-     */
-    public var label: String
-    /**
-     * On.
-     */
-    public var on: Bool
-    /**
-     * It can be changed (the environment does not decide).
-     */
-    public var enabled: Bool
-    /**
-     * Why it cannot ("Set by env DO_NOT_TRACK").
-     */
-    public var help: String?
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(
-        /**
-         * "Share usage data to help improve Cua".
-         */label: String,
-        /**
-         * On.
-         */on: Bool,
-        /**
-         * It can be changed (the environment does not decide).
-         */enabled: Bool,
-        /**
-         * Why it cannot ("Set by env DO_NOT_TRACK").
-         */help: String?) {
-        self.label = label
-        self.on = on
-        self.enabled = enabled
-        self.help = help
-    }
-
-
-
-
-}
-
-#if compiler(>=6)
-extension AppUsageToggle: Sendable {}
-#endif
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public struct FfiConverterTypeAppUsageToggle: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AppUsageToggle {
-        return
-            try AppUsageToggle(
-                label: FfiConverterString.read(from: &buf),
-                on: FfiConverterBool.read(from: &buf),
-                enabled: FfiConverterBool.read(from: &buf),
-                help: FfiConverterOptionString.read(from: &buf)
-        )
-    }
-
-    public static func write(_ value: AppUsageToggle, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.label, into: &buf)
-        FfiConverterBool.write(value.on, into: &buf)
-        FfiConverterBool.write(value.enabled, into: &buf)
-        FfiConverterOptionString.write(value.help, into: &buf)
-    }
-}
-
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeAppUsageToggle_lift(_ buf: RustBuffer) throws -> AppUsageToggle {
-    return try FfiConverterTypeAppUsageToggle.lift(buf)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeAppUsageToggle_lower(_ value: AppUsageToggle) -> RustBuffer {
-    return FfiConverterTypeAppUsageToggle.lower(value)
 }
 
 
@@ -53779,10 +53451,8 @@ public enum AppChecklistAction: Equatable, Hashable {
          */agentRan: Bool
     )
     /**
-     * Progress kept elsewhere before (the web UI's own storage, another
-     * copy of the file): its steps are ticked, and it stays closed or
-     * shown if it was. Its events were recorded where it was ticked, so
-     * none are recorded again.
+     * Another copy of the file: its steps are ticked, and it stays closed or
+     * shown if it was.
      */
     case merge(
         /**
@@ -58823,29 +58493,6 @@ public enum AppOnboardingAction: Equatable, Hashable {
      */
     case back
     /**
-     * The machine's telemetry setting, as the shell read it. Any page.
-     */
-    case telemetryLoaded(
-        /**
-         * The setting.
-         */telemetry: AppTelemetryInput
-    )
-    /**
-     * Welcome is on screen (each time it shows; after `telemetry-loaded`).
-     * On a machine that already showed the usage notice, with usage data
-     * on, the run's start counts now rather than when Welcome is left.
-     */
-    case welcomeShown
-    /**
-     * Welcome's "Share usage data to help improve Cua" switch (not while the
-     * environment decides). The shell writes the setting.
-     */
-    case usageDataToggled(
-        /**
-         * On.
-         */on: Bool
-    )
-    /**
      * Settings, Experiments, as the shell read them (at the start, and
      * whenever a switch changes). Any page; turning Cua Volume off on its
      * page moves on.
@@ -58956,21 +58603,13 @@ public struct FfiConverterTypeAppOnboardingAction: FfiConverterRustBuffer {
 
         case 22: return .back
 
-        case 23: return .telemetryLoaded(telemetry: try FfiConverterTypeAppTelemetryInput.read(from: &buf)
+        case 23: return .experimentsLoaded(experiments: try FfiConverterTypeAppExperiments.read(from: &buf)
         )
 
-        case 24: return .welcomeShown
-
-        case 25: return .usageDataToggled(on: try FfiConverterBool.read(from: &buf)
+        case 24: return .todoChosen(id: try FfiConverterTypeAppOnboardingTodoId.read(from: &buf)
         )
 
-        case 26: return .experimentsLoaded(experiments: try FfiConverterTypeAppExperiments.read(from: &buf)
-        )
-
-        case 27: return .todoChosen(id: try FfiConverterTypeAppOnboardingTodoId.read(from: &buf)
-        )
-
-        case 28: return .agentsDetected(configured: try FfiConverterSequenceString.read(from: &buf)
+        case 25: return .agentsDetected(configured: try FfiConverterSequenceString.read(from: &buf)
         )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -59088,32 +58727,18 @@ public struct FfiConverterTypeAppOnboardingAction: FfiConverterRustBuffer {
             writeInt(&buf, Int32(22))
 
 
-        case let .telemetryLoaded(telemetry):
-            writeInt(&buf, Int32(23))
-            FfiConverterTypeAppTelemetryInput.write(telemetry, into: &buf)
-
-
-        case .welcomeShown:
-            writeInt(&buf, Int32(24))
-
-
-        case let .usageDataToggled(on):
-            writeInt(&buf, Int32(25))
-            FfiConverterBool.write(on, into: &buf)
-
-
         case let .experimentsLoaded(experiments):
-            writeInt(&buf, Int32(26))
+            writeInt(&buf, Int32(23))
             FfiConverterTypeAppExperiments.write(experiments, into: &buf)
 
 
         case let .todoChosen(id):
-            writeInt(&buf, Int32(27))
+            writeInt(&buf, Int32(24))
             FfiConverterTypeAppOnboardingTodoId.write(id, into: &buf)
 
 
         case let .agentsDetected(configured):
-            writeInt(&buf, Int32(28))
+            writeInt(&buf, Int32(25))
             FfiConverterSequenceString.write(configured, into: &buf)
 
         }
@@ -64465,463 +64090,6 @@ public func FfiConverterTypeAppTeamsState_lift(_ buf: RustBuffer) throws -> AppT
 #endif
 public func FfiConverterTypeAppTeamsState_lower(_ value: AppTeamsState) -> RustBuffer {
     return FfiConverterTypeAppTeamsState.lower(value)
-}
-
-
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-
-public enum AppTelemetrySignal: Equatable, Hashable {
-
-    /**
-     * A Spaces app feature was used (`cua_spaces_feature_used`).
-     */
-    case feature(
-        /**
-         * A fixed feature name (`space_create_local`, `teleport_drop`, ...).
-         */feature: String
-    )
-    /**
-     * An install or activation funnel step (`cua_onboarding_step`;
-     * `first_*` steps count once per install).
-     */
-    case step(
-        /**
-         * A fixed step name (`app_launched`, `signed_in`, ...).
-         */step: String,
-        /**
-         * It worked.
-         */ok: Bool
-    )
-    /**
-     * The app started (`cua_onboarding_step`, step `app_launched`).
-     */
-    case launched(
-        /**
-         * The first run was not finished yet at this launch, so the
-         * app opens it (none: the shell does not know).
-         */onboardingEligible: Bool?
-    )
-    /**
-     * A sign-in failed, timed out or was cancelled (`cua_onboarding_step`,
-     * step `signed_in`, outcome `error`).
-     */
-    case signInFailed(
-        /**
-         * `timeout`, `cancelled`, `permission_denied`, `transport`,
-         * `unauthenticated` or `other` (never the message).
-         */errorKind: String
-    )
-    /**
-     * A first-run page was shown or left (`cua_onboarding_page`).
-     */
-    case onboardingPage(
-        /**
-         * `welcome`, `signin`, `agents`, `presentation`, `volume`,
-         * `this_machine` or `done`; or, with a `step_*` action, one of
-         * `schema::FIRST_RUN_STEPS` (`connect_agent`, `terminal`, ...).
-         */page: String,
-        /**
-         * `shown`, `completed`, `skipped` or `back`; or `step_viewed`,
-         * `step_completed`, `step_failed` or `step_skipped`, which send
-         * `cua_onboarding_step_*` and `cua_onboarding_skipped`.
-         */action: String,
-        /**
-         * The page's answer as a fixed word, or `none`; for
-         * `step_failed`, the reason (`timeout`, `install_failed`, ...).
-         */choice: String
-    )
-    /**
-     * The New Space panel (`cua_space_wizard`).
-     */
-    case spaceWizard(
-        /**
-         * `opened`, `cancelled` or `submitted`.
-         */action: String
-    )
-    /**
-     * A Space create reached ready or failed (`cua_space_create`).
-     */
-    case spaceCreate(
-        /**
-         * `local`, `cloud`, `direct` or `relay`.
-         */location: String,
-        /**
-         * `linux`, `windows` or `macos`.
-         */guestOs: String,
-        /**
-         * `container`, `vm` or `unknown`.
-         */kind: String,
-        /**
-         * `ok` or `error`.
-         */outcome: String,
-        /**
-         * The phase it failed in; `none` when it succeeded.
-         */failedPhase: String,
-        /**
-         * It failed because a phase stopped moving.
-         */stalled: Bool,
-        /**
-         * Milliseconds from Create to ready, the failure, or the cancel
-         * finishing (bucketed before it is sent).
-         */elapsedMs: UInt64,
-        /**
-         * GPU acceleration was turned on.
-         */gpu: Bool,
-        /**
-         * The error enum's case name, when the shell sent one.
-         */errorVariant: String,
-        /**
-         * 1 when the app ran the create a second time by itself, else 0.
-         */retryAttempt: UInt32,
-        /**
-         * The finer cause (`error_subclass`): the failure's, or on a
-         * retried create that worked, the failure it recovered from.
-         */errorSubclass: String
-    )
-    /**
-     * A Space create started (`cua_space_create_started`).
-     */
-    case spaceCreateStarted(
-        /**
-         * `local`, `cloud`, `direct` or `relay`.
-         */location: String,
-        /**
-         * `linux`, `windows` or `macos`.
-         */guestOs: String,
-        /**
-         * `container`, `vm` or `unknown`.
-         */kind: String,
-        /**
-         * GPU acceleration was turned on.
-         */gpu: Bool
-    )
-    /**
-     * A Cua Volume setting was saved (`cua_volume_setup`).
-     */
-    case volumeSetup(
-        /**
-         * `onboarding` or `settings`.
-         */surface: String,
-        /**
-         * `this_mac`, `s3` or `later`.
-         */storage: String,
-        /**
-         * Added to Finder (mounted on Linux).
-         */addToFinder: Bool,
-        /**
-         * `fskit`, `nfs`, `fuse`, `none` or `unknown`.
-         */mountMethod: String,
-        /**
-         * `ok` or `error`.
-         */outcome: String
-    )
-    /**
-     * A Space was shared, unshared or its role changed (`cua_share`).
-     */
-    case share(
-        /**
-         * `share`, `unshare` or `change_role`.
-         */action: String,
-        /**
-         * `viewer`, `editor` or `none`.
-         */role: String,
-        /**
-         * `ok`, `error`, or `cancelled` when the confirmation prompt was
-         * dismissed.
-         */outcome: String,
-        /**
-         * Why it did not happen (`presence_denied`, `presence_cancelled`,
-         * `presence_unavailable`, `not_signed_in`, `device_not_enrolled`,
-         * `driver_unsupported`, `relay_refused`, `relay_unreachable`,
-         * `invalid_who` or `other`); `none` when it worked.
-         */errorKind: String,
-        /**
-         * Where it stopped (`request`, `presence`, `account`, `device`,
-         * `driver`, `relay` or `other`); `none` when it worked.
-         */failedStage: String
-    )
-    /**
-     * An updater step (`cua_app_update`).
-     */
-    case appUpdate(
-        /**
-         * `checked`, `found`, `not_found`, `installed` or `failed`.
-         */action: String,
-        /**
-         * `stable` or `beta`.
-         */channel: String,
-        /**
-         * `user` or `background`.
-         */trigger: String
-    )
-    /**
-     * This device enrolled with the relay, or failed to
-     * (`cua_device_enroll`).
-     */
-    case deviceEnroll(
-        /**
-         * `sign_in`, `approval` or `rekey`.
-         */method: String,
-        /**
-         * `ok` or `error`.
-         */outcome: String
-    )
-    /**
-     * An experiment was turned on or off in Settings, Experiments
-     * (`cua_experiment`).
-     */
-    case experiment(
-        /**
-         * `experiment_on` or `experiment_off`.
-         */action: String,
-        /**
-         * `cua_volume`, `your_cloud` or `sharing`.
-         */experiment: String
-    )
-    /**
-     * Which experiments are on now (no event of its own: the daily
-     * `cua_app_active` carries them as `experiments_on`).
-     */
-    case experimentsOn(
-        /**
-         * Their ids (`cua_volume`, ...); empty: none.
-         */experiments: [String]
-    )
-    /**
-     * A plan limit was shown (`cua_plan_limit_shown`).
-     */
-    case planLimitShown(
-        /**
-         * Where: `app_create`, `app_connect`, `app_meter`, `app_team`, ...
-         */surface: String,
-        /**
-         * `sessions`, `hours`, `machines`, `seats` or `other`.
-         */kind: String,
-        /**
-         * `free`, `pro`, `teams` or `unknown`.
-         */plan: String
-    )
-    /**
-     * The upgrade or plan link of a limit or an upgrade prompt was opened
-     * (`cua_upgrade_link_opened`).
-     */
-    case upgradeLinkOpened(
-        /**
-         * Where: `app_meter`, `app_share`, `app_plan_card`, ...
-         */surface: String,
-        /**
-         * The cap when it came from a limit, `none` otherwise.
-         */kind: String,
-        /**
-         * `free`, `pro`, `teams` or `unknown`.
-         */plan: String
-    )
-
-
-
-
-
-}
-
-#if compiler(>=6)
-extension AppTelemetrySignal: Sendable {}
-#endif
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public struct FfiConverterTypeAppTelemetrySignal: FfiConverterRustBuffer {
-    typealias SwiftType = AppTelemetrySignal
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AppTelemetrySignal {
-        let variant: Int32 = try readInt(&buf)
-        switch variant {
-
-        case 1: return .feature(feature: try FfiConverterString.read(from: &buf)
-        )
-
-        case 2: return .step(step: try FfiConverterString.read(from: &buf), ok: try FfiConverterBool.read(from: &buf)
-        )
-
-        case 3: return .launched(onboardingEligible: try FfiConverterOptionBool.read(from: &buf)
-        )
-
-        case 4: return .signInFailed(errorKind: try FfiConverterString.read(from: &buf)
-        )
-
-        case 5: return .onboardingPage(page: try FfiConverterString.read(from: &buf), action: try FfiConverterString.read(from: &buf), choice: try FfiConverterString.read(from: &buf)
-        )
-
-        case 6: return .spaceWizard(action: try FfiConverterString.read(from: &buf)
-        )
-
-        case 7: return .spaceCreate(location: try FfiConverterString.read(from: &buf), guestOs: try FfiConverterString.read(from: &buf), kind: try FfiConverterString.read(from: &buf), outcome: try FfiConverterString.read(from: &buf), failedPhase: try FfiConverterString.read(from: &buf), stalled: try FfiConverterBool.read(from: &buf), elapsedMs: try FfiConverterUInt64.read(from: &buf), gpu: try FfiConverterBool.read(from: &buf), errorVariant: try FfiConverterString.read(from: &buf), retryAttempt: try FfiConverterUInt32.read(from: &buf), errorSubclass: try FfiConverterString.read(from: &buf)
-        )
-
-        case 8: return .spaceCreateStarted(location: try FfiConverterString.read(from: &buf), guestOs: try FfiConverterString.read(from: &buf), kind: try FfiConverterString.read(from: &buf), gpu: try FfiConverterBool.read(from: &buf)
-        )
-
-        case 9: return .volumeSetup(surface: try FfiConverterString.read(from: &buf), storage: try FfiConverterString.read(from: &buf), addToFinder: try FfiConverterBool.read(from: &buf), mountMethod: try FfiConverterString.read(from: &buf), outcome: try FfiConverterString.read(from: &buf)
-        )
-
-        case 10: return .share(action: try FfiConverterString.read(from: &buf), role: try FfiConverterString.read(from: &buf), outcome: try FfiConverterString.read(from: &buf), errorKind: try FfiConverterString.read(from: &buf), failedStage: try FfiConverterString.read(from: &buf)
-        )
-
-        case 11: return .appUpdate(action: try FfiConverterString.read(from: &buf), channel: try FfiConverterString.read(from: &buf), trigger: try FfiConverterString.read(from: &buf)
-        )
-
-        case 12: return .deviceEnroll(method: try FfiConverterString.read(from: &buf), outcome: try FfiConverterString.read(from: &buf)
-        )
-
-        case 13: return .experiment(action: try FfiConverterString.read(from: &buf), experiment: try FfiConverterString.read(from: &buf)
-        )
-
-        case 14: return .experimentsOn(experiments: try FfiConverterSequenceString.read(from: &buf)
-        )
-
-        case 15: return .planLimitShown(surface: try FfiConverterString.read(from: &buf), kind: try FfiConverterString.read(from: &buf), plan: try FfiConverterString.read(from: &buf)
-        )
-
-        case 16: return .upgradeLinkOpened(surface: try FfiConverterString.read(from: &buf), kind: try FfiConverterString.read(from: &buf), plan: try FfiConverterString.read(from: &buf)
-        )
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
-    }
-
-    public static func write(_ value: AppTelemetrySignal, into buf: inout [UInt8]) {
-        switch value {
-
-
-        case let .feature(feature):
-            writeInt(&buf, Int32(1))
-            FfiConverterString.write(feature, into: &buf)
-
-
-        case let .step(step,ok):
-            writeInt(&buf, Int32(2))
-            FfiConverterString.write(step, into: &buf)
-            FfiConverterBool.write(ok, into: &buf)
-
-
-        case let .launched(onboardingEligible):
-            writeInt(&buf, Int32(3))
-            FfiConverterOptionBool.write(onboardingEligible, into: &buf)
-
-
-        case let .signInFailed(errorKind):
-            writeInt(&buf, Int32(4))
-            FfiConverterString.write(errorKind, into: &buf)
-
-
-        case let .onboardingPage(page,action,choice):
-            writeInt(&buf, Int32(5))
-            FfiConverterString.write(page, into: &buf)
-            FfiConverterString.write(action, into: &buf)
-            FfiConverterString.write(choice, into: &buf)
-
-
-        case let .spaceWizard(action):
-            writeInt(&buf, Int32(6))
-            FfiConverterString.write(action, into: &buf)
-
-
-        case let .spaceCreate(location,guestOs,kind,outcome,failedPhase,stalled,elapsedMs,gpu,errorVariant,retryAttempt,errorSubclass):
-            writeInt(&buf, Int32(7))
-            FfiConverterString.write(location, into: &buf)
-            FfiConverterString.write(guestOs, into: &buf)
-            FfiConverterString.write(kind, into: &buf)
-            FfiConverterString.write(outcome, into: &buf)
-            FfiConverterString.write(failedPhase, into: &buf)
-            FfiConverterBool.write(stalled, into: &buf)
-            FfiConverterUInt64.write(elapsedMs, into: &buf)
-            FfiConverterBool.write(gpu, into: &buf)
-            FfiConverterString.write(errorVariant, into: &buf)
-            FfiConverterUInt32.write(retryAttempt, into: &buf)
-            FfiConverterString.write(errorSubclass, into: &buf)
-
-
-        case let .spaceCreateStarted(location,guestOs,kind,gpu):
-            writeInt(&buf, Int32(8))
-            FfiConverterString.write(location, into: &buf)
-            FfiConverterString.write(guestOs, into: &buf)
-            FfiConverterString.write(kind, into: &buf)
-            FfiConverterBool.write(gpu, into: &buf)
-
-
-        case let .volumeSetup(surface,storage,addToFinder,mountMethod,outcome):
-            writeInt(&buf, Int32(9))
-            FfiConverterString.write(surface, into: &buf)
-            FfiConverterString.write(storage, into: &buf)
-            FfiConverterBool.write(addToFinder, into: &buf)
-            FfiConverterString.write(mountMethod, into: &buf)
-            FfiConverterString.write(outcome, into: &buf)
-
-
-        case let .share(action,role,outcome,errorKind,failedStage):
-            writeInt(&buf, Int32(10))
-            FfiConverterString.write(action, into: &buf)
-            FfiConverterString.write(role, into: &buf)
-            FfiConverterString.write(outcome, into: &buf)
-            FfiConverterString.write(errorKind, into: &buf)
-            FfiConverterString.write(failedStage, into: &buf)
-
-
-        case let .appUpdate(action,channel,trigger):
-            writeInt(&buf, Int32(11))
-            FfiConverterString.write(action, into: &buf)
-            FfiConverterString.write(channel, into: &buf)
-            FfiConverterString.write(trigger, into: &buf)
-
-
-        case let .deviceEnroll(method,outcome):
-            writeInt(&buf, Int32(12))
-            FfiConverterString.write(method, into: &buf)
-            FfiConverterString.write(outcome, into: &buf)
-
-
-        case let .experiment(action,experiment):
-            writeInt(&buf, Int32(13))
-            FfiConverterString.write(action, into: &buf)
-            FfiConverterString.write(experiment, into: &buf)
-
-
-        case let .experimentsOn(experiments):
-            writeInt(&buf, Int32(14))
-            FfiConverterSequenceString.write(experiments, into: &buf)
-
-
-        case let .planLimitShown(surface,kind,plan):
-            writeInt(&buf, Int32(15))
-            FfiConverterString.write(surface, into: &buf)
-            FfiConverterString.write(kind, into: &buf)
-            FfiConverterString.write(plan, into: &buf)
-
-
-        case let .upgradeLinkOpened(surface,kind,plan):
-            writeInt(&buf, Int32(16))
-            FfiConverterString.write(surface, into: &buf)
-            FfiConverterString.write(kind, into: &buf)
-            FfiConverterString.write(plan, into: &buf)
-
-        }
-    }
-}
-
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeAppTelemetrySignal_lift(_ buf: RustBuffer) throws -> AppTelemetrySignal {
-    return try FfiConverterTypeAppTelemetrySignal.lift(buf)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeAppTelemetrySignal_lower(_ value: AppTelemetrySignal) -> RustBuffer {
-    return FfiConverterTypeAppTelemetrySignal.lower(value)
 }
 
 
@@ -71425,30 +70593,6 @@ fileprivate struct FfiConverterOptionTypeAppTeamsInput: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
-fileprivate struct FfiConverterOptionTypeAppTelemetryInput: FfiConverterRustBuffer {
-    typealias SwiftType = AppTelemetryInput?
-
-    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        guard let value = value else {
-            writeInt(&buf, Int8(0))
-            return
-        }
-        writeInt(&buf, Int8(1))
-        FfiConverterTypeAppTelemetryInput.write(value, into: &buf)
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-        switch try readInt(&buf) as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterTypeAppTelemetryInput.read(from: &buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
 fileprivate struct FfiConverterOptionTypeAppTeleportPlan: FfiConverterRustBuffer {
     typealias SwiftType = AppTeleportPlan?
 
@@ -71561,30 +70705,6 @@ fileprivate struct FfiConverterOptionTypeAppTransferOverlayState: FfiConverterRu
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeAppTransferOverlayState.read(from: &buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-fileprivate struct FfiConverterOptionTypeAppUsageToggle: FfiConverterRustBuffer {
-    typealias SwiftType = AppUsageToggle?
-
-    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        guard let value = value else {
-            writeInt(&buf, Int8(0))
-            return
-        }
-        writeInt(&buf, Int8(1))
-        FfiConverterTypeAppUsageToggle.write(value, into: &buf)
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-        switch try readInt(&buf) as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterTypeAppUsageToggle.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -77377,31 +76497,6 @@ fileprivate struct FfiConverterSequenceTypeAppSensitiveGroup: FfiConverterRustBu
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
-fileprivate struct FfiConverterSequenceTypeAppTelemetrySignal: FfiConverterRustBuffer {
-    typealias SwiftType = [AppTelemetrySignal]
-
-    public static func write(_ value: [AppTelemetrySignal], into buf: inout [UInt8]) {
-        let len = Int32(value.count)
-        writeInt(&buf, len)
-        for item in value {
-            FfiConverterTypeAppTelemetrySignal.write(item, into: &buf)
-        }
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [AppTelemetrySignal] {
-        let len: Int32 = try readInt(&buf)
-        var seq = [AppTelemetrySignal]()
-        seq.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeAppTelemetrySignal.read(from: &buf))
-        }
-        return seq
-    }
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
 fileprivate struct FfiConverterSequenceTypeAppTeleportMove: FfiConverterRustBuffer {
     typealias SwiftType = [AppTeleportMove]
 
@@ -78070,7 +77165,7 @@ public func appChecklistObserveFrom(seen: AppChecklistSeen) -> AppChecklistActio
 })
 }
 /**
- * The getting-started checklist after `action`, and its usage events.
+ * The getting-started checklist after `action`.
  */
 public func appChecklistReduce(state: AppChecklistState, action: AppChecklistAction) -> AppChecklistTransition  {
     return try!  FfiConverterTypeAppChecklistTransition_lift(try! rustCall() {
@@ -80465,211 +79560,6 @@ public func appTeams(accountToken: String)async throws  -> AppTeamsInput  {
         )
 }
 /**
- * The events one step of the Spaces being created means, at `now_ms`
- * (call with the state before it).
- */
-public func appTelemetryCreates(state: AppCreatesState, action: AppCreateAction, nowMs: Int64) -> [AppTelemetrySignal]  {
-    return try!  FfiConverterSequenceTypeAppTelemetrySignal.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_creates(
-        FfiConverterTypeAppCreatesState_lower(state),
-        FfiConverterTypeAppCreateAction_lower(action),
-        FfiConverterInt64.lower(nowMs),$0
-    )
-})
-}
-/**
- * The events one step of the enroll sheet means.
- */
-public func appTelemetryEnroll(state: AppEnrollState, action: AppEnrollAction) -> [AppTelemetrySignal]  {
-    return try!  FfiConverterSequenceTypeAppTelemetrySignal.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_enroll(
-        FfiConverterTypeAppEnrollState_lower(state),
-        FfiConverterTypeAppEnrollAction_lower(action),$0
-    )
-})
-}
-/**
- * The events of a change in Settings, Experiments (call with the switches
- * before and after it).
- */
-public func appTelemetryExperimentsChanged(before: AppExperiments, after: AppExperiments) -> [AppTelemetrySignal]  {
-    return try!  FfiConverterSequenceTypeAppTelemetrySignal.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_experiments_changed(
-        FfiConverterTypeAppExperiments_lower(before),
-        FfiConverterTypeAppExperiments_lower(after),$0
-    )
-})
-}
-/**
- * Which experiments are on (at launch).
- */
-public func appTelemetryExperimentsOn(experiments: AppExperiments) -> [AppTelemetrySignal]  {
-    return try!  FfiConverterSequenceTypeAppTelemetrySignal.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_experiments_on(
-        FfiConverterTypeAppExperiments_lower(experiments),$0
-    )
-})
-}
-/**
- * A Spaces app feature (a fixed name).
- */
-public func appTelemetryFeature(feature: String) -> [AppTelemetrySignal]  {
-    return try!  FfiConverterSequenceTypeAppTelemetrySignal.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_feature(
-        FfiConverterString.lower(feature),$0
-    )
-})
-}
-/**
- * The app started (`app_launched`).
- */
-public func appTelemetryLaunched(onboardingEligible: Bool?) -> [AppTelemetrySignal]  {
-    return try!  FfiConverterSequenceTypeAppTelemetrySignal.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_launched(
-        FfiConverterOptionBool.lower(onboardingEligible),$0
-    )
-})
-}
-/**
- * The events one first-run step means (call with the state before it).
- */
-public func appTelemetryOnboarding(state: AppOnboardingState, action: AppOnboardingAction) -> [AppTelemetrySignal]  {
-    return try!  FfiConverterSequenceTypeAppTelemetrySignal.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_onboarding(
-        FfiConverterTypeAppOnboardingState_lower(state),
-        FfiConverterTypeAppOnboardingAction_lower(action),$0
-    )
-})
-}
-/**
- * "Start using Cua Spaces".
- */
-public func appTelemetryOnboardingFinished(state: AppOnboardingState) -> [AppTelemetrySignal]  {
-    return try!  FfiConverterSequenceTypeAppTelemetrySignal.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_onboarding_finished(
-        FfiConverterTypeAppOnboardingState_lower(state),$0
-    )
-})
-}
-/**
- * A plan limit shown at `surface` (`action` `shown`: `app_create`,
- * `app_connect`, `app_meter`, `app_team`, ...) or its upgrade link opened
- * (`opened`); `kind` is the cap (none: not from a limit), `plan` the plan.
- */
-public func appTelemetryPlanLimit(action: String, surface: String, kind: String?, plan: String?) -> [AppTelemetrySignal]  {
-    return try!  FfiConverterSequenceTypeAppTelemetrySignal.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_plan_limit(
-        FfiConverterString.lower(action),
-        FfiConverterString.lower(surface),
-        FfiConverterOptionString.lower(kind),
-        FfiConverterOptionString.lower(plan),$0
-    )
-})
-}
-/**
- * Records `signals` on the SDK's telemetry client (the switch, the notice
- * and the schema apply) and marks the day active. Returns how many events
- * were queued.
- */
-public func appTelemetryRecord(signals: [AppTelemetrySignal]) -> UInt32  {
-    return try!  FfiConverterUInt32.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_record(
-        FfiConverterSequenceTypeAppTelemetrySignal.lower(signals),$0
-    )
-})
-}
-/**
- * The events one step of the Share sheet means.
- */
-public func appTelemetryShare(input: AppShareInput, state: AppShareSheetState, action: AppShareSheetAction) -> [AppTelemetrySignal]  {
-    return try!  FfiConverterSequenceTypeAppTelemetrySignal.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_share(
-        FfiConverterTypeAppShareInput_lower(input),
-        FfiConverterTypeAppShareSheetState_lower(state),
-        FfiConverterTypeAppShareSheetAction_lower(action),$0
-    )
-})
-}
-/**
- * A sign-in failed (`message`, which never leaves: only its kind) or was
- * cancelled (none).
- */
-public func appTelemetrySignInFailed(message: String?) -> [AppTelemetrySignal]  {
-    return try!  FfiConverterSequenceTypeAppTelemetrySignal.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_sign_in_failed(
-        FfiConverterOptionString.lower(message),$0
-    )
-})
-}
-/**
- * A sign-in failed for `reason` or was cancelled (none): its kind only.
- */
-public func appTelemetrySignInFailure(reason: AppSignInFailure?) -> [AppTelemetrySignal]  {
-    return try!  FfiConverterSequenceTypeAppTelemetrySignal.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_sign_in_failure(
-        FfiConverterOptionTypeAppSignInFailure.lower(reason),$0
-    )
-})
-}
-/**
- * The app started: attributes this process's events to `spaces_app` at
- * `version`, links usage data to the signed-in account in the background
- * when the Spaces API offers it, lets the app show the first-run notice itself (nothing is
- * sent before it has been shown once), and records `app_launched` (on a
- * first run, once the notice shows). Call once at launch, before the
- * first `Cua`. `onboarding_eligible`: the first run is still to finish
- * (`app_launched` carries it). Returns whether the notice was already
- * shown here.
- */
-public func appTelemetryStart(version: String, onboardingEligible: Bool?) -> Bool  {
-    return try!  FfiConverterBool.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_start(
-        FfiConverterString.lower(version),
-        FfiConverterOptionBool.lower(onboardingEligible),$0
-    )
-})
-}
-/**
- * The events one step of Settings, Storage means.
- */
-public func appTelemetryStorage(input: AppStorageInput, state: AppStorageState, action: AppStorageAction) -> [AppTelemetrySignal]  {
-    return try!  FfiConverterSequenceTypeAppTelemetrySignal.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_storage(
-        FfiConverterTypeAppStorageInput_lower(input),
-        FfiConverterTypeAppStorageState_lower(state),
-        FfiConverterTypeAppStorageAction_lower(action),$0
-    )
-})
-}
-/**
- * A Pro or Teams surface's event (`upsell_<surface>_<action>`), knowing
- * the plan and, for the meter past a limit, its cap (`kind`): a `click`
- * also records the upgrade link opened, the meter shown past a limit the
- * plan limit shown.
- */
-public func appTelemetryUpsell(surface: String, action: String, kind: String?, plan: String?) -> [AppTelemetrySignal]  {
-    return try!  FfiConverterSequenceTypeAppTelemetrySignal.lift(try! rustCall() {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_upsell(
-        FfiConverterString.lower(surface),
-        FfiConverterString.lower(action),
-        FfiConverterOptionString.lower(kind),
-        FfiConverterOptionString.lower(plan),$0
-    )
-})
-}
-/**
- * The first run left Welcome with its usage-data switch at `on`: writes
- * the machine's setting when it changed (the same as Settings and `cua
- * telemetry off`), then records that the notice was shown. Nothing is
- * queued or sent before; with the switch off, nothing after either.
- */
-public func appTelemetryWelcomeLeft(on: Bool)throws   {try rustCallWithError(FfiConverterTypeCuaError_lift) {
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_welcome_left(
-        FfiConverterBool.lower(on),$0
-    )
-}
-}
-/**
  * A plan from `Teleport.plan`, as the review's plan.
  */
 public func appTeleportPlan(plan: TeleportPlan) -> AppTeleportPlan  {
@@ -81524,7 +80414,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_cua_spaces_ffi_checksum_func_app_checklist_observe_from() != 5363) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_checklist_reduce() != 46431) {
+    if (uniffi_cua_spaces_ffi_checksum_func_app_checklist_reduce() != 56142) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_cua_spaces_ffi_checksum_func_app_checklist_state_from_json() != 52352) {
@@ -82179,57 +81069,6 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_cua_spaces_ffi_checksum_func_app_teams() != 64616) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_creates() != 25911) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_enroll() != 55601) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_experiments_changed() != 28606) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_experiments_on() != 48676) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_feature() != 57127) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_launched() != 17300) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_onboarding() != 25405) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_onboarding_finished() != 62975) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_plan_limit() != 23952) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_record() != 54106) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_share() != 42479) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_sign_in_failed() != 34262) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_sign_in_failure() != 23014) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_start() != 30125) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_storage() != 21459) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_upsell() != 47353) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_cua_spaces_ffi_checksum_func_app_telemetry_welcome_left() != 26839) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_cua_spaces_ffi_checksum_func_app_teleport_plan() != 33184) {

@@ -1,6 +1,6 @@
 ---
 title: "Account and setup"
-description: "Sign in and out, user defaults, the cua daemon, health checks and usage telemetry."
+description: "Sign in and out, user defaults, the cua daemon and health checks."
 ---
 
 {/*
@@ -35,13 +35,6 @@ description: "Sign in and out, user defaults, the cua daemon, health checks and 
 | [`cua daemon mcp`](#cua-daemon-mcp) | Stdio MCP server backed by the daemon (started if needed): the Spaces contract tools plus the sandbox/computer/skills tools (same server as `cua mcp`). |
 | [`cua doctor`](#cua-doctor) | Check the host, an image and a sandbox's guest in one report (`cua doctor [REF]`), or eval parity between two variants (`cua doctor parity A B`). |
 | [`cua doctor parity`](#cua-doctor-parity) | Eval parity between two variants of one image (rootfs vs containerDisk): doctor on both, fidelity diff, task outcomes. |
-| [`cua telemetry`](#cua-telemetry) | Anonymous usage telemetry (status, on, off, show-last, reset-id, schema). |
-| [`cua telemetry status`](#cua-telemetry-status) | Whether telemetry is on, why, and the exact properties every event carries. |
-| [`cua telemetry on`](#cua-telemetry-on) | Turn usage telemetry on (writes [telemetry] enabled = \"on\" to ~/.cua/config.toml). |
-| [`cua telemetry off`](#cua-telemetry-off) | Turn usage telemetry off (same as `cua config set telemetry off`). |
-| [`cua telemetry show-last`](#cua-telemetry-show-last) | Print the last events this computer queued or sent, exactly as sent. |
-| [`cua telemetry reset-id`](#cua-telemetry-reset-id) | Delete the anonymous install id and salt (new ones are created on the next event). |
-| [`cua telemetry schema`](#cua-telemetry-schema) | Every event and property that may be sent, with its allowed values. |
 
 Every command also accepts the [global options](/cua-cli/reference/cli#global-options).
 
@@ -324,11 +317,12 @@ Start the daemon (in the background unless --foreground).
 cua daemon start [OPTIONS]
 ```
 
-| Flag | Type | Default | Description |
-| --- | --- | --- | --- |
-| <span id="cua-daemon-start--socket"></span>`--socket` | path |  | Unix socket (default ~/.cua/cua.sock). |
-| <span id="cua-daemon-start--loopback"></span>`--loopback` | string | `127.0.0.1:0` | Loopback address (default 127.0.0.1:0; "off" disables). |
-| <span id="cua-daemon-start--foreground"></span>`--foreground` | boolean | `false` | Stay in the foreground. |
+| Flag | Type | Default | Env var | Description |
+| --- | --- | --- | --- | --- |
+| <span id="cua-daemon-start--socket"></span>`--socket` | path |  |  | Unix socket (default ~/.cua/cua.sock). |
+| <span id="cua-daemon-start--loopback"></span>`--loopback` | string | `127.0.0.1:0` |  | Loopback address (default 127.0.0.1:0; "off" disables). |
+| <span id="cua-daemon-start--mcp-listen"></span>`--mcp-listen` | string |  | `CUA_DAEMON_MCP_LISTEN` | Also serve the Spaces MCP endpoint (`/mcp`) to other machines at this address (for example 0.0.0.0:7420), authenticated by the token in ~/.cua/remote-mcp-token. Plain HTTP: the token grants Space and host file access, so use it only on a trusted network. |
+| <span id="cua-daemon-start--foreground"></span>`--foreground` | boolean | `false` |  | Stay in the foreground. |
 
 **Examples**
 
@@ -337,6 +331,9 @@ cua daemon start
 
 # In the foreground, for a service manager
 cua daemon start --foreground
+
+# Let agents on the LAN use the Spaces MCP
+cua daemon start --mcp-listen 0.0.0.0:7420
 ```
 
 ### `cua daemon stop`
@@ -479,112 +476,6 @@ cua doctor parity [OPTIONS] <A> <B>
 ```bash test="cli-shape" id="ref-cua-doctor-parity"
 cua doctor parity local:linux-rootfs local:linux-vm
 cua doctor parity local:linux-rootfs local:linux-vm --out parity.json
-```
-
-## `cua telemetry`
-
-Anonymous usage telemetry (status, on, off, show-last, reset-id, schema). What is sent: https://cua.ai/docs/cua-sdk/concepts/telemetry.
-
-```text output
-cua telemetry [OPTIONS] <COMMAND>
-```
-
-**Examples**
-
-```bash test="cli-shape" id="ref-cua-telemetry"
-cua telemetry status
-cua telemetry off
-cua telemetry show-last
-```
-
-### `cua telemetry status`
-
-Whether telemetry is on, why, and the exact properties every event carries.
-
-```text output
-cua telemetry status [OPTIONS]
-```
-
-**Examples**
-
-```bash test="cli-shape" id="ref-cua-telemetry-status"
-cua telemetry status
-cua telemetry status --json
-```
-
-### `cua telemetry on`
-
-Turn usage telemetry on (writes [telemetry] enabled = \"on\" to ~/.cua/config.toml).
-
-```text output
-cua telemetry on [OPTIONS]
-```
-
-**Examples**
-
-```bash test="cli-shape" id="ref-cua-telemetry-on"
-cua telemetry on
-```
-
-### `cua telemetry off`
-
-Turn usage telemetry off (same as `cua config set telemetry off`).
-
-```text output
-cua telemetry off [OPTIONS]
-```
-
-**Examples**
-
-```bash test="cli-shape" id="ref-cua-telemetry-off"
-cua telemetry off
-```
-
-### `cua telemetry show-last`
-
-Print the last events this computer queued or sent, exactly as sent.
-
-```text output
-cua telemetry show-last [OPTIONS]
-```
-
-| Flag | Short | Type | Default | Description |
-| --- | --- | --- | --- | --- |
-| <span id="cua-telemetry-show-last--limit"></span>`--limit` | `-n` | integer | `20` | How many. |
-
-**Examples**
-
-```bash test="cli-shape" id="ref-cua-telemetry-show-last"
-cua telemetry show-last
-cua telemetry show-last -n 5 --json
-```
-
-### `cua telemetry reset-id`
-
-Delete the anonymous install id and salt (new ones are created on the next event).
-
-```text output
-cua telemetry reset-id [OPTIONS]
-```
-
-**Examples**
-
-```bash test="cli-shape" id="ref-cua-telemetry-reset-id"
-cua telemetry reset-id
-```
-
-### `cua telemetry schema`
-
-Every event and property that may be sent, with its allowed values.
-
-```text output
-cua telemetry schema [OPTIONS]
-```
-
-**Examples**
-
-```bash test="cli-shape" id="ref-cua-telemetry-schema"
-cua telemetry schema --json
 ```
 
 ## Exit codes

@@ -136,13 +136,13 @@ struct ViewModelTests {
     func makeModel(_ backend: SpacesBackend = FixtureSpacesBackend(), kv: KeyvaultClientProtocol? = nil,
                    host: HostRunning? = nil, account: AccountRunning? = nil,
                    agents: AgentSetupRunning? = nil,
-                   loginItem: LoginItemControlling? = nil, telemetry: TelemetryRunning = FixtureTelemetry()) -> AppModel {
+                   loginItem: LoginItemControlling? = nil) -> AppModel {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("cua-mac-tests-\(UUID().uuidString)")
         return AppModel(backend: backend,
                         keyvault: KeyvaultModel(client: kv, clock: { fixtureNow }),
                         onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
                         settingsPath: dir.appendingPathComponent("settings.json").path,
-                        host: host, account: account, telemetry: telemetry, agentSetup: agents,
+                        host: host, account: account, agentSetup: agents,
                         loginItem: loginItem)
     }
 
@@ -399,23 +399,11 @@ struct ViewModelTests {
         #expect(model.host.formView?.canSubmit == true)
     }
 
-    /// The web page's usage signals (a sign-in's start, the "still waiting" hint)
-    /// wait for the usage-data switch in its Settings snapshot, and the page can
-    /// run signed out before any Settings view loaded it: reading the switch
-    /// alone fills the page's Settings with it.
-    @Test func refreshingTelemetryGivesTheSettingsItsSwitch() {
-        let model = makeModel(telemetry: FixtureTelemetry())
-        #expect(model.telemetryInput == nil)
-        model.refreshTelemetry()
-        #expect(model.telemetryInput?.enabled == true)
-    }
-
     /// Settings, Experiments: every switch off except Sharing and Your cloud
-    /// (on by default); Cua Volume on shows Storage after General, is saved,
-    /// recorded, and reaches the first run.
+    /// (on by default); Cua Volume on shows Storage after General, and is
+    /// saved.
     @Test func experimentsAreOffAndCuaVolumeShowsStorage() async {
-        let telemetry = FixtureTelemetry()
-        let model = makeModel(telemetry: telemetry)
+        let model = makeModel()
         let toggles = model.experimentsPage.sections.flatMap(\.rows).filter { $0.kind == .toggle }
         #expect(toggles.map(\.id) == ["experiment:cua_volume", "experiment:your_cloud", "experiment:sharing"])
         // Sharing and Your cloud are on unless turned off; no New UI row.
@@ -427,64 +415,19 @@ struct ViewModelTests {
         model.chooseExperiment(row: "experiment:cua_volume", option: "on")
         #expect(model.settingsPageWithStorage.sections.map(\.id).prefix(4) == ["account", "teams", "general", "storage"])
         #expect(appSettingsLoad(path: model.settingsPath).experiments.cuaVolume, "saved")
-        let toggled = telemetry.recorded.compactMap { s -> String? in
-            if case let .experiment(action, experiment) = s { return "\(action) \(experiment)" }
-            return nil
-        }
-        #expect(toggled == ["experiment_on cua_volume"])
     }
 
-    /// A sign-in after the first run (from Settings, say) still counts in
-    /// the activation funnel, once; during the first run the page's own
-    /// flow counts it.
-    @Test func signInAfterTheFirstRunRecordsSignedIn() async {
-        func steps(_ telemetry: FixtureTelemetry) -> [String] {
-            telemetry.recorded.compactMap { s -> String? in
-                if case let .step(step, ok) = s, ok { return step }
-                return nil
-            }
-        }
-        let first = FixtureTelemetry()
-        let during = makeModel(account: FixtureAccount(), telemetry: first)
-        await during.beginSignIn()
-        #expect(during.identity == "you@example.com")
-        #expect(steps(first).isEmpty, "the first run's page records it")
-
-        let telemetry = FixtureTelemetry()
-        let model = makeModel(account: FixtureAccount(), telemetry: telemetry)
-        model.onboarding.finish()
+    /// A sign-in from the main window works whatever the first run shows.
+    @Test func mainWindowSignInSetsTheIdentity() async {
+        let model = makeModel(account: FixtureAccount())
         await model.beginSignIn()
         #expect(model.identity == "you@example.com")
-        #expect(steps(telemetry) == ["signed_in"])
     }
 
-    /// "Get a code instead": a sign-in that never came back from the browser
-    /// restarts with a code, and the account is asked for exactly that.
-    @Test func aSignInThatNeverComesBackCanRestartWithACode() async throws {
-        let account = CodeAskingAccount()
-        let model = makeModel(account: account)
-        let first = Task { await model.beginSignIn() }
-        try await waitUntil { account.starts == [false] }
-        first.cancel()
-        model.cancelSignIn()
-        let byCode = Task { await model.beginSignIn(code: true) }
-        try await waitUntil { account.starts == [false, true] }
-        try await waitUntil { if case .waiting = model.signIn { true } else { false } }
-        guard case let .waiting(userCode, _) = model.signIn else {
-            Issue.record("expected a waiting sign-in, got \(model.signIn)")
-            return
-        }
-        #expect(userCode == "ABCD-EFGH")
-        byCode.cancel()
-        model.cancelSignIn()
-    }
-
-    /// A sign-in that never finishes: Cancel stops it, a timeout fails it,
-    /// and each counts by its kind only (never the message).
+    /// A sign-in that never finishes: Cancel stops it, a timeout fails it.
     @Test func aStuckSignInCanBeCancelledAndTimesOut() async throws {
-        let telemetry = FixtureTelemetry()
         let account = StuckAccount()
-        let model = makeModel(account: account, telemetry: telemetry)
+        let model = makeModel(account: account)
         let first = Task { await model.beginSignIn() }
         try await waitUntil { if case .waiting = model.signIn { true } else { false } }
         #expect(model.signIn == .waiting(userCode: "ABCD-EFGH", opened: true))
@@ -510,29 +453,23 @@ struct ViewModelTests {
         #expect(model.signInFooter.actionLabel == "Try again")
         #expect(model.signInToast?.title == "Sign-in didn't finish")
         second.cancel()
-        let kinds = telemetry.recorded.compactMap { s -> String? in
-            if case let .signInFailed(kind) = s { return kind }
-            return nil
-        }
-        #expect(kinds == ["cancelled", "timeout"])
     }
 
     /// Every way the account's sign-in fails is shown in the sidebar's
     /// foot with its reason, Try again and a toast; never a silent stop.
     @Test func everySignInFailureIsShownWithItsReason() async throws {
-        let cases: [(Error, AppSignInFailure, String)] = [
-            (CuaError.Http(message: "could not reach the sign-in service: error sending request"), .offline, "transport"),
-            (CuaError.Timeout(message: "device authorization expired before it was completed"), .notConfirmed, "timeout"),
-            (CuaError.Unauthenticated(message: "sign-in was declined in the browser: access_denied"), .declined, "permission_denied"),
-            (CuaError.Unauthenticated(message: "Code not valid"), .codeRejected, "unauthenticated"),
-            (CuaError.Http(message: "the sign-in service answered HTTP 503: down"), .serviceUnavailable, "http"),
-            (CuaError.Internal(message: "credential store: User interaction is not allowed."), .couldNotSave, "internal"),
+        let cases: [(Error, AppSignInFailure)] = [
+            (CuaError.Http(message: "could not reach the sign-in service: error sending request"), .offline),
+            (CuaError.Timeout(message: "device authorization expired before it was completed"), .notConfirmed),
+            (CuaError.Unauthenticated(message: "sign-in was declined in the browser: access_denied"), .declined),
+            (CuaError.Unauthenticated(message: "Code not valid"), .codeRejected),
+            (CuaError.Http(message: "the sign-in service answered HTTP 503: down"), .serviceUnavailable),
+            (CuaError.Internal(message: "credential store: User interaction is not allowed."), .couldNotSave),
         ]
-        for (error, reason, kind) in cases {
+        for (error, reason) in cases {
             for whileStarting in [true, false] {
-                let telemetry = FixtureTelemetry()
                 let account = FailingAccount(error: error, whileStarting: whileStarting)
-                let model = makeModel(account: account, telemetry: telemetry)
+                let model = makeModel(account: account)
                 await model.beginSignIn()
                 guard case let .failed(got, message, detail) = model.signIn else {
                     Issue.record("\(error): \(model.signIn)")
@@ -546,11 +483,6 @@ struct ViewModelTests {
                 #expect(footer.actionLabel == "Try again")
                 #expect(footer.detail == detail)
                 #expect(model.signInToast != nil, "a failure toasts")
-                let kinds = telemetry.recorded.compactMap { s -> String? in
-                    if case let .signInFailed(kind) = s { return kind }
-                    return nil
-                }
-                #expect(kinds == [kind])
             }
         }
     }
@@ -601,7 +533,7 @@ struct ViewModelTests {
         let model = makeModel(account: account, agents: agents)
         await model.loadSettings()
         let page = model.settingsPage
-        #expect(page.sections.map(\.id) == ["account", "teams", "general", "runtimes", "privacy", "agents"])
+        #expect(page.sections.map(\.id) == ["account", "teams", "general", "runtimes", "agents"])
         // Settings, Runtimes: one row per kind; Virtual machines picks runtime.vm.
         let runtimes = { model.settingsPage.sections.first { $0.id == "runtimes" }!.rows }
         #expect(runtimes().map(\.id) == ["runtime:container", "runtime:vm", "runtime:microvm"])

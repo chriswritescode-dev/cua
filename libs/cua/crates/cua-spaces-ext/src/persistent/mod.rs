@@ -842,22 +842,15 @@ impl Persistent {
     /// the home, and starts the harness with its memory in the home and
     /// the bridge attached.
     pub async fn start(&self, name: &str, prompt: &str) -> Result<Delivery> {
-        self.start_from(name, prompt, "persistent").await
+        self.start_with(name, prompt, None).await
     }
 
-    /// [`Self::start`], recording `entry` (`persistent` or `routine`) as
-    /// where the run was started from.
-    async fn start_from(&self, name: &str, prompt: &str, entry: &str) -> Result<Delivery> {
-        self.start_with(name, prompt, entry, None).await
-    }
-
-    /// [`Self::start_from`]; `restore`: a durable member's journal from the
-    /// Volume and the epoch to continue it at.
+    /// [`Self::start`], keeping `restore`: a durable member's journal from
+    /// the Volume and the epoch to continue it at.
     async fn start_with(
         &self,
         name: &str,
         prompt: &str,
-        entry: &str,
         restore: Option<(u64, std::collections::BTreeMap<String, Vec<u8>>)>,
     ) -> Result<Delivery> {
         let rec = self.get(name)?;
@@ -865,7 +858,7 @@ impl Persistent {
         if restore.is_some() && !rec.policy.durable {
             return Err(Error::invalid(format!("{name} is not durable")));
         }
-        self.start_session(&rec, prompt, entry, restore).await
+        self.start_session(&rec, prompt, restore).await
     }
 
     /// Starts a run of the session `view` shows. Session 1 is the home's
@@ -879,7 +872,6 @@ impl Persistent {
         &self,
         view: &AgentRecord,
         prompt: &str,
-        entry: &str,
         restore: Option<(u64, std::collections::BTreeMap<String, Vec<u8>>)>,
     ) -> Result<Delivery> {
         let k = view.k();
@@ -975,14 +967,10 @@ impl Persistent {
             )
             .await;
         let started = match started {
-            Ok(s) => {
-                cua_spaces::agents::telemetry::started(&agents, &rec.space, entry, &s);
-                s
-            }
+            Ok(s) => s,
             Err(e) => {
                 self.release_writer(&rec).await;
                 let e = Error::from(e);
-                cua_spaces::agents::telemetry::start_failed(&rec.harness, &rec.space, entry, &e);
                 let msg = e.to_string();
                 let _ = self.update_in(&rec, |r| r.last_error = Some(msg.clone()));
                 return Err(e);
@@ -1007,18 +995,18 @@ impl Persistent {
     /// the home restored) when it has none. Refused while a turn runs or
     /// while paused.
     pub async fn send(&self, name: &str, text: &str) -> Result<Delivery> {
-        self.send_from(name, text, "persistent").await
+        self.send_from(name, text).await
     }
 
-    /// [`Self::send`], recording `entry` for a run it starts.
-    async fn send_from(&self, name: &str, text: &str, entry: &str) -> Result<Delivery> {
+    /// [`Self::send`] for one of this member's own (not external) sessions.
+    async fn send_from(&self, name: &str, text: &str) -> Result<Delivery> {
         let rec = self.get(name)?;
         self.not_external(&rec)?;
-        self.send_session(&rec, text, entry).await
+        self.send_session(&rec, text).await
     }
 
     /// [`Self::send_from`] to the session `view` shows.
-    async fn send_session(&self, view: &AgentRecord, text: &str, entry: &str) -> Result<Delivery> {
+    async fn send_session(&self, view: &AgentRecord, text: &str) -> Result<Delivery> {
         let rec = self.get(&view.name)?.session(view.k());
         let name = rec.name.as_str();
         if rec.paused {
@@ -1074,7 +1062,7 @@ impl Persistent {
                 _ => {}
             }
         }
-        self.start_session(&rec, text, entry, None).await
+        self.start_session(&rec, text, None).await
     }
 
     /// Whether the idle run `run` of `rec` must not take another message:
@@ -1111,9 +1099,7 @@ impl Persistent {
             return Ok(None);
         };
         let agents = self.agents_for(&rec.space).await?;
-        cua_spaces::agents::telemetry::before_stop(&agents, run).await;
         agents.stop(run).await?;
-        cua_spaces::agents::telemetry::stopped(run);
         Ok(Some(run.clone()))
     }
 
@@ -1823,14 +1809,6 @@ impl Persistent {
                 report.notified += 1;
             }
             self.update_in(&rec, |r| r.saved_turn = turn)?;
-        }
-        let run_failed = failed.is_some();
-        // Agent-run telemetry: the end of a run this install started.
-        if (ended.is_some() || run_failed)
-            && cua_telemetry::global().agent_run_pending(&run)
-            && let Ok(info) = agents.status(&run).await
-        {
-            cua_spaces::agents::telemetry::observe(&info);
         }
         if page.cursor != rec.cursor {
             let cursor = page.cursor;

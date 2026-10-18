@@ -6,7 +6,7 @@
 // lays it out, and the Keyvault's reason when it is unavailable.
 
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { BridgeProvider } from "@/bridge";
 import type { DataAdapter } from "@/bridge/adapter";
@@ -100,16 +100,10 @@ describe.skipIf(!wasmBuilt)("as the SwiftUI app (real routes, wasm core)", () =>
     );
   });
 
-  it("General keeps the privacy line with its link; Welcome's Show again is in About", async () => {
+  it("General has no usage-data row; About's Show again starts the first run over", async () => {
     const { router } = await mount("/settings/general");
-    const row = await waitFor(() => {
-      const r = document.querySelector<HTMLElement>('[data-setting-row="telemetry"]');
-      if (!r) throw new Error("no usage data row");
-      return r;
-    });
-    expect(row.textContent).toMatch(/Which features you use and when something goes wrong\./);
-    expect(within(document.querySelector<HTMLElement>("[data-telemetry-link]")!.parentElement!).getByText("What is collected")).toBeTruthy();
-    expect(document.body.textContent).not.toContain("Crash reports and feature counts");
+    await waitFor(() => expect(document.querySelector("[data-setting-row=notch], [aria-label=Appearance]")).toBeTruthy());
+    expect(document.querySelector('[data-setting-row="telemetry"]')).toBeNull();
     await router.navigate({ to: "/settings/about" });
     const welcome = await waitFor(() => {
       const w = document.querySelector<HTMLElement>("[data-about-welcome]");

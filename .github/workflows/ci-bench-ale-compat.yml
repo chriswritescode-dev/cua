@@ -35,7 +35,6 @@ jobs:
         # cua-core 0.1.18, cua-agent 0.7.38) co-installed with this cua-bench.
         deps: [root, pinned]
     env:
-      CUA_TELEMETRY_ENABLED: "false"
       CUA_BENCH_NO_BANNER: "1"
     steps:
       - name: Check out Cua

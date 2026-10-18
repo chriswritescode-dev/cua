@@ -31,7 +31,6 @@ label_old=com.trycua.spacesd.host
 label_new=com.trycua.spaces.helper
 gui="gui/$(id -u)"
 fails=0
-export CUA_TELEMETRY=0
 
 pass() { printf 'PASS  %s\n' "$*"; }
 fail() { printf 'FAIL  %s\n' "$*"; fails=$((fails + 1)); }

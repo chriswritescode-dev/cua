@@ -29,8 +29,6 @@ import type { DriveMountInput } from "../model/persistent";
 import type { SpaceOs } from "../model/types";
 import { answerOrNull, createDriveBridge, type DriveBridge } from "../native/drive";
 import type { SignInStart } from "../native/spacesBridge";
-import { storageSignals } from "../model/telemetry";
-import { telemetryBridge, type TelemetryBridge, type TelemetryView } from "../native/telemetry";
 import { createLoginItemBridge, type LoginItemBridge } from "../native/loginItem";
 import { writeLaunchChoice, type LoginItemStatus } from "../model/loginItem";
 import { settingsPage, type SettingsRow, type SettingsSection, type SignInPhase } from "../model/window";
@@ -98,8 +96,6 @@ interface SettingsPanelProps {
   onOpenExternal: (url: string) => void;
   /** "Show again": first run from the start. */
   onShowWelcome?: () => void;
-  /** Usage telemetry (the shell's; a fallback outside it). */
-  telemetry?: TelemetryBridge;
   /** The Cua Volume's storage, mount and cache (the daemon's `drive_*` tools). */
   drive?: DriveBridge;
   /** This machine's system (the platform the app runs on). */
@@ -115,8 +111,8 @@ interface SettingsPanelProps {
 /**
  * Settings, shown as a page of the main window (never in the notch panel),
  * with its own scroll. The sections, rows, words and states are the app
- * core's `settings::page` (Account, General, Privacy, AI agents; one line
- * per row), the same page the SwiftUI app draws; this runs what the buttons
+ * core's `settings::page` (Account, General, AI agents; one line per row),
+ * the same page the SwiftUI app draws; this runs what the buttons and
  * and choices ask for. Keyboard events are kept local so the panel's inputs
  * never leak navigation keys to the portal's global handler.
  */
@@ -127,7 +123,6 @@ export function SettingsPanel({
   auth,
   onOpenExternal,
   onShowWelcome,
-  telemetry: telemetryProp,
   drive: driveProp,
   os,
   loginItem: loginItemProp,
@@ -138,39 +133,9 @@ export function SettingsPanel({
   // Re-renders the panel when the language changes (the core's rows are words too).
   const tl = useT("settings");
   const [localeChoice, setLocaleChoiceState] = useState(savedLocaleChoice);
-  const telemetry = useMemo(() => telemetryProp ?? telemetryBridge(), [telemetryProp]);
   const experiments = useExperiments();
   const drive = useMemo(() => driveProp ?? createDriveBridge(), [driveProp]);
   const storage = useStorage(drive, os ?? hostOs());
-
-  // Privacy: the usage-telemetry switch (the same setting as `cua telemetry
-  // off`). Opening Settings also counts as seeing the first-run notice.
-  const [telemetryView, setTelemetryView] = useState<TelemetryView | null>(null);
-  const [telemetryError, setTelemetryError] = useState<string | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    void telemetry
-      .acknowledgeNotice()
-      .then((v) => {
-        if (!cancelled) setTelemetryView(v);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) setTelemetryError(String(e));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [telemetry]);
-  const setTelemetry = useCallback(
-    (on: boolean) => {
-      setTelemetryError(null);
-      telemetry
-        .setEnabled(on)
-        .then(setTelemetryView)
-        .catch((e: unknown) => setTelemetryError(e instanceof Error ? e.message : String(e)));
-    },
-    [telemetry],
-  );
 
   // General: launch at login. The toggle shows what the system holds, read
   // again after every change; the change saves the user's choice.
@@ -339,13 +304,6 @@ export function SettingsPanel({
     signIn: phase,
     canSignOut: Boolean(auth) && Boolean(identity),
     menuBar,
-    telemetry: telemetryView
-      ? {
-          enabled: telemetryView.enabled,
-          lockedBy:
-            telemetryView.sourceKind !== "config" && telemetryView.sourceKind !== "default" ? telemetryView.source : null,
-        }
-      : null,
     agents: agentRows,
     agentsBusy,
     agentsPending: agentPending,
@@ -387,9 +345,8 @@ export function SettingsPanel({
   };
 
   const choose = (row: SettingsRow, id: string) => {
-    if (row.id.startsWith("experiment:")) chooseExperimentRow(row.id, id, telemetry);
+    if (row.id.startsWith("experiment:")) chooseExperimentRow(row.id, id);
     else if (row.id === "notch") onMenuBarMode(id === "hide");
-    else if (row.id === "telemetry") setTelemetry(id === "on");
     else if (row.id === "launch-at-login") setLaunchAtLogin(id === "on");
   };
 
@@ -401,8 +358,7 @@ export function SettingsPanel({
     ...experimentsPage(experiments).sections,
   ];
 
-  const sectionError = (id: string) =>
-    id === "privacy" ? telemetryError : id === "agents" ? agentsError : null;
+  const sectionError = (id: string) => (id === "agents" ? agentsError : null);
 
   return (
     <div
@@ -714,9 +670,6 @@ function useStorage(drive: DriveBridge, os: SpaceOs) {
     async (request: StorageRequest) => {
       // Through the ref, so a reload right after sees this answer.
       const settle = (action: StorageAction) => {
-        // A storage choice saved, the Finder volume on or off, Open in
-        // Finder: the usage events the app core derives.
-        telemetryBridge().recordSignals(storageSignals(inputRef.current, stateRef.current, action));
         const n = reduceStorage(stateRef.current, action);
         stateRef.current = n;
         setState(n);

@@ -45,9 +45,6 @@ describe.skipIf(!wasmBuilt)("a sign-in that never finishes", () => {
         detail: null,
       }),
     );
-    await store.telemetry.flush();
-    const kinds = adapter.state.telemetry.flatMap((s) => (s.type === "sign-in-failed" ? [s.errorKind] : []));
-    expect(kinds).toEqual(["cancelled", "timeout"]);
     store.dispose();
   });
 });
@@ -139,7 +136,6 @@ describe("a sign-in that fails in the host (Ellie: it silently failed)", () => {
       }),
     );
     expect(session()?.signInUrl).toBeNull();
-    await store.telemetry.flush();
     store.dispose();
   });
 

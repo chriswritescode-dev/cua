@@ -38,14 +38,7 @@ fn desktop_capture_does_not_require_sbin_on_path() {
             socket: &socket,
         };
         assert!(Command::new("/usr/bin/open")
-            .args([
-                "-n",
-                "-g",
-                "--env",
-                &format!("PATH={path}"),
-                "--env",
-                "CUA_DRIVER_RS_TELEMETRY_ENABLED=false"
-            ])
+            .args(["-n", "-g", "--env", &format!("PATH={path}"),])
             .arg(app)
             .args(["--args", "serve", "--socket"])
             .arg(&socket)

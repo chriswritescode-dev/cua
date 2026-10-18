@@ -13,6 +13,7 @@ import { agentKeysMethods } from "./agent-keys";
 import { agentsMethods, agentsSignature } from "./agents";
 import { appMethods } from "./app";
 import { checklistMethods } from "./checklist";
+import { crashReportingMethods } from "./crash-reporting";
 import { cloudsMethods } from "./clouds";
 import type { BridgeContext } from "./context";
 import { devicesMethods } from "./devices";
@@ -41,7 +42,6 @@ import { spacesMethods } from "./spaces";
 import { followStartup, startupMethods } from "./startup";
 import { storageMethods } from "./storage";
 import { streamMethods } from "./stream";
-import { telemetryMethods } from "./telemetry";
 import { teleportMethods } from "./teleport";
 import { encode } from "./value";
 import { volumeMethods } from "./volume";
@@ -62,7 +62,7 @@ export const AREAS = [
   devicesMethods,
   storageMethods,
   notificationsMethods,
-  telemetryMethods,
+  crashReportingMethods,
   spaceDetailMethods,
   filesMethods,
   hostSetupMethods,
@@ -125,7 +125,7 @@ function followModel(ctx: BridgeContext): () => void {
     // The broker's overview, whether an action is running, and the copies dismissed from the notch.
     "keyvault.changed": () => [encode(model.keyvault.overview), model.keyvault.busy, model.keyvault.dismissed],
     "checklist.changed": () => model.checklist.stored,
-    // Where the updater is: found, downloading, ready.
+    // Where the updater is: checking, or the found release and how to rebuild.
     "update.changed": () => updatesModel(ctx).updateState,
   };
   const byChange: Record<string, string> = {

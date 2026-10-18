@@ -72,7 +72,6 @@ def _capture_native(monkeypatch) -> list:
     monkeypatch.setattr(
         native_module, "local_runtime", lambda: SimpleNamespace(sandboxes=lambda: _Sandboxes())
     )
-    monkeypatch.setattr(sandbox_module, "_TELEMETRY_AVAILABLE", False)
     # What reaches the SDK, independent of whether this host has QEMU.
     monkeypatch.setattr("cua_sandbox.runtime.compat._has_qemu", lambda: True)
     return seen

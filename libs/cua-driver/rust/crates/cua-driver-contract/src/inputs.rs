@@ -1037,7 +1037,7 @@ impl ToolInput for TypeTextInput {
 #[serde(deny_unknown_fields)]
 pub struct ClipboardReadInput {
     /// Return plain-text clipboard content in addition to the available types.
-    /// Clipboard content is privacy-sensitive and is never retained in telemetry.
+    /// Clipboard content is privacy-sensitive and is never retained beyond the response.
     #[serde(default)]
     pub include_text: bool,
     /// For multi-call work, prefer a short public session label and repeat it on every call that

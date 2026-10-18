@@ -3,7 +3,7 @@
 
 import { useEffect } from "react";
 
-import { usePlanLimitNotice, usePlanLimitTelemetry, useSession } from "@/bridge";
+import { upgradeLink, useBridge, usePlanLimitNotice, useSession } from "@/bridge";
 import { setErrorAction } from "@/components/ui/toast";
 
 /**
@@ -13,14 +13,12 @@ import { setErrorAction } from "@/components/ui/toast";
  * the error's own; the button opens the plan's page on the account app.
  * Renders nothing.
  *
- * Usage data (CUA-1881): the refusal shown is `cua_plan_limit_shown` and
- * Upgrade `cua_upgrade_link_opened`, at `app_create` (a Space create's
- * toast) or `app_connect` (opening or starting one); the link says so too
- * (`?from=`).
+ * The link says where it opened from (`?from=app_create` for a Space
+ * create's toast, `app_connect` for opening or starting one).
  */
 export function PlanLimitToastAction() {
   const noticeFor = usePlanLimitNotice();
-  const plans = usePlanLimitTelemetry();
+  const { core } = useBridge();
   const { openExternal } = useSession();
   useEffect(() => {
     setErrorAction((text, group) => {
@@ -28,17 +26,12 @@ export function PlanLimitToastAction() {
       const url = notice?.upgradeUrl;
       if (!notice || !url) return null;
       const surface = group === "create" ? "app_create" : "app_connect";
-      const facts = { kind: notice.kind, plan: notice.plan };
-      plans.shown(surface, facts);
       return {
         label: notice.upgrade,
-        onClick: () => {
-          plans.opened(surface, facts);
-          void openExternal(plans.link(url, surface)).catch(() => {});
-        },
+        onClick: () => void openExternal(upgradeLink(core, url, surface)).catch(() => {}),
       };
     });
     return () => setErrorAction(null);
-  }, [noticeFor, openExternal, plans]);
+  }, [noticeFor, openExternal, core]);
   return null;
 }

@@ -9,7 +9,6 @@ import type { Placement, SandboxImage } from "../../model/images";
 import type { Runtime } from "../../model/types";
 import type { GpuChoice } from "../../native/spacesBridge";
 import type { LocalStorage } from "../../native/local";
-import { telemetryBridge, type TelemetryBridge } from "../../native/telemetry";
 import { hostOs } from "../../model/host";
 import { ImageField, type ImageFieldView } from "./ImageField";
 import { Sym } from "./Sym";
@@ -57,8 +56,6 @@ export interface NewSpaceWizardProps {
   /** "Connect by address": awaited so the handshake error shows inline. */
   onAddByAddress: (url: string, token?: string, name?: string) => Promise<unknown>;
   onCancel: () => void;
-  /** Usage telemetry (the shell's; nothing outside it). */
-  telemetry?: TelemetryBridge;
   /** Upper bound for the vCPU slider. */
   maxCpus?: number;
   /** This Mac's architecture (`arm64`, `amd64`), from `local_status`. */
@@ -253,7 +250,6 @@ export function NewSpaceWizard({
   onCreate,
   onAddByAddress,
   onCancel,
-  telemetry: telemetryProp,
   maxCpus = Math.max(2, Math.min(16, globalThis.navigator?.hardwareConcurrency || 8)),
   hostArch,
   storage,
@@ -303,13 +299,7 @@ export function NewSpaceWizard({
       core<WizardState>("wizard.initial", { env: { ...env, nameSeed: nameSeed() } }),
     ),
   );
-  // The panel opened, was cancelled, or created a Space (the SwiftUI app
-  // records the same).
-  const telemetry = useMemo(() => telemetryProp ?? telemetryBridge(), [telemetryProp]);
-  const cancel = () => {
-    telemetry.recordSignals([{ type: "space-wizard", action: "cancelled" }]);
-    onCancel();
-  };
+  const cancel = () => onCancel();
   const dispatch = (action: WizardAction) =>
     setState((s) => core<WizardState>("wizard.reduce", { state: s, action, env }));
   // Until the person picks, follow the configured default (it can arrive
@@ -323,10 +313,7 @@ export function NewSpaceWizard({
   useLayoutEffect(() => {
     if (started.current) return;
     started.current = true;
-    if (quick && v.canContinue) {
-      telemetry.recordSignals([{ type: "space-wizard", action: "submitted" }]);
-      onCreate(v.plan);
-    } else telemetry.recordSignals([{ type: "space-wizard", action: "opened" }]);
+    if (quick && v.canContinue) onCreate(v.plan);
   }, []);
   const step = v.step;
 
@@ -577,10 +564,7 @@ export function NewSpaceWizard({
             <button
               type="button"
               className="dw-btn dw-btn-primary"
-              onClick={() => {
-                telemetry.recordSignals([{ type: "space-wizard", action: "submitted" }]);
-                onCreate(v.plan);
-              }}
+              onClick={() => onCreate(v.plan)}
             >
               {v.primaryLabel}
             </button>

@@ -30,12 +30,10 @@ function host(usage: RelayUsage | null) {
   const demo = createDemoAdapter({ latencyMs: 0 });
   demo.state.relayUsage = usage;
   const opened: string[] = [];
-  const features: string[] = [];
   const adapter: DataAdapter = {
     ...demo,
     call: (op, args) => {
       if (op === "session.openExternal") opened.push((args as { url: string }).url);
-      if (op === "telemetry.track") for (const s of (args as { signals: { feature?: string }[] }).signals) if (s.feature) features.push(s.feature);
       return demo.call(op, args);
     },
   };
@@ -45,7 +43,7 @@ function host(usage: RelayUsage | null) {
         {reason ? <UpgradeCard reason={reason} /> : <RelayAllowanceNotice />}
       </BridgeProvider>,
     );
-  return { opened, features, view };
+  return { opened, view };
 }
 
 describe("the upsell_cards flag", () => {
@@ -68,9 +66,9 @@ describe.skipIf(!wasmBuilt)("<UpgradeCard>", () => {
     expect(document.querySelector("[data-upgrade-card]")).toBeNull();
   });
 
-  it("flag on: says what happened, what Pro gives and the price; Upgrade opens the Pro checkout and is counted", async () => {
+  it("flag on: says what happened, what Pro gives and the price; Upgrade opens the Pro checkout", async () => {
     setFlagOverride("upsell_cards", true);
-    const { view, opened, features } = host(reached);
+    const { view, opened } = host(reached);
     view("hours");
     const card = await waitFor(() => {
       const el = document.querySelector("[data-upgrade-card]");
@@ -83,16 +81,14 @@ describe.skipIf(!wasmBuilt)("<UpgradeCard>", () => {
     expect(card.textContent).toContain("$18 a month");
     fireEvent.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
     await waitFor(() => expect(opened).toEqual(["https://app.cua.ai/buy/pro?from=app_card_hours"]));
-    await waitFor(() => expect(features).toEqual(["upsell_card_hours_shown", "upsell_card_hours_click"]));
   });
 
-  it("Not now closes it and is counted", async () => {
+  it("Not now closes it", async () => {
     setFlagOverride("upsell_cards", true);
-    const { view, features } = host(reached);
+    const { view } = host(reached);
     view("invite");
     fireEvent.click(await screen.findByRole("button", { name: "Not now" }));
     await waitFor(() => expect(document.querySelector("[data-upgrade-card]")).toBeNull());
-    await waitFor(() => expect(features).toEqual(["upsell_card_invite_shown", "upsell_card_invite_dismiss"]));
   });
 
   it("a team plan has nothing to buy for an invite", async () => {

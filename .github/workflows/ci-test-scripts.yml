@@ -75,7 +75,6 @@ on:
       - "libs/cua-driver/rust/crates/cua-driver/src/cli.rs"
       - "libs/cua-driver/rust/crates/cua-driver/src/main.rs"
       - "libs/cua-driver/rust/crates/cua-driver/src/skills.rs"
-      - "libs/cua-driver/rust/crates/cua-driver/src/telemetry.rs"
       - "libs/cua-driver/rust/crates/cua-perception/VERSION"
       - "libs/cua-driver/rust/scripts/CuaDriverBundle/**"
       - "libs/cua-driver/typescript/package.json"
@@ -88,11 +87,6 @@ on:
 concurrency:
   group: ci-test-scripts-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
-env:
-  # Cua programs and packages run here never send usage telemetry.
-  CUA_TELEMETRY: "0"
-  DO_NOT_TRACK: "1"
 
 permissions:
   contents: read

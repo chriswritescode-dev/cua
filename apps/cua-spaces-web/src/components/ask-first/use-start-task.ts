@@ -3,7 +3,7 @@
 
 import { useNavigate, useRouter } from "@tanstack/react-router";
 
-import { firstMessage, newPendingId, threadOpAvailable, useAgents, useBridge, useFeatureRecorder, useFirstSpaceOffers, useFlag, useSpaces, type AgentMember, type HostStatus } from "@/bridge";
+import { firstMessage, newPendingId, threadOpAvailable, useAgents, useBridge, useFirstSpaceOffers, useFlag, useSpaces, type AgentMember, type HostStatus } from "@/bridge";
 import { enqueue, flushQueue, resolveQueue } from "@/components/space-thread/queued";
 import { sendWithSummon } from "@/components/space-thread/summon";
 import { useConnectors } from "@/hooks/use-connectors";
@@ -30,7 +30,6 @@ export function useStartTask(): {
   const { data: host } = useBridge();
   const { startRun } = useAgents();
   const { offers } = useFirstSpaceOffers();
-  const record = useFeatureRecorder();
   const { core } = useBridge();
   // With the redesign, the job goes straight to its Space: the page is the Space's, and
   // the job is its first message, @mentioning the agent (the same summon as the composer's).
@@ -108,7 +107,6 @@ export function useStartTask(): {
     start: ({ prompt, agent, where }) => {
       const target = taskTarget(where);
       const task = addAskTask({ prompt: prompt.trim(), agent, os: whereOs(where), spaceId: target.kind === "space" ? target.spaceId : null, onHost: target.kind === "host" });
-      record("ask_first_task_started");
       if (!inSpace) {
         void navigate({ to: "/home/$taskId", params: { taskId: task.id } });
         run(task.id, target);
@@ -139,7 +137,6 @@ export function useStartTask(): {
       const os = where ? whereOs(where) : task.os;
       const spaceId = target.kind === "space" ? target.spaceId : target.kind === "create" && !where ? task.spaceId : null;
       updateAskTask(task.id, { error: null, runId: null, pendingId: null, os, spaceId, onHost: target.kind === "host" });
-      record("ask_first_task_retried");
       run(task.id, target);
     },
   };

@@ -127,7 +127,7 @@ import Testing
         let model = AppModel(backend: pending, keyvault: KeyvaultModel(client: nil),
                              onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
                              settingsPath: dir.appendingPathComponent("settings.json").path,
-                             telemetry: FixtureTelemetry(), startup: startup ?? StartupModel())
+                             startup: startup ?? StartupModel())
         // Short, with room for a loaded test run.
         model.listTimeout = 1
         model.hostTimeout = 1

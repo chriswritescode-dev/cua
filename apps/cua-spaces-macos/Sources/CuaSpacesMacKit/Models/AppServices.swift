@@ -6,9 +6,9 @@ import CuaSDK
 import CuaSpacesFFI
 import Foundation
 
-// The account, telemetry and coding-agent setup, behind protocols so
-// fixtures and tests never touch the account's real session, telemetry
-// config or agent configs. Rows and words are the core's.
+// The account and coding-agent setup, behind protocols so
+// fixtures and tests never touch the account's real session or agent
+// configs. Rows and words are the core's.
 
 /// Coding agents on this machine (the SDK's agent onboarding).
 public protocol AgentSetupRunning: AnyObject, Sendable {
@@ -229,127 +229,6 @@ public final class FixtureAgentSetup: AgentSetupRunning, @unchecked Sendable {
             current[i].cuaConfigured = false
         }
         return []
-    }
-}
-
-/// The one-time notice that usage data is now linked to the signed-in
-/// account (CUA-1881), for machines that saw the older "anonymous" wording:
-/// the SDK's words (`telemetryLinkNotice`) and whether it is due now.
-public struct LinkNoticeCopy: Sendable, Equatable {
-    public var due: Bool
-    public var title: String
-    public var body: String
-    /// "Got it": keeps usage data on.
-    public var okLabel: String
-    /// "Turn off usage data".
-    public var turnOffLabel: String
-    /// The link to what is collected.
-    public var detailsLabel: String
-    public var docsUrl: String
-
-    public init(due: Bool, title: String, body: String, okLabel: String, turnOffLabel: String,
-                detailsLabel: String, docsUrl: String) {
-        self.due = due
-        self.title = title
-        self.body = body
-        self.okLabel = okLabel
-        self.turnOffLabel = turnOffLabel
-        self.detailsLabel = detailsLabel
-        self.docsUrl = docsUrl
-    }
-}
-
-/// The usage-telemetry switch, and where the app's usage events go.
-public protocol TelemetryRunning: AnyObject, Sendable {
-    func status() -> AppTelemetryInput
-    func setEnabled(_ on: Bool) throws -> AppTelemetryInput
-    /// Records signals the app core derived (`appTelemetry*`): the same ones
-    /// the Tauri app sends for the same step.
-    func record(_ signals: [AppTelemetrySignal])
-    /// The first run's usage notice was on screen and the person moved on
-    /// (left Welcome, finished the first run, or used the switch beside the
-    /// note): from here usage events may be sent. Keeps the switch as it is.
-    func acknowledgeNotice()
-
-    /// The one-time linking notice: its words and whether it is due now.
-    func linkNotice() -> LinkNoticeCopy
-    /// The person closed it (either button): linking starts at the next
-    /// launch, never in this process.
-    func acknowledgeLinkNotice()
-}
-
-/// The SDK's telemetry setting (`$CUA_HOME/config.toml`, the same switch as
-/// `cua telemetry off`); the environment wins and locks it.
-public final class LiveTelemetry: TelemetryRunning, @unchecked Sendable {
-    public init() {}
-
-    static func input(_ s: TelemetryStatus) -> AppTelemetryInput {
-        let locked = s.sourceKind != "config" && s.sourceKind != "default"
-        return AppTelemetryInput(enabled: s.enabled, lockedBy: locked ? s.source : nil, noticeShown: s.noticeShown)
-    }
-
-    public func status() -> AppTelemetryInput { Self.input(telemetryStatus()) }
-    public func setEnabled(_ on: Bool) throws -> AppTelemetryInput { Self.input(try telemetrySetEnabled(enabled: on)) }
-    /// On the SDK's client: the switch, the first-run notice and the schema
-    /// apply (fixed words only).
-    public func record(_ signals: [AppTelemetrySignal]) {
-        guard !signals.isEmpty else { return }
-        _ = appTelemetryRecord(signals: signals)
-    }
-    /// Writes the notice marker (and records the `app_launched` that waited
-    /// for it) once; the switch stays as it is.
-    public func acknowledgeNotice() {
-        let s = telemetryStatus()
-        guard !s.noticeShown else { return }
-        do { try appTelemetryWelcomeLeft(on: s.enabled) } catch {
-            NSLog("Cua Spaces: the usage notice was not recorded: %@", LiveSpacesBackend.words(error))
-        }
-    }
-
-
-    public func linkNotice() -> LinkNoticeCopy {
-        let n = telemetryLinkNotice()
-        return LinkNoticeCopy(due: telemetryLinkNoticeDue(), title: n.title, body: n.body, okLabel: n.okLabel,
-                              turnOffLabel: n.turnOffLabel, detailsLabel: n.detailsLabel, docsUrl: n.docsUrl)
-    }
-
-    public func acknowledgeLinkNotice() { telemetryAcknowledgeLinkNotice() }
-}
-
-/// An in-memory switch (fixtures, tests).
-public final class FixtureTelemetry: TelemetryRunning, @unchecked Sendable {
-    public var current = AppTelemetryInput(enabled: true, lockedBy: nil, noticeShown: false)
-    public init() {}
-    public func status() -> AppTelemetryInput { current }
-    public func setEnabled(_ on: Bool) throws -> AppTelemetryInput {
-        current.enabled = on
-        return current
-    }
-    /// What the app recorded, in order (nothing leaves the process).
-    public private(set) var recorded: [AppTelemetrySignal] = []
-    public func record(_ signals: [AppTelemetrySignal]) {
-        if current.enabled { recorded += signals }
-    }
-    /// How many times the notice was acknowledged.
-    public private(set) var acknowledgements = 0
-    public func acknowledgeNotice() {
-        acknowledgements += 1
-        current.noticeShown = true
-    }
-
-    /// Whether the one-time linking notice is due (a machine that saw the older wording).
-    public var linkNoticeDue = false
-    /// How many times the notice was closed.
-    public private(set) var linkNoticeAcknowledged = 0
-    public func linkNotice() -> LinkNoticeCopy {
-        LinkNoticeCopy(due: linkNoticeDue, title: "We've updated how usage data works",
-                       body: "Cua collects usage data, like which features you use and when something goes wrong.",
-                       okLabel: "Got it", turnOffLabel: "Turn off usage data", detailsLabel: "What is collected",
-                       docsUrl: "https://cua.ai/docs/cua-sdk/concepts/telemetry")
-    }
-    public func acknowledgeLinkNotice() {
-        linkNoticeAcknowledged += 1
-        linkNoticeDue = false
     }
 }
 

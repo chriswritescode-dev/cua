@@ -76,7 +76,6 @@ describe("migrateFromSwiftApp", () => {
         copied: ["settings.json", "onboarding.json"],
         from: "0.7.2 (0.7.2.512)",
         sparkleAutomaticChecks: true,
-        sparkleAutomaticDownloads: false,
       },
     });
     // The Swift app's files stay where they are.

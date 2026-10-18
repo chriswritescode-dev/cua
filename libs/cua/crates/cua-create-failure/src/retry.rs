@@ -42,7 +42,7 @@ pub enum Subclass {
     LocalNetworkVpn,
 }
 
-/// Every [`Subclass`] word, in order (`cua_telemetry::schema::ERROR_SUBCLASSES`).
+/// Every [`Subclass`] word, in order.
 pub const SUBCLASSES: &[&str] = &[
     "none",
     "runtime_start",
@@ -201,8 +201,17 @@ mod tests {
     }
 
     #[test]
-    fn every_subclass_word_is_in_the_telemetry_schema() {
-        assert_eq!(SUBCLASSES, cua_telemetry::schema::ERROR_SUBCLASSES);
+    fn every_subclass_word_round_trips() {
+        let all = [
+            Subclass::None,
+            Subclass::RuntimeStart,
+            Subclass::DaemonUnresponsive,
+            Subclass::PullInterrupted,
+            Subclass::LocalNetworkDenied,
+            Subclass::LocalNetworkVpn,
+        ];
+        let words: Vec<&str> = all.iter().map(|s| s.as_str()).collect();
+        assert_eq!(words, SUBCLASSES);
         for w in SUBCLASSES {
             assert_eq!(Subclass::from_word(w).as_str(), *w);
         }

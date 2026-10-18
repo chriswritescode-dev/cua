@@ -69,9 +69,7 @@ fn assert_admission_hint(driver_home: Option<&Path>, admitted: bool) {
     let socket = format!("/tmp/cua-history-missing-{}.sock", uuid::Uuid::new_v4());
 
     let mut command = Command::new(driver_binary());
-    command
-        .args(["history", "status", "--socket", &socket])
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false");
+    command.args(["history", "status", "--socket", &socket]);
     match driver_home {
         Some(path) => command.env("CUA_DRIVER_RS_HOME", path),
         None => command.env_remove("CUA_DRIVER_RS_HOME"),

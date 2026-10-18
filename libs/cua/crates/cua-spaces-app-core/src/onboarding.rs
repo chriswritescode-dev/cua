@@ -18,7 +18,7 @@ use crate::drive_settings::{
 use crate::experiments::Experiments;
 use crate::installer::{CliInstallPlan, InstallMethod};
 use crate::model::SpaceOs;
-use crate::settings::{SettingsOption, SettingsRow, TelemetryInput};
+use crate::settings::{SettingsOption, SettingsRow};
 
 /// A page.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -205,21 +205,10 @@ pub struct OnboardingState {
     /// shell applies it when the first run finishes.
     #[serde(default = "ticked")]
     pub launch_at_login: bool,
-    /// The usage-data switch on Welcome: the machine's telemetry setting
-    /// (Settings' "Share usage data to help improve Cua", `cua telemetry off`), none
-    /// until the shell read it (then it shows on).
-    #[serde(default)]
-    pub telemetry: Option<TelemetryInput>,
     /// Settings, Experiments: the Cua Volume page (and its Done line) only
     /// while Cua Volume is on. Off until the shell says otherwise.
     #[serde(default)]
     pub experiments: Experiments,
-    /// The run's start was counted (`onboarding_shown`, Welcome shown):
-    /// when Welcome showed on a machine whose usage notice was already
-    /// shown, else when Welcome was left. Once per run, however often
-    /// Welcome shows again (Back).
-    #[serde(default)]
-    pub run_counted: bool,
     /// A page opened from Done's to-do list: leaving it (Continue, Skip or
     /// Back) comes back to Done.
     #[serde(default)]
@@ -228,14 +217,6 @@ pub struct OnboardingState {
 
 fn ticked() -> bool {
     true
-}
-
-impl OnboardingState {
-    /// Usage data is shared: on until the user (or the environment) turns
-    /// it off.
-    pub fn shares_usage(&self) -> bool {
-        self.telemetry.as_ref().is_none_or(|t| t.enabled)
-    }
 }
 
 /// An input.
@@ -346,21 +327,6 @@ pub enum OnboardingAction {
     },
     /// Back one page (not from Welcome or Done).
     Back,
-    /// The machine's telemetry setting, as the shell read it. Any page.
-    TelemetryLoaded {
-        /// The setting.
-        telemetry: TelemetryInput,
-    },
-    /// Welcome is on screen (each time it shows; after `telemetry-loaded`).
-    /// On a machine that already showed the usage notice, with usage data
-    /// on, the run's start counts now rather than when Welcome is left.
-    WelcomeShown,
-    /// Welcome's "Share usage data to help improve Cua" switch (not while the
-    /// environment decides). The shell writes the setting.
-    UsageDataToggled {
-        /// On.
-        on: bool,
-    },
     /// Settings, Experiments, as the shell read them (at the start, and
     /// whenever a switch changes). Any page; turning Cua Volume off on its
     /// page moves on.
@@ -411,9 +377,7 @@ pub fn initial(
         storage: StorageState::default(),
         drive_home: None,
         launch_at_login: true,
-        telemetry: None,
         experiments: Experiments::default(),
-        run_counted: false,
         revisit: false,
     }
 }
@@ -491,12 +455,6 @@ fn reduce_page(s: &OnboardingState, a: &OnboardingAction) -> OnboardingState {
     match (s.step, a) {
         (Welcome, OnboardingAction::Start) => {
             n.step = next(s, Welcome);
-            n.run_counted = true;
-        }
-        (Welcome, OnboardingAction::WelcomeShown) => {
-            if s.shares_usage() && s.telemetry.as_ref().is_some_and(|t| t.notice_shown) {
-                n.run_counted = true;
-            }
         }
         (_, OnboardingAction::CliInstalled { target }) => n.cli_target = target.clone(),
         (_, OnboardingAction::CliPlanned { plan }) => {
@@ -673,9 +631,6 @@ fn reduce_page(s: &OnboardingState, a: &OnboardingAction) -> OnboardingState {
                 }
             }
         }
-        (_, OnboardingAction::TelemetryLoaded { telemetry }) => {
-            n.telemetry = Some(telemetry.clone())
-        }
         (step, OnboardingAction::ExperimentsLoaded { experiments }) => {
             n.experiments = *experiments;
             // Turned off on its own page: the page goes (whatever it set
@@ -684,15 +639,6 @@ fn reduce_page(s: &OnboardingState, a: &OnboardingAction) -> OnboardingState {
                 n.step = next(&n, Presentation);
                 n.drive_request = None;
             }
-        }
-        (Welcome, OnboardingAction::UsageDataToggled { on })
-            if s.telemetry
-                .as_ref()
-                .is_none_or(|t| t.locked_by.as_deref().is_none_or(str::is_empty)) =>
-        {
-            let mut t = s.telemetry.clone().unwrap_or_default();
-            t.enabled = *on;
-            n.telemetry = Some(t);
         }
         (step, OnboardingAction::Back) if step != Welcome && !s.cli_installing => {
             let all = steps(s);
@@ -749,18 +695,6 @@ pub struct OnboardingView {
     /// both columns under "Try asking your agent:", to suggest what to ask a
     /// coding agent. Each copies to the clipboard on click.
     pub prompts: Vec<String>,
-    /// The first-run telemetry notice (the Welcome page, so the first run
-    /// itself can be measured): nothing is sent before it has been shown
-    /// once.
-    pub notice: Option<String>,
-    /// Its link: label.
-    pub notice_link_label: Option<String>,
-    /// Its link: URL.
-    pub notice_link_url: Option<String>,
-    /// Welcome's usage-data switch, next to the notice: nothing is sent
-    /// before the user leaves Welcome, and nothing at all while it is off.
-    #[serde(default)]
-    pub usage: Option<UsageToggle>,
     /// The Cua Volume page's card.
     pub drive: Option<DriveCard>,
     /// Done's "Launch at login" checkbox.
@@ -1007,19 +941,6 @@ fn drive_fact(s: &OnboardingState) -> String {
 }
 
 /// One answer on the This machine page.
-/// Welcome's "Share usage data to help improve Cua" switch.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UsageToggle {
-    /// "Share usage data to help improve Cua".
-    pub label: String,
-    /// On.
-    pub on: bool,
-    /// It can be changed (the environment does not decide).
-    pub enabled: bool,
-    /// Why it cannot ("Set by env DO_NOT_TRACK").
-    pub help: Option<String>,
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ModeChoice {
@@ -1156,7 +1077,7 @@ pub fn copy() -> OnboardingCopy {
         continue_label: "Continue".into(),
         try_again: "Try again".into(),
         checking: "Checking\u{2026}".into(),
-        install_script: "curl -fsSL https://cua.ai/install.sh | sh".into(),
+        install_script: "git clone https://github.com/trycua/cua.git ~/.cua/cua 2>/dev/null; git -C ~/.cua/cua pull --ff-only; cargo build --release -p cua-cli --manifest-path ~/.cua/cua/libs/cua/Cargo.toml".into(),
         install: "Install".into(),
         installing: "Installing\u{2026}".into(),
         add_to_path: "Add to PATH".into(),
@@ -1416,25 +1337,6 @@ pub fn view_for(s: &OnboardingState, os: SpaceOs, cli_page: bool) -> OnboardingV
         } else {
             vec![]
         },
-        notice: (s.step == Welcome).then(|| {
-            "Cua collects usage data, like which features you use and when something goes wrong. When you're signed in, it's linked to your account through a random ID. Never your files, what you type or your screen. Change this here or in Settings, Privacy."
-                .into()
-        }),
-        notice_link_label: (s.step == Welcome).then(|| "What is collected".into()),
-        notice_link_url: (s.step == Welcome).then(|| crate::settings::TELEMETRY_DOCS_URL.into()),
-        usage: (s.step == Welcome).then(|| {
-            let locked = s
-                .telemetry
-                .as_ref()
-                .and_then(|t| t.locked_by.clone())
-                .filter(|b| !b.is_empty());
-            UsageToggle {
-                label: "Share usage data to help improve Cua".into(),
-                on: s.shares_usage(),
-                enabled: locked.is_none(),
-                help: locked.map(|by| format!("Set by {by}")),
-            }
-        }),
         drive: (s.step == Drive).then(|| drive_card(s)),
         launch_at_login: (s.step == Done).then(|| OnboardingCheckbox {
             label: crate::login_item::DONE_LABEL.into(),

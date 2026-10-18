@@ -93,7 +93,6 @@ fn prime_agent_connection_guidance_uses_the_skill_and_cli_path() {
         .env("HOME", home.path())
         .env("USERPROFILE", home.path())
         .env("CUA_DRIVER_RS_HOME", home.path().join("driver"))
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "0")
         .output()
         .expect("run Prime Agent connection guidance");
 

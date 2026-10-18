@@ -1992,8 +1992,8 @@ pub async fn run_host_to(
             };
             opts.tailnet = tailnet;
             // The code is single use: install the driver first, so a failed
-            // download does not spend it.
-            opts.download_first = pair.is_some();
+            // install does not spend it.
+            opts.install_driver_first = pair.is_some();
             opts.name = name;
             opts.allow = allow;
             opts.driver_bin = driver_bin;

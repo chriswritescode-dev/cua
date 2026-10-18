@@ -4,7 +4,6 @@
 import i18next from "i18next";
 
 import { AVAILABLE_LOCALES, LOCALE_SETTING_KEY, detectLocale } from "./index";
-import { reportUiLocale } from "./reportLocale";
 
 /** Each language in its own language, so a user can find theirs whatever the UI says. */
 export const LOCALE_ENDONYMS: Record<(typeof AVAILABLE_LOCALES)[number], string> = {
@@ -27,8 +26,8 @@ export function savedLocaleChoice(): string {
 }
 
 /**
- * Save the Settings language choice (`"system"` clears it), switch the UI
- * live and tell telemetry which language is now in use.
+ * Save the Settings language choice (`"system"` clears it) and switch the UI
+ * live.
  */
 export async function setLocaleChoice(choice: string): Promise<void> {
   try {
@@ -39,5 +38,4 @@ export async function setLocaleChoice(choice: string): Promise<void> {
     // Storage blocked: the switch still applies for this session.
   }
   await i18next.changeLanguage(detectLocale(choice === "system" ? null : choice));
-  reportUiLocale();
 }

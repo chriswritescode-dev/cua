@@ -655,8 +655,7 @@ pub struct DriverHostOptions {
 }
 
 /// Runtime that imported the shared UniFFI SDK library. The language package
-/// selects this automatically at its root entry point; callers do not need to
-/// supply telemetry metadata.
+/// selects this automatically at its root entry point.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
 pub enum SdkClientKind {
     Python,

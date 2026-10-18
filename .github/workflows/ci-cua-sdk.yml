@@ -47,9 +47,6 @@ env:
   CARGO_NET_RETRY: "10"
   CARGO_HTTP_TIMEOUT: "120"
   CARGO_HTTP_MULTIPLEXING: "false"
-  # Cua programs and packages run here never send usage telemetry.
-  CUA_TELEMETRY: "0"
-  DO_NOT_TRACK: "1"
   CARGO_TERM_COLOR: always
   # CI checks behavior, not speed: a cheaper release profile compiles about a
   # quarter faster and the dev profile drops debug info (the line-table
@@ -250,9 +247,9 @@ jobs:
       # durable tests kill runners with POSIX signals and symlink the ACP SDK.
       # Agent onboarding: the connection-state matrix against fake harness
       # homes (fake agent binaries, a fake `cua` MCP handshake, an in-memory
-      # Keyvault), and the telemetry vocabulary its sign-in import adds to.
-      - name: Test (cua-agent-setup and cua-telemetry)
-        run: cargo test --locked --no-fail-fast -p cua-agent-setup -p cua-telemetry -- --test-threads=4
+      # Keyvault).
+      - name: Test (cua-agent-setup)
+        run: cargo test --locked --no-fail-fast -p cua-agent-setup -- --test-threads=4
       - name: Test (cua-agents and its runner)
         if: runner.os != 'Windows'
         run: cargo test --locked --no-fail-fast -p cua-agents -- --test-threads=4

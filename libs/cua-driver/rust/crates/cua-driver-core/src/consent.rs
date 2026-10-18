@@ -37,7 +37,7 @@ pub struct ProviderDecision {
 }
 
 /// Exact, bounded request rendered by a protected provider. `resource` is
-/// typed by the caller and never copied into telemetry or refusal strings.
+/// typed by the caller and never copied into logs or refusal strings.
 #[derive(Debug, Clone, Serialize)]
 pub struct ConsentRequest {
     pub schema: &'static str,

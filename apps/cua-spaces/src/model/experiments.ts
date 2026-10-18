@@ -9,7 +9,6 @@
  * Off only hides: nothing set up is undone. The SwiftUI app draws the same.
  */
 import { core } from "../core";
-import type { TelemetrySignal } from "./telemetry";
 import type { SettingsPage, SettingsSection } from "./window";
 
 /** The switches, as stored (`cua.settings.experiments`). */
@@ -38,14 +37,4 @@ export function settingsWithStorage(
   experiments: Experiments,
 ): SettingsPage {
   return core("settings.withStorage", { page, storage, experiments });
-}
-
-/** The events of a change (`experiment_on` / `experiment_off`, then the set). */
-export function experimentsChangedSignals(before: Experiments, after: Experiments): TelemetrySignal[] {
-  return core("telemetry.experimentsChanged", { before, after });
-}
-
-/** Which experiments are on (at launch). */
-export function experimentsOnSignals(experiments: Experiments): TelemetrySignal[] {
-  return core("telemetry.experimentsOn", { experiments });
 }

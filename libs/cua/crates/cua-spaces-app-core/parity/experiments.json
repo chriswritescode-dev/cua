@@ -17,7 +17,6 @@
     "canSignOut": true,
     "signIn": { "kind": "idle" },
     "menuBar": false,
-    "telemetry": { "enabled": true },
     "agents": [],
     "loginItem": { "status": "enabled" }
   },

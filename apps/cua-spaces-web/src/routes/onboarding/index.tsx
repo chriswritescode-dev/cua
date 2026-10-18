@@ -12,7 +12,6 @@ import { CuaLogo } from "@/components/cua-logo";
 import { OsIcon } from "@/components/os-icon";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { RuntimeFixRow } from "@/components/new-space/runtime-fix";
 import { Snippet } from "@/components/settings/snippet";
@@ -311,18 +310,6 @@ function Connect({ fr, view }: { fr: FirstRunHook; view: FirstRunView }) {
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
-  const usage = fr.usage ? (
-    <label className="mt-5 flex items-center gap-2.5 text-[13px] text-muted-foreground" data-first-run-usage="">
-      <Switch checked={fr.usage.on} disabled={!fr.usage.enabled} onCheckedChange={(on) => void fr.setUsage(on).catch(() => {})} aria-label={fr.usage.label} />
-      <span>
-        {fr.usage.label}.{" "}
-        <button type="button" className="underline hover:text-foreground" onClick={fr.openUsageLink}>
-          {fr.usage.linkLabel}
-        </button>
-      </span>
-    </label>
-  ) : null;
-
   if (advanced) return <AdvancedConnect fr={fr} view={view} />;
 
   if (looking) {
@@ -360,7 +347,6 @@ function Connect({ fr, view }: { fr: FirstRunHook; view: FirstRunView }) {
             <Secondary label="Continue without one" onClick={() => void fr.act("skip")} />
           </div>
           <p className="mt-4 text-[13px] text-muted-foreground">Spaces work without a coding app. You can set one up later in Settings.</p>
-          {usage}
         </div>
       </Step>
     );
@@ -463,7 +449,6 @@ function Connect({ fr, view }: { fr: FirstRunHook; view: FirstRunView }) {
               ? `${listNames(ready.map((a) => a.name))} ${ready.length === 1 ? "is" : "are"} done. ${listNames(failed.map((a) => a.name))} can wait: Settings has the same button.`
               : "Cua adds itself to each app\u2019s settings and leaves everything else alone. Apps you install later are set up the same way, with a notice and Undo. You can turn it off any time in Settings."}
         </p>
-        {usage}
       </div>
     </Step>
   );
@@ -586,17 +571,6 @@ function AdvancedConnect({ fr, view }: { fr: FirstRunHook; view: FirstRunView })
           </button>
         ) : null}
       </div>
-      {fr.usage ? (
-        <label className="mt-5 flex items-center gap-2.5 text-[13px] text-muted-foreground" data-first-run-usage="">
-          <Switch checked={fr.usage.on} disabled={!fr.usage.enabled} onCheckedChange={(on) => void fr.setUsage(on).catch(() => {})} aria-label={fr.usage.label} />
-          <span>
-            {fr.usage.label}.{" "}
-            <button type="button" className="underline hover:text-foreground" onClick={fr.openUsageLink}>
-              {fr.usage.linkLabel}
-            </button>
-          </span>
-        </label>
-      ) : null}
       {keys.sheet ? <KeySheet key={keys.sheet.provider} keys={keys} provider={keys.sheet.provider} env={keys.sheet.env} /> : null}
     </Step>
   );

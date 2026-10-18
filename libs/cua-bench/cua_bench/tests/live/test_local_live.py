@@ -38,7 +38,6 @@ def _cb(args: list[str], tmp: Path, timeout: int = 1200) -> subprocess.Completed
         "XDG_DATA_HOME": str(tmp / "data"),
         "XDG_STATE_HOME": str(tmp / "state"),
         "CUA_BENCH_NO_BANNER": "1",
-        "CUA_TELEMETRY_ENABLED": "false",
         "PYTHONUNBUFFERED": "1",
     }
     return subprocess.run(

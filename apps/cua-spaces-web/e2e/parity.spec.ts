@@ -398,42 +398,6 @@ async function checkMachines(page: Page, cp: Of<"machines">): Promise<void> {
   await expect.poll(read, { message: "the core's machine rows" }).toEqual(cp.merged.map((m) => ({ id: m.id, name: m.name, online: m.online })));
 }
 
-/* ---- Usage events ------------------------------------------------------------- */
-
-const tracked = (page: Page) => page.evaluate(() => window.__cuaParity!.tracked());
-const track = (page: Page, signals: unknown[]) => page.evaluate((s) => window.__cuaParity!.track(s as never), signals);
-
-/** Sends every step's events through the bridge: the host records exactly
- * the core's, in order; with usage data off it records none; and nothing
- * but fixed words leaves the page. */
-async function checkTelemetry(page: Page, cps: Of<"telemetry">[]): Promise<number> {
-  // The page recorded its own launch (the demo host is a shell that doesn't),
-  // saying whether the first run is due (the demo session finished it).
-  await expect.poll(() => tracked(page)).toContainEqual({ type: "launched", onboardingEligible: false });
-  const before = (await tracked(page)).length;
-  for (const cp of cps) await track(page, cp.signals);
-  const ours = (await tracked(page)).slice(before);
-  expect(ours, "the host recorded the core's events").toEqual(cps.flatMap((c) => c.signals));
-
-  await page.evaluate(() => window.__cuaParity!.setTelemetry(false));
-  const off = (await tracked(page)).length;
-  for (const cp of cps) await track(page, cp.signals);
-  expect((await tracked(page)).length, "nothing is sent with usage data off").toBe(off);
-  await page.evaluate(() => window.__cuaParity!.setTelemetry(true));
-
-  const n = (await tracked(page)).length;
-  await track(page, [
-    { type: "step", step: "signed_in", ok: true, identity: "maya@example.com" },
-    { type: "feature", feature: "/Users/maya/secret" },
-    { type: "share", action: "share", role: "viewer", outcome: "ok", errorKind: "none", failedStage: "none", email: "grace@example.com" },
-  ]);
-  expect((await tracked(page)).slice(n), "only schema fields and fixed words are sent").toEqual([
-    { type: "step", step: "signed_in", ok: true },
-    { type: "share", action: "share", role: "viewer", outcome: "ok", errorKind: "none", failedStage: "none" },
-  ]);
-  return cps.filter((c) => c.signals.length > 0).length;
-}
-
 /** Every state the replay reached that a web screen draws, on that screen. */
 async function checkScreens(page: Page, screen: ParityScreen, checkpoints: ParityCheckpoint[]): Promise<number> {
   let checked = 0;
@@ -460,8 +424,6 @@ async function checkScreens(page: Page, screen: ParityScreen, checkpoints: Parit
   for (const cp of checkpoints) {
     if (cp.kind === "machines" && once(cp)) (await checkMachines(page, cp), checked++);
   }
-  const telemetry = checkpoints.filter((c): c is Of<"telemetry"> => c.kind === "telemetry");
-  if (telemetry.length) checked += await checkTelemetry(page, telemetry);
   for (const cp of checkpoints) {
     if (cp.kind === "space-detail" && once(cp)) (await checkSpaceDetail(page, cp), checked++);
     else if (cp.kind === "stream" && once(cp)) (await checkStream(page, cp), checked++);

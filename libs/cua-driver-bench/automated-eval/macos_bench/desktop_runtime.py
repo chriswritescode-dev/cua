@@ -70,8 +70,6 @@ def desktop_env(home: Path, extra: Mapping[str, str] | None = None) -> dict[str,
         else "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
         "USER": os.environ.get("USER", ""),
         "LANG": os.environ.get("LANG", "C.UTF-8") if linux else "en_US.UTF-8",
-        "CUA_DRIVER_RS_TELEMETRY_ENABLED": "false",
-        "DO_NOT_TRACK": "1",
     }
     if linux:
         env.update({key: os.environ[key] for key in SESSION_KEYS if key in os.environ})

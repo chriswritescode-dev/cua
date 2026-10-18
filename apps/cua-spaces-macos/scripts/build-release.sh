@@ -24,9 +24,12 @@
 #                                          it would register as the app)
 #   Cua Spaces.app                         com.trycua.spaces.macos, Support/CuaSpacesMac.entitlements
 #
-#   scripts/build-release.sh --version 0.2.0[-suffix][+build] [--build-number N]
+#   scripts/build-release.sh [--version 0.2.0[-suffix][+build]] [--build-number N]
 #       [--bundle-version A.B.C.D[.E]] [--arch universal|arm64|x86_64]
 #       [--sign IDENTITY] [--out DIR] [--feed-url URL] [--skip-cargo]
+#
+# Without --version it builds the repository's VERSION, so a local rebuild is
+# just `scripts/build-release.sh`.
 #
 # Every release build, a beta included, is a production build: it talks to
 # Cua production unless CUA_ENV=staging is set at launch. The script keeps
@@ -87,7 +90,7 @@ while [ $# -gt 0 ]; do
     --out) out="$2"; shift ;;
     --skip-cargo) skip_cargo=1 ;;
     --feed-url) feed_url="$2"; shift ;;
-    -h | --help) sed -n '5,52p' "$0"; exit 0 ;;
+    -h | --help) sed -n '5,69p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
   shift
@@ -96,6 +99,7 @@ done
 # CFBundleShortVersionString is X.Y.Z (numbers only); a prerelease suffix
 # (0.2.0-staging.4) goes in CuaVersion. CFBundleVersion is X.Y.Z plus the
 # build number when there is one (the release workflow's run number).
+version="${version:-$(tr -d '[:space:]' <"$here/VERSION")}"
 if [[ ! "$version" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
   echo "--version must look like 1.2.3, 1.2.3-suffix or 1.2.3-suffix+build" >&2
   exit 2

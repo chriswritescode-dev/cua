@@ -14,7 +14,7 @@ class TestComputerAgentInitialization:
     """Test ComputerAgent initialization (SRP: Only tests initialization)."""
 
     @patch("cua_agent.agent.litellm")
-    def test_agent_initialization_with_model(self, mock_litellm, disable_telemetry):
+    def test_agent_initialization_with_model(self, mock_litellm):
         """Test that agent can be initialized with a model string."""
         from cua_agent import ComputerAgent
 
@@ -25,7 +25,7 @@ class TestComputerAgentInitialization:
         assert agent.model == "anthropic/claude-sonnet-4-5-20250929"
 
     @patch("cua_agent.agent.litellm")
-    def test_agent_initialization_with_tools(self, mock_litellm, disable_telemetry, mock_computer):
+    def test_agent_initialization_with_tools(self, mock_litellm, mock_computer):
         """Test that agent can be initialized with tools."""
         from cua_agent import ComputerAgent
 
@@ -35,7 +35,7 @@ class TestComputerAgentInitialization:
         assert hasattr(agent, "tools")
 
     @patch("cua_agent.agent.litellm")
-    def test_agent_initialization_with_max_budget(self, mock_litellm, disable_telemetry):
+    def test_agent_initialization_with_max_budget(self, mock_litellm):
         """Test that agent can be initialized with max trajectory budget."""
         from cua_agent import ComputerAgent
 
@@ -47,7 +47,7 @@ class TestComputerAgentInitialization:
         assert agent is not None
 
     @patch("cua_agent.agent.litellm")
-    def test_agent_requires_model(self, mock_litellm, disable_telemetry):
+    def test_agent_requires_model(self, mock_litellm):
         """Test that agent requires a model parameter."""
         from cua_agent import ComputerAgent
 
@@ -61,7 +61,7 @@ class TestComputerAgentRun:
 
     @pytest.mark.asyncio
     @patch("cua_agent.agent.litellm")
-    async def test_agent_run_with_messages(self, mock_litellm, disable_telemetry, sample_messages):
+    async def test_agent_run_with_messages(self, mock_litellm, sample_messages):
         """Test that agent.run() works with valid messages."""
         from cua_agent import ComputerAgent
 
@@ -88,7 +88,7 @@ class TestComputerAgentRun:
         # Check it's an async generator
         assert hasattr(result_generator, "__anext__")
 
-    def test_agent_has_run_method(self, disable_telemetry):
+    def test_agent_has_run_method(self):
         """Test that agent has run method available."""
         from cua_agent import ComputerAgent
 
@@ -98,7 +98,7 @@ class TestComputerAgentRun:
         assert hasattr(agent, "run")
         assert callable(agent.run)
 
-    def test_agent_has_agent_loop(self, disable_telemetry):
+    def test_agent_has_agent_loop(self):
         """Test that agent has agent_loop initialized."""
         from cua_agent import ComputerAgent
 
@@ -128,7 +128,7 @@ class TestComputerAgentTypes:
 class TestComputerAgentIntegration:
     """Test ComputerAgent integration with Computer tool (SRP: Integration within package)."""
 
-    def test_agent_accepts_computer_tool(self, disable_telemetry, mock_computer):
+    def test_agent_accepts_computer_tool(self, mock_computer):
         """Test that agent can be initialized with Computer tool."""
         from cua_agent import ComputerAgent
 

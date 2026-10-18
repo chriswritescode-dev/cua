@@ -4,8 +4,8 @@
 //! Settings, About: the app's name and version, its links (acknowledgements,
 //! privacy policy, terms, system status, an issue report), the copyright line, and, where
 //! the app updates itself (the macOS app, through Sparkle), the update
-//! controls: automatic checks, automatic installs, the channel (Stable or
-//! Beta), Check Now and the last check.
+//! controls: automatic checks, the channel (Stable or Beta), Check Now and
+//! the last check.
 //!
 //! Also what the first launch after an update does ([`after_launch`]): it
 //! refreshes what cua installed into the coding agents (`cua agents
@@ -60,8 +60,8 @@ impl UpdateChannel {
     }
 }
 
-/// The Sparkle channels an updater on `channel` may install from (Stable:
-/// none but the default one).
+/// The Sparkle channels an updater on `channel` may check (Stable: none but
+/// the default one).
 pub fn allowed_channels(channel: UpdateChannel) -> Vec<String> {
     match channel {
         UpdateChannel::Stable => vec![],
@@ -86,8 +86,6 @@ pub struct AboutInput {
     pub updater: bool,
     /// The updater checks on its own.
     pub auto_check: bool,
-    /// The updater downloads and installs on its own.
-    pub auto_install: bool,
     /// The chosen channel.
     pub channel: UpdateChannel,
     /// The last check, as the shell formats a date; `None`: never.
@@ -128,16 +126,10 @@ pub struct AboutLink {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AboutUpdates {
-    /// "Check for and download updates automatically".
+    /// "Check for updates automatically".
     pub auto_check_label: String,
     /// Checked.
     pub auto_check: bool,
-    /// "Install a downloaded update when Cua Spaces quits".
-    pub auto_install_label: String,
-    /// Checked.
-    pub auto_install: bool,
-    /// It can be used (only with automatic checks).
-    pub auto_install_enabled: bool,
     /// "Update to:".
     pub channel_label: String,
     /// Stable, Beta.
@@ -223,11 +215,8 @@ pub fn view(input: &AboutInput) -> AboutView {
         url,
     };
     let updates = input.updater.then(|| AboutUpdates {
-        auto_check_label: "Check for and download updates automatically".into(),
+        auto_check_label: "Check for updates automatically".into(),
         auto_check: input.auto_check,
-        auto_install_label: "Install a downloaded update when Cua Spaces quits".into(),
-        auto_install: input.auto_install,
-        auto_install_enabled: input.auto_check,
         channel_label: "Update to:".into(),
         channels: [
             (UpdateChannel::Stable, "Stable"),
@@ -418,7 +407,6 @@ mod tests {
             os: "macOS 26.0 (arm64)".into(),
             updater: true,
             auto_check: true,
-            auto_install: false,
             channel: UpdateChannel::Stable,
             last_check: None,
             checking: false,
@@ -466,7 +454,7 @@ mod tests {
     #[test]
     fn update_controls_follow_the_updater() {
         let u = view(&input()).updates.unwrap();
-        assert!(u.auto_check && !u.auto_install && u.auto_install_enabled);
+        assert!(u.auto_check);
         assert_eq!(u.last_check, "Last check: Never");
         assert_eq!(u.check_label, "Check Now");
         assert!(u.check_enabled);
@@ -485,7 +473,7 @@ mod tests {
         i.last_check = Some("9/30/26, 3:04 PM".into());
         i.checking = true;
         let u = view(&i).updates.unwrap();
-        assert!(!u.auto_install_enabled);
+        assert!(!u.auto_check);
         assert_eq!(u.last_check, "Last check: 9/30/26, 3:04 PM");
         assert_eq!(u.check_label, "Checking\u{2026}");
         assert!(!u.check_enabled);

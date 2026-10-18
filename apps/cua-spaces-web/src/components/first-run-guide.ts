@@ -4,27 +4,19 @@
 /**
  * The guided first run on the Spaces page (CUA-2062): "Create your first
  * Space" on the empty home, then "Your first Space is ready" with one task to
- * try. Each step is counted once per install, as a feature event:
- * `first_run_guide_shown`, `first_space_created`, `first_space_ready`,
- * `suggested_task_started`. Created and ready only count on an install that
- * showed the guide, so people who already had Spaces are not counted again.
+ * try. Each step is marked once per install. Created and ready only mark an
+ * install that showed the guide, so people who already had Spaces are not
+ * taken through it again.
  */
 
 import { useEffect } from "react";
 
-import { useFeatureRecorder, type Space } from "@/bridge";
+import type { Space } from "@/bridge";
 import { spaceState } from "@/lib/spaces";
 
 const KEY = "cua.firstRun";
 
 export type FirstRunStep = "guide_shown" | "space_created" | "space_ready" | "task_started";
-
-const EVENT: Record<FirstRunStep, string> = {
-  guide_shown: "first_run_guide_shown",
-  space_created: "first_space_created",
-  space_ready: "first_space_ready",
-  task_started: "suggested_task_started",
-};
 
 function seen(step: FirstRunStep): boolean {
   try {
@@ -45,15 +37,14 @@ function mark(step: FirstRunStep): boolean {
   return true;
 }
 
-/** Records a first-run step once per install. */
+/** Marks a first-run step once per install. */
 export function useFirstRunStep(): (step: FirstRunStep) => void {
-  const record = useFeatureRecorder();
   return (step) => {
-    if (mark(step)) record(EVENT[step]);
+    mark(step);
   };
 }
 
-/** Counts the first Space's create and its ready, after the guide was shown. */
+/** Marks the first Space's create and its ready, after the guide was shown. */
 export function useFirstSpaceMilestones(spaces: Space[]): void {
   const step = useFirstRunStep();
   const creating = spaces.some((s) => spaceState(s) === "creating");

@@ -124,8 +124,6 @@ jobs:
     env:
       CUA_DRIVER_RS_VERSION: ${{ matrix.version }}
       CUA_DRIVER_RS_KEEP_VERSIONS: "0"
-      CUA_DRIVER_RS_TELEMETRY_ENABLED: "false"
-      CUA_TELEMETRY_ENABLED: "false"
     steps:
       - uses: actions/checkout@v4
 

@@ -285,7 +285,7 @@
     },
     {
       "name": "clipboard_read",
-      "description": "List available system clipboard types and optionally return privacy-sensitive plain text. Clipboard content is never retained in telemetry.",
+      "description": "List available system clipboard types and optionally return privacy-sensitive plain text. Clipboard content is never retained beyond the response.",
       "platforms": [
         "macos",
         "windows",
@@ -310,7 +310,7 @@
         "properties": {
           "include_text": {
             "default": false,
-            "description": "Return plain-text clipboard content in addition to the available types.\nClipboard content is privacy-sensitive and is never retained in telemetry.",
+            "description": "Return plain-text clipboard content in addition to the available types.\nClipboard content is privacy-sensitive and is never retained beyond the response.",
             "type": "boolean"
           },
           "session": {

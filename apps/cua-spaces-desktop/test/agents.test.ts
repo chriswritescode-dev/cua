@@ -24,7 +24,7 @@ import { devDirName, nativeFiles } from "../src/native/location";
 import { loadNative, type Native } from "../src/native/load";
 import type { AgentInfo, AgentSetupLike, AgentSetupOutcome } from "../src/native/generated/index";
 import { FakeAgentKeysTools, FakeAgentsTools, FixtureAgentSetup, RUNS } from "./agents-fixtures";
-import { FixtureAccount, FixtureSpacesBackend, FixtureTelemetry, fixtureDevices, fixtureHost } from "./fixtures";
+import { FixtureAccount, FixtureSpacesBackend, fixtureDevices, fixtureHost } from "./fixtures";
 
 const dir = path.resolve(__dirname, "../native", devDirName(process.platform, process.arch));
 const built = existsSync(nativeFiles(dir, process.platform).library);
@@ -41,7 +41,6 @@ describe.skipIf(!built)("agents", () => {
   let native: Native;
   const saved = { ...process.env };
   let backend: FixtureSpacesBackend;
-  let telemetry: FixtureTelemetry;
   let daemon: FakeAgentsTools;
   let keys: FakeAgentKeysTools;
   let setup: FixtureAgentSetup;
@@ -49,7 +48,7 @@ describe.skipIf(!built)("agents", () => {
 
   beforeAll(async () => {
     home = mkdtempSync(path.join(tmpdir(), "cua-agents-"));
-    Object.assign(process.env, { HOME: home, USERPROFILE: home, CUA_HOME: path.join(home, ".cua"), CUA_TELEMETRY: "0", DO_NOT_TRACK: "1", CUA_KEYCHAIN_NONINTERACTIVE: "1" });
+    Object.assign(process.env, { HOME: home, USERPROFILE: home, CUA_HOME: path.join(home, ".cua"), CUA_KEYCHAIN_NONINTERACTIVE: "1" });
     native = await loadNative(dir);
   });
 
@@ -61,7 +60,6 @@ describe.skipIf(!built)("agents", () => {
   beforeEach(() => {
     backend = new FixtureSpacesBackend(native);
     backend.fixtureRuns["local:aurora"] = RUNS;
-    telemetry = new FixtureTelemetry();
     daemon = new FakeAgentsTools();
     keys = new FakeAgentKeysTools();
     setup = new FixtureAgentSetup();
@@ -81,7 +79,6 @@ describe.skipIf(!built)("agents", () => {
       devices: new DevicesModel(native, () => fixtureDevices()),
       cloud: new CloudModel(native, () => backend),
       account: new FixtureAccount("ada@example.com"),
-      telemetry,
       agentSetup: o.setup === undefined ? setup : o.setup,
       agentTools: tools,
       servicesIn: () => true,
@@ -470,7 +467,7 @@ describe.skipIf(!built)("agents", () => {
     expect(await code(bridge, "agentKeys.list")).toBe("failed");
   });
 
-  // MARK: Events and telemetry
+  // MARK: Events
 
   it("tells the page when the agents or the coding agents' rows changed, once", async () => {
     const { bridge, model } = makeBridge();
@@ -491,13 +488,5 @@ describe.skipIf(!built)("agents", () => {
     await tick(5);
     expect(events.filter((e) => e.event === "agents.changed")).toHaveLength(1);
     expect(model.agents.coding.rows).not.toBeNull();
-  });
-
-  it("records the Agents page's open through the usage switch", async () => {
-    const { bridge } = makeBridge();
-    await call(bridge, "telemetry.track", { signals: [{ type: "feature", feature: "agents_page_open" }] });
-    const last = telemetry.recorded.at(-1) as unknown as { tag: string; inner: { feature: string } };
-    expect(last.tag).toBe("Feature");
-    expect(last.inner.feature).toBe("agents_page_open");
   });
 });

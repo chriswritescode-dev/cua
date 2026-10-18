@@ -14,7 +14,7 @@ struct CliBridgeTests {
         let m = AppModel(backend: FixtureSpacesBackend(), keyvault: KeyvaultModel(client: nil),
                          onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
                          settingsPath: dir.appendingPathComponent("settings.json").path,
-                         telemetry: FixtureTelemetry(), devices: FixtureDevices())
+                         devices: FixtureDevices())
         let b = WebUIBridge(model: m, allowedOrigins: [])
         let bin = dir.appendingPathComponent("bin").path
         let profile = dir.appendingPathComponent(".zshrc").path

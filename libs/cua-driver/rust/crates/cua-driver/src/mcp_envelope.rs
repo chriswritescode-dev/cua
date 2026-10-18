@@ -6,10 +6,6 @@
 
 use crate::driver_service_http::{Request as ServiceRequest, Service};
 use cua_driver_core::protocol::{initialize_result, Request, Response};
-use cua_driver_core::server::{
-    observe_proxy_session_started, observe_proxy_tool_completed, tool_observation_timer,
-    StdioExecutionPath,
-};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::collections::HashSet;
@@ -163,7 +159,6 @@ where
     let legacy_serial = Arc::new(tokio::sync::Mutex::new(()));
     let mut pending = HashSet::new();
     let mut reaper = tokio::time::interval(Duration::from_secs(30));
-    let mut session_observed = false;
     loop {
         // read_until is cancellation-safe. Keep partial bytes across task and
         // reaper wakeups, and retain the original total line budget.
@@ -223,12 +218,6 @@ where
         if request.method == "initialize" {
             let mut result = initialize_result();
             result["capabilities"]["experimental"][CAPABILITY] = json!({"version": 1});
-            if !session_observed {
-                if let Some(metadata) = request.initialize_metadata() {
-                    observe_proxy_session_started(metadata);
-                    session_observed = true;
-                }
-            }
             write_response(&writer, Response::ok(id, result)).await?;
             continue;
         }
@@ -257,34 +246,13 @@ where
                 let _guard = serial.lock().await;
                 let mut request = request;
                 crate::proxy::apply_direct_session_identity(&mut request, &session);
-                let context = request.tool_call().ok().and_then(|call| {
-                    sdk.begin_tool_call(
-                        &call.name,
-                        &call.args,
-                        cua_driver_core::session::SessionTransport::McpStdio,
-                        cua_driver_core::session::SessionClientKind::Mcp,
-                    )
-                });
-                let timer = tool_observation_timer(
-                    &request,
-                    |name| sdk.is_known_tool(name),
-                    StdioExecutionPath::DirectDaemon,
-                );
-                let response = cua_driver_core::server::handle_request_with_transport_session(
+                cua_driver_core::server::handle_request_with_transport_session(
                     request,
                     id,
                     sdk.as_ref(),
                     &session,
                 )
-                .await;
-                if let Some(timer) = timer {
-                    let outcome = timer.finish(&response);
-                    if let Some(context) = context {
-                        context.complete(&outcome);
-                    }
-                    observe_proxy_tool_completed(outcome);
-                }
-                response
+                .await
             };
             write_response(&writer, response).await?;
             Ok::<_, anyhow::Error>(key)

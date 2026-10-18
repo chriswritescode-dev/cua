@@ -288,10 +288,11 @@ browser-profile consent, or any other app's prompts.
 Install or update only when the user asked for it or approved it.
 
 ```bash
-cua-driver check-update       # read-only
-cua-driver update --apply     # installs the latest release
-# No driver yet (no administrator access needed):
-/bin/bash -c "$(curl -fsSL https://cua.ai/driver/install.sh)"
+cua-driver check-update       # read-only; reports whether a newer release exists
+cua-driver skills install     # refresh the skill pack from the local build
+# No driver yet (no administrator access needed): build from a checkout
+git pull
+libs/cua-driver/scripts/install-local.sh
 ```
 
 Verify with the daemon running:
@@ -565,7 +566,7 @@ the one exception, and only on these terms:
 
 Approvals persist across signed updates, because the signature's designated
 requirement names only the bundle id `com.trycua.driver` and the Developer ID
-Team ID. `cua-driver update --apply` keeps them. A local or ad-hoc build has a
+Team ID. Release builds keep them across updates. A local or ad-hoc build has a
 different identity and asks again.
 
 Do not run `tccutil reset` unless the user asks you to. If Cua Driver reports a

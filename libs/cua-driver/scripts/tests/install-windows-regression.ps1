@@ -64,15 +64,15 @@ try {
     $LegacyVendorDir = Join-Path $root "localappdata\Programs\trycua"
     $LegacyVisibleBinDir = Join-Path $LegacyVendorDir "cua-driver-rs\bin"
 
-    # Current releases write cache and telemetry state here. Neither file is a
+    # Current releases write cache state here. Neither file is a
     # legacy installation marker, and migration must leave both untouched.
     New-Item -ItemType Directory -Force -Path $LegacyHomeDir | Out-Null
     Set-Content -LiteralPath (Join-Path $LegacyHomeDir "version_check.json") -Value "{}"
-    Set-Content -LiteralPath (Join-Path $LegacyHomeDir ".telemetry_id") -Value "synthetic-test-id"
+    Set-Content -LiteralPath (Join-Path $LegacyHomeDir "version_check.json") -Value "{}"
     Remove-LegacyInstall
-    Assert-True ($script:Steps.Count -eq 0) "cache/telemetry-only home was detected as legacy"
-    Assert-True ($script:DaemonStops -eq 0) "cache/telemetry-only home triggered process cleanup"
-    Assert-True (Test-Path -LiteralPath $LegacyHomeDir) "cache/telemetry-only home was removed"
+    Assert-True ($script:Steps.Count -eq 0) "cache-only home was detected as legacy"
+    Assert-True ($script:DaemonStops -eq 0) "cache-only home triggered process cleanup"
+    Assert-True (Test-Path -LiteralPath $LegacyHomeDir) "cache-only home was removed"
 
     # Every supported on-disk legacy marker independently enters migration.
     foreach ($marker in @("packages", "bin", "visible-bin")) {

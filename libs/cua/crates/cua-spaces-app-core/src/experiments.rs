@@ -81,7 +81,7 @@ pub const ALL: [Experiment; 4] = [
 
 impl Experiment {
     /// The stable id (`cua_volume`, `your_cloud`, `sharing`, `web_ui`): the Settings
-    /// row's suffix and the telemetry word.
+    /// row's suffix.
     pub fn id(self) -> &'static str {
         match self {
             Experiment::CuaVolume => "cua_volume",

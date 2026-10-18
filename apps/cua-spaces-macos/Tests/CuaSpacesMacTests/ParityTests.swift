@@ -50,7 +50,6 @@ struct ParityTests {
     @Test("agent-keys") func agentKeys() throws { try check("agent-keys", runAgentKeys) }
     @Test("your-cloud") func yourCloud() throws { try check("your-cloud", runYourCloud) }
     @Test("launch-at-login") func launchAtLogin() throws { try check("launch-at-login", runLaunchAtLogin) }
-    @Test("telemetry-funnel") func telemetryFunnel() throws { try check("telemetry-funnel", runTelemetry) }
     @Test("experiments") func experiments() throws { try check("experiments", runExperiments) }
     @Test("placement-picker") func placementPicker() throws { try check("placement-picker", runPlacementPicker) }
     @Test("create-stages") func createStages() throws { try check("create-stages", runProvisioning) }
@@ -1286,11 +1285,6 @@ struct ParityTests {
             "choices": v.choices.map { "\($0.mode): \($0.label)\($0.preselected ? " (preselected)" : "")" },
             "presentations": v.presentations.map { "\($0.title) [\($0.id)]\($0.selected ? " (selected)" : "")" },
             "prompts": v.prompts,
-            "notice": opt(v.notice),
-            "noticeLink": v.noticeLinkUrl.map { "\(v.noticeLinkLabel ?? "") \($0)" } as Any? ?? NSNull(),
-            "usage": v.usage.map { u in
-                "\(u.label) [\(u.on ? "x" : " ")]\(u.enabled ? "" : " (disabled)")\(u.help.map { " ~\($0)" } ?? "")"
-            } as Any? ?? NSNull(),
             "drive": v.drive.map(driveCardFrame) as Any? ?? NSNull(),
             "driveStorage": driveStorageFrame(v.drive),
         ]
@@ -2164,93 +2158,6 @@ struct ParityTests {
         return frames
     }
 
-    // MARK: - telemetry-funnel
-
-    /// A signal as the golden records it (the core's serde shape).
-    static func signalFrame(_ s: AppTelemetrySignal) -> [String: Any] {
-        switch s {
-        case let .feature(feature): return ["type": "feature", "feature": feature]
-        case let .step(step, ok): return ["type": "step", "step": step, "ok": ok]
-        case let .signInFailed(kind): return ["type": "sign-in-failed", "errorKind": kind]
-        case let .launched(eligible):
-            return ["type": "launched", "onboardingEligible": eligible.map { $0 as Any } ?? NSNull()]
-        case let .onboardingPage(page, action, choice):
-            return ["type": "onboarding-page", "page": page, "action": action, "choice": choice]
-        case let .spaceWizard(action): return ["type": "space-wizard", "action": action]
-        case let .spaceCreate(location, guestOs, kind, outcome, failedPhase, stalled, elapsedMs, gpu, errorVariant,
-                              retryAttempt, errorSubclass):
-            return ["type": "space-create", "location": location, "guestOs": guestOs, "kind": kind,
-                    "outcome": outcome, "failedPhase": failedPhase, "stalled": stalled, "elapsedMs": Int(elapsedMs),
-                    "gpu": gpu, "errorVariant": errorVariant, "retryAttempt": Int(retryAttempt),
-                    "errorSubclass": errorSubclass]
-        case let .spaceCreateStarted(location, guestOs, kind, gpu):
-            return ["type": "space-create-started", "location": location, "guestOs": guestOs, "kind": kind, "gpu": gpu]
-        case let .volumeSetup(surface, storage, addToFinder, mountMethod, outcome):
-            return ["type": "volume-setup", "surface": surface, "storage": storage, "addToFinder": addToFinder,
-                    "mountMethod": mountMethod, "outcome": outcome]
-        case let .share(action, role, outcome, errorKind, failedStage):
-            return ["type": "share", "action": action, "role": role, "outcome": outcome,
-                    "errorKind": errorKind, "failedStage": failedStage]
-        case let .appUpdate(action, channel, trigger):
-            return ["type": "app-update", "action": action, "channel": channel, "trigger": trigger]
-        case let .deviceEnroll(method, outcome): return ["type": "device-enroll", "method": method, "outcome": outcome]
-        case let .experiment(action, experiment):
-            return ["type": "experiment", "action": action, "experiment": experiment]
-        case let .experimentsOn(experiments): return ["type": "experiments-on", "experiments": experiments]
-        case let .planLimitShown(surface, kind, plan):
-            return ["type": "plan-limit-shown", "surface": surface, "kind": kind, "plan": plan]
-        case let .upgradeLinkOpened(surface, kind, plan):
-            return ["type": "upgrade-link-opened", "surface": surface, "kind": kind, "plan": plan]
-        }
-    }
-
-    func signals(_ v: [AppTelemetrySignal]) -> [Any] { v.map(Self.signalFrame) }
-
-    /// `run_telemetry`: the usage events each reducer step means, through
-    /// the Swift bindings the app's models call.
-    func runTelemetry(_ f: [String: Any]) throws -> [Any] {
-        let eligible = (f["launch"] as? [String: Any])?["onboardingEligible"] as? Bool
-        var frames: [Any] = [["at": "launch", "signals": signals(appTelemetryLaunched(onboardingEligible: eligible))]]
-        for run in ["onboarding", "skipping", "no-usage-data"] {
-            var st = appOnboardingInitial(installerMode: nil, identity: nil)
-            for a in f[run] as! [[String: Any]] {
-                let action = try appOnboardingActionFromJson(json: text(a))
-                let sig = appTelemetryOnboarding(state: st, action: action)
-                st = appOnboardingReduce(state: st, action: action)
-                frames.append(["at": run, "action": a["type"] as! String, "page": "\(st.step)", "signals": signals(sig)])
-            }
-            frames.append(["at": run, "action": "finish", "signals": signals(appTelemetryOnboardingFinished(state: st))])
-        }
-        var creates = AppCreatesState(pending: [], deleting: [], powering: [], streaks: [])
-        for step in f["creates"] as! [[String: Any]] {
-            let a = step["action"] as! [String: Any]
-            let action = createAction(a)
-            let sig = appTelemetryCreates(state: creates, action: action, nowMs: Int64(step["now"] as! Int))
-            creates = appCreatesReduce(state: creates, action: action)
-            frames.append(["at": "creates", "action": a["type"] as! String, "signals": signals(sig)])
-        }
-        let storage = f["storage"] as! [String: Any]
-        let storageInput = try appStorageInputFromJson(json: text(storage["input"]))
-        for c in storage["cases"] as! [[String: Any]] {
-            let sig = appTelemetryStorage(input: storageInput, state: try appStorageStateFromJson(json: text(c["state"])),
-                                          action: try appStorageActionFromJson(json: text(c["action"])))
-            frames.append(["at": "storage", "step": c["step"] as! String, "signals": signals(sig)])
-        }
-        let share = f["share"] as! [String: Any]
-        let shareInput = try appShareInputFromJson(json: text(share["input"]))
-        for c in share["cases"] as! [[String: Any]] {
-            let sig = appTelemetryShare(input: shareInput, state: try appShareStateFromJson(json: text(c["state"])),
-                                        action: try appShareActionFromJson(json: text(c["action"])))
-            frames.append(["at": "share", "step": c["step"] as! String, "signals": signals(sig)])
-        }
-        for c in f["enroll"] as! [[String: Any]] {
-            let sig = appTelemetryEnroll(state: try appEnrollStateFromJson(json: text(c["state"])),
-                                         action: try appEnrollActionFromJson(json: text(c["action"])))
-            frames.append(["at": "enroll", "step": c["step"] as! String, "signals": signals(sig)])
-        }
-        return frames
-    }
-
     // MARK: - about
 
     func aboutLinkId(_ id: AppAboutLinkId) -> String {
@@ -2314,7 +2221,6 @@ struct ParityTests {
             if let u = v.updates {
                 updates = [
                     "autoCheck": check(u.autoCheck, u.autoCheckLabel, true),
-                    "autoInstall": check(u.autoInstall, u.autoInstallLabel, u.autoInstallEnabled),
                     "channel": "\(u.channelLabel) " + u.channels.map { "\($0.label)\($0.active ? "*" : "")" }
                         .joined(separator: " | "),
                     "help": u.channelHelp,
@@ -2397,7 +2303,6 @@ struct ParityTests {
         var x = try appExperimentsFromJson(json: "{}")
         var first = try experimentsFrame(f, storage: storage, space: space, x)
         first["step"] = "defaults"
-        first["signals"] = [Any]()
         var frames: [Any] = [first]
         for change in f["changes"] as! [[String: Any]] {
             let before = x
@@ -2405,7 +2310,6 @@ struct ParityTests {
                                      option: change["option"] as! String)
             var frame = try experimentsFrame(f, storage: storage, space: space, x)
             frame["step"] = change["step"] as! String
-            frame["signals"] = signals(appTelemetryExperimentsChanged(before: before, after: x))
             frames.append(frame)
         }
         return frames

@@ -59,8 +59,6 @@ class Driver:
         self.environment = dict(os.environ)
         self.environment.update({
             "CUA_DRIVER_RS_HOME": str(home),
-            "CUA_DRIVER_RS_TELEMETRY_ENABLED": "false",
-            "CUA_TELEMETRY_ENABLED": "false",
         })
 
     def run(self, arguments: Sequence[str], *, expect_success: bool = True) -> subprocess.CompletedProcess[str]:

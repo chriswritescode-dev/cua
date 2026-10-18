@@ -15,7 +15,7 @@ crate-type = ["rlib", "cdylib", "staticlib"]
 
 [dependencies]
 cua-sdk = { workspace = true, features = ["local", "spaces", "host", "media", "byoc"] }
-cua-spaces-app-core = { workspace = true, features = ["keyvault-client", "installer", "telemetry"] }
+cua-spaces-app-core = { workspace = true, features = ["keyvault-client", "installer"] }
 cua-spaces-ext.workspace = true
 cua-spaces = { path = "../cua-spaces" }
 cua-teleport.workspace = true
@@ -23,8 +23,6 @@ cua-keyvault.workspace = true
 cua-home.workspace = true
 cua-host.workspace = true
 cua-spacesd-client.workspace = true
-cua-telemetry.workspace = true
-cua-crash.workspace = true
 tokio-tungstenite.workspace = true
 uniffi.workspace = true
 serde.workspace = true

@@ -8,6 +8,7 @@ line (`[ "$DELETE_MAPS" = true ] && find ...` with delete-maps off).
 
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import subprocess
@@ -24,7 +25,9 @@ def script() -> str:
     return action["runs"]["steps"][0]["run"]
 
 
-def run(tmp_path: pathlib.Path, *, kind: str, delete_maps: str, inject: str, cli_ok: bool) -> subprocess.CompletedProcess:
+def run(
+    tmp_path: pathlib.Path, *, kind: str, delete_maps: str, inject: str, cli_ok: bool
+) -> subprocess.CompletedProcess:
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(exist_ok=True)
     npx = bin_dir / "npx"
@@ -34,10 +37,22 @@ def run(tmp_path: pathlib.Path, *, kind: str, delete_maps: str, inject: str, cli
     upload.mkdir(exist_ok=True)
     (upload / "main.js").write_text("//")
     (upload / "main.js.map").write_text("{}")
+    workspace = tmp_path / "workspace"
+    config = workspace / "config"
+    config.mkdir(parents=True)
+    (config / "spaces-crash-reporting.json").write_text(
+        json.dumps(
+            {
+                "dsn": "https://public@sentry.example.com/1",
+                "org": "cua",
+                "project": "cua-spaces-desktop",
+            }
+        )
+    )
     env = {
         **os.environ,
         "PATH": f"{bin_dir}:{os.environ['PATH']}",
-        "GITHUB_WORKSPACE": str(REPO_ROOT),
+        "GITHUB_WORKSPACE": str(workspace),
         "SENTRY_AUTH_TOKEN": "test-token",
         "VERSION": "0.17.0-beta.3",
         "KIND": kind,
@@ -67,4 +82,6 @@ def test_debug_files_upload_never_fails_the_build(tmp_path, cli_ok):
 
 
 def test_an_unknown_kind_is_an_error(tmp_path):
-    assert run(tmp_path, kind="nope", delete_maps="false", inject="false", cli_ok=True).returncode == 1
+    assert (
+        run(tmp_path, kind="nope", delete_maps="false", inject="false", cli_ok=True).returncode == 1
+    )

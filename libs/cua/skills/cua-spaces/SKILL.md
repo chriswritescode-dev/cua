@@ -59,8 +59,9 @@ user's Tailscale, or the LAN):
 
 1. ssh into it (Tailscale is only the ssh transport, the same as any LAN or
    internet address).
-2. Run the install script non-interactively:
-   `curl -fsSL https://cua.ai/install.sh | sh -s -- -y --select spaces,host --no-onboarding`.
+2. Build the CLI from the repository:
+   `git clone https://github.com/trycua/cua.git ~/.cua/cua 2>/dev/null; git -C ~/.cua/cua pull --ff-only; cargo build --release -p cua-cli --manifest-path ~/.cua/cua/libs/cua/Cargo.toml`,
+   then use `~/.cua/cua/libs/cua/target/release/cua` for the steps below.
 3. Sign in on the mini: `cua auth login --remote` prints a device code and a
    URL. Show both to the user and have them approve it (on another signed-in
    device or at the URL).

@@ -7,18 +7,15 @@
  *
  * In the Mac app and the Electron app the host keeps the one copy
  * (`ops/checklist.ts`: `checklist.get`, `checklist.send`), runs the core's
- * reducer, records the usage events and ticks steps off from what it
- * shows (`checklist::observe_from`), so the classic Mac UI, the New UI and
+ * reducer and ticks steps off from what it shows
+ * (`checklist::observe_from`), so the classic Mac UI, the New UI and
  * Electron count the same. Progress this page kept itself before (its
  * storage) is merged into the host's copy once, then forgotten here.
  *
  * Elsewhere (the demo, Tauri, an older host) the page keeps its own copy
- * in its storage. What each event does to it, its words and its usage
- * events are the core's (`checklist.reduce`, `checklist.view`). Usage
- * events: `cua_onboarding_step` with step `checklist_shown`,
- * `checklist_<step>` (once per step), `checklist_completed`,
- * `checklist_dismissed` or `checklist_reopened`. Without the core the
- * checklist is not shown and nothing changes.
+ * in its storage. What each event does to it and its words are the core's
+ * (`checklist.reduce`, `checklist.view`). Without the core the checklist
+ * is not shown and nothing changes.
  */
 
 import { useContext, useEffect, useSyncExternalStore } from "react";
@@ -27,7 +24,6 @@ import { isNativeHost, type DataAdapter } from "./adapter";
 import { BridgeContext } from "./BridgeProvider";
 import type { CoreClient } from "./core";
 import type { HostChecklistAction, HostChecklistState } from "./ops/checklist";
-import type { TelemetrySignal } from "./ops/telemetry";
 import type { BridgeStore } from "./store";
 
 /** The steps in order (`checklist::STEPS`). */
@@ -268,22 +264,16 @@ export function checklistView(core: CoreClient, state: ChecklistState): Checklis
   return core.tryCall<ChecklistView>("checklist.view", { state: toCore(state) }) ?? null;
 }
 
-/** Runs `action` through the core: saves what changed and answers the
- * usage events it means. */
-function apply(core: CoreClient, action: ChecklistAction): TelemetrySignal[] {
-  const t = core.tryCall<{ state: CoreChecklistState; signals: TelemetrySignal[] }>("checklist.reduce", {
+/** Runs `action` through the core: saves what changed. */
+function apply(core: CoreClient, action: ChecklistAction): void {
+  const t = core.tryCall<{ state: CoreChecklistState }>("checklist.reduce", {
     state: toCore(readChecklist()),
     action,
   });
-  if (!t) return [];
-  // A skip changes the state without an event of its own.
+  if (!t) return;
   const next = fromCore(t.state);
-  if (t.signals.length || JSON.stringify(toCore(next)) !== JSON.stringify(toCore(readChecklist()))) write(next);
-  return t.signals;
+  if (JSON.stringify(toCore(next)) !== JSON.stringify(toCore(readChecklist()))) write(next);
 }
-
-/** Usage events waiting for the bridge store. */
-const pending: TelemetrySignal[] = [];
 
 /** Ticks off `step` (once): records it, and `completed` with the last one. */
 export function checklistDone(store: BridgeStore | null, step: ChecklistStep): void {
@@ -294,8 +284,7 @@ export function checklistDone(store: BridgeStore | null, step: ChecklistStep): v
     void h.send({ type: "done", step }).catch(() => {});
     return;
   }
-  const signals = apply(store.core, { type: "done", step });
-  if (signals.length) void store.telemetry.track(signals);
+  apply(store.core, { type: "done", step });
 }
 
 export interface ChecklistHook {
@@ -321,21 +310,13 @@ export function useChecklist(): ChecklistHook {
   const read = () => (h ? (h.failed ? readChecklist() : (h.state ?? LOADING)) : readChecklist());
   const state = useSyncExternalStore(subscribeChecklist, read, read);
   const loading = Boolean(h && !h.failed && h.state === undefined);
-  // Events from before the store exists wait for it (the first `ready`
-  // promise can be replaced before it resolves).
-  useEffect(() => {
-    if (store && pending.length) void store.telemetry.track(pending.splice(0));
-  }, [store]);
   const send = (action: ChecklistAction) => {
     if (h && !h.failed) {
       const a = forHost(action);
       if (a) void h.send(a).catch(() => {});
       return;
     }
-    const signals = apply(core, action);
-    if (!signals.length) return;
-    if (store) void store.telemetry.track(signals);
-    else pending.push(...signals);
+    apply(core, action);
   };
   return {
     state,
@@ -353,7 +334,6 @@ export function useChecklist(): ChecklistHook {
 /** Tests: forget the cached copy. */
 export function resetChecklistCache(): void {
   saved = undefined;
-  pending.length = 0;
   host?.stop();
   host = undefined;
 }

@@ -31,7 +31,7 @@ import { Emitter, HostError, type DataAdapter } from "../adapter";
 import { hostOs, THIS_MACHINE, type HostOs } from "../host-os";
 import { electronTransport, webkitTransport, type HostTransport } from "../transport";
 import type { AgentEventsPage, AgentMessageSent, AgentSetupRow, AgentStarted, ConnectionReport, ConnectResult, PersistentAgent, SpaceAgentRun } from "../contracts/agents";
-import type { CancelOutcome, HostActionId, HostStatus, MachinePageRow, MachineRow, MachinesView, SpacePowerReport } from "../contracts/host";
+import type { CancelOutcome, DefaultLocation, HostActionId, HostStatus, MachinePageRow, MachineRow, MachinesView, SpacePowerReport } from "../contracts/host";
 import type { HostWindow } from "../detect";
 import {
   DEFAULT_SETTINGS,
@@ -57,7 +57,6 @@ import { webkitKeyvaultManageOps } from "../ops/keyvault-manage";
 import { webkitKeyvaultSetupOps } from "../ops/keyvault-setup";
 import { webkitSettingsOps } from "../ops/settings";
 import { startupFromHost, webkitStartupOps } from "../ops/startup";
-import { webkitTelemetryNoticeOps } from "../ops/telemetry";
 import { unsupportedStreamOps, type StreamTicket } from "../ops/stream";
 import type { RelayUsage } from "../ops/relay-usage";
 import type { RiskyRequest } from "../ops/nudges";
@@ -67,6 +66,7 @@ import type { LinkCreate, ShareLink } from "../ops/links";
 import { unsupportedPresenceOps, type PresenceJoinInfo } from "../ops/presence";
 import { cloudApproveWebkitOps } from "../ops/cloud-approve";
 import { unsupportedRuntimeFixOps } from "../ops/runtime-fix";
+import { webkitCrashReportingOps } from "../ops/crash-reporting";
 import type { CliInstallPlan } from "../contracts/first-run";
 import type { BulkResult } from "../contracts/spaces-page";
 import type { CreatingElsewhere, ListStatus, SpaceAccess, SpaceRow, SpaceSharingFacts } from "../contracts/spaces";
@@ -295,9 +295,12 @@ const lockedBy = (r: WkSettingsRow | undefined) => (r && !r.enabled && r.help?.s
 /** The core's Settings page back to the values `useSettings` reads. */
 export function toSettingsSnapshot(s: WkSettings, page: Pick<SettingsValues, "theme" | "hotkey">): SettingsSnapshot {
   const rows = rowsById(s);
-  const telemetry = rows.get("telemetry");
+  const location = rows.get("default-location");
   const loginRow = rows.get("launch-at-login");
-  const telemetryOn = telemetry ? active(telemetry) === "on" : DEFAULT_SETTINGS.telemetry;
+  const env = lockedBy(location);
+  const defaultLocation: DefaultLocation | null = location
+    ? { value: active(location) ?? "local", source: env ? "env" : "config", env, path: "" }
+    : null;
   // The rows only this host lays out: what they show now, so the core lays
   // them out again on the page (null: the host has none).
   const on = (id: string) => (rows.has(id) ? active(rows.get(id)) === "on" : null);
@@ -309,8 +312,7 @@ export function toSettingsSnapshot(s: WkSettings, page: Pick<SettingsValues, "th
       theme: page.theme,
       hotkey: page.hotkey,
       menuBar: active(rows.get("notch")) === "hide",
-      telemetry: telemetryOn,
-      defaultLocation: DEFAULT_SETTINGS.defaultLocation,
+      defaultLocation: defaultLocation?.value ?? DEFAULT_SETTINGS.defaultLocation,
       // The core lays out `launch-at-login` once the host read the login item.
       launchAtLogin: loginRow && loginRow.enabled ? active(loginRow) === "on" : null,
       updateChannel: s.updateChannel === "beta" || s.updateChannel === "stable" ? s.updateChannel : null,
@@ -319,24 +321,13 @@ export function toSettingsSnapshot(s: WkSettings, page: Pick<SettingsValues, "th
       // The core's own settings the page changes (`settings.update`); an older host has none.
       ...(s.tips ? { tips: { off: s.tips.off === true, done: Array.isArray(s.tips.done) ? s.tips.done : [] } } : {}),
     },
-    defaultLocation: null,
-    telemetry: telemetry
-      ? {
-          enabled: telemetryOn,
-          source: lockedBy(telemetry) ?? "config",
-          sourceKind: lockedBy(telemetry) ? "env" : "config",
-          noticeShown: true,
-          noticeText: "",
-          docsUrl: "",
-        }
-      : null,
+    defaultLocation,
     hostSettings: {
       runtimes: s.runtimes ?? null,
       autoConnect: on("auto-connect"),
       overflow: on("placement-overflow"),
       keyvaultAutoWipe: on("keyvault-auto-wipe"),
       keyvaultUnlockPrompt: on("keyvault-unlock-prompt"),
-      keyvaultSiteIcons: on("keyvault-site-icons"),
       keyvaultProtection: protection.length ? protection : null,
     },
     globalShortcut: s.globalShortcut ? { label: s.globalShortcut.label, registered: s.globalShortcut.registered } : null,
@@ -630,9 +621,6 @@ export function createWebkitAdapter(
         case "menuBar":
           await choose("notch", value ? "hide" : "show");
           break;
-        case "telemetry":
-          await choose("telemetry", value ? "on" : "off");
-          break;
         case "defaultLocation":
           if (value !== "local") throw new HostError("New Spaces can start on This Mac here", "unsupported");
           break;
@@ -720,7 +708,6 @@ export function createWebkitAdapter(
     ...webkitSettingsOps(request),
     ...webkitPageOps(request, toHostStatus, spaceToRow),
     ...webkitStartupOps(request),
-    ...webkitTelemetryNoticeOps(request),
     ...webkitAgentDetailOps(request),
     ...webkitThreadOps(request),
     ...webkitAgentKeysOps(request),
@@ -752,6 +739,7 @@ export function createWebkitAdapter(
     "links.list": () => request<{ links: ShareLink[] }>("links.list"),
     "links.create": (a: LinkCreate) => request<ShareLink>("links.create", a as unknown as Record<string, unknown>),
     "links.stop": ({ id }) => request<{ stopped: string[] }>("links.stop", { id }),
+    ...webkitCrashReportingOps(request),
     // The bundled CLI on PATH (the app core's installer in the host).
     "cli.plan": () => request<CliInstallPlan | null>("cli.plan"),
     "cli.install": ({ modifyPath }) => request<CliInstallPlan>("cli.install", { modifyPath }),

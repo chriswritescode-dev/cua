@@ -766,20 +766,6 @@ enum CommandDocExtractor {
                     ]
                 ),
                 CommandDoc(
-                    name: "telemetry",
-                    abstract: "Manage pseudonymous telemetry settings",
-                    discussion: nil,
-                    arguments: [],
-                    options: [],
-                    flags: [],
-                    subcommands: [
-                        leaf("status", "Show current telemetry status", examples: [ExampleDoc("lume config telemetry status")]),
-                        leaf("enable", "Enable pseudonymous telemetry", examples: [ExampleDoc("lume config telemetry enable")]),
-                        leaf("disable", "Disable pseudonymous telemetry", examples: [ExampleDoc("lume config telemetry disable")]),
-                        leaf("reset-id", "Delete the pseudonymous installation ID and registration markers", examples: [ExampleDoc("lume config telemetry reset-id")]),
-                    ]
-                ),
-                CommandDoc(
                     name: "registry",
                     abstract: "Manage container registry settings",
                     discussion: nil,
@@ -878,18 +864,18 @@ enum CommandDocExtractor {
     private static var updateDoc: CommandDoc {
         CommandDoc(
             name: "update",
-            abstract: "Check for a Lume update and optionally apply it",
-            discussion: "Without --apply, this command only checks for a newer release and prints the command to install it. With --apply, it runs the official Lume installer pinned to the discovered version and exits with the installer's status.",
+            abstract: "Check for a newer Lume release and how to rebuild from source",
+            discussion: "Checks for a newer release. Lume never installs release builds; update a source checkout by pulling the repository and rebuilding it with `git pull && libs/lume/scripts/build/build-release.sh`.",
             arguments: [],
             options: [],
             flags: [
-                FlagDoc(name: "apply", shortName: nil, help: "Apply the update while preserving the current background-service choice", defaultValue: false),
+                FlagDoc(name: "apply", shortName: nil, help: "Removed: installing release builds is disabled", defaultValue: false),
                 FlagDoc(name: "json", shortName: nil, help: "Emit the structured update-state payload as JSON", defaultValue: false),
             ],
             subcommands: [],
             examples: [
                 ExampleDoc("lume update"),
-                ExampleDoc("lume update --apply"),
+                ExampleDoc("lume update --json"),
             ]
         )
     }
@@ -898,7 +884,7 @@ enum CommandDocExtractor {
         CommandDoc(
             name: "channel",
             abstract: "Inspect or change the stable/nightly update channel; selection does not install",
-            discussion: "The selection persists but never installs by itself; run `lume update --apply` after changing it. Without a subcommand, prints the status.",
+            discussion: "The selection persists but never installs by itself; Lume never installs release builds, so update a source checkout with `git pull && libs/lume/scripts/build/build-release.sh`. Without a subcommand, prints the status.",
             arguments: [],
             options: [],
             flags: [],

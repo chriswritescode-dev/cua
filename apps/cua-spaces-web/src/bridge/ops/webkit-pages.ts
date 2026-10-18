@@ -26,7 +26,6 @@ import type { CatalogEntry, KvInventory, RunEvent, TeleportPlan } from "../contr
 import type { HostEvent, OpArgs, OpName, OpResult } from "../protocol";
 import type { WebkitMethod, WkHostState, WkSpace } from "../webkit-protocol";
 import { isSettingsPane } from "./host-setup";
-import { sanitizeSignals } from "./telemetry";
 
 /** `wait`: how long to wait for the answer (ms); null for as long as it takes. */
 type Request = <T>(method: WebkitMethod, args?: Record<string, unknown>, wait?: number | null) => Promise<T>;
@@ -71,7 +70,6 @@ export const WEBKIT_PAGE_OPS = [
   "about.set",
   "about.checkNow",
   "update.get",
-  "update.install",
   "loginItem.get",
   "loginItem.set",
   "loginItem.openSettings",
@@ -93,7 +91,6 @@ export const WEBKIT_PAGE_OPS = [
   "notifications.list",
   "notifications.markAllRead",
   "notifications.markRead",
-  "telemetry.track",
   "spaces.usage",
   "spaces.windows",
   "stream.pip",
@@ -253,7 +250,6 @@ export function webkitPageOps(request: Request, toHostStatus: (h: WkHostState) =
     "about.set": call("about.set"),
     "about.checkNow": call("about.checkNow"),
     "update.get": call("update.get"),
-    "update.install": call("update.install"),
     "loginItem.get": call("loginItem.get"),
     "loginItem.set": call("loginItem.set"),
     "loginItem.openSettings": none("loginItem.openSettings"),
@@ -283,13 +279,6 @@ export function webkitPageOps(request: Request, toHostStatus: (h: WkHostState) =
     "notifications.markAllRead": none("notifications.markAllRead"),
     "notifications.markRead": none("notifications.markRead"),
 
-    // Only known signals of fixed words leave the page; the host drops
-    // them all while usage data is off.
-    "telemetry.track": async ({ signals }) => {
-      const clean = sanitizeSignals(signals);
-      if (clean.length) await request("telemetry.track", { signals: clean });
-      return null;
-    },
     "spaces.usage": call("spaces.usage"),
     "spaces.windows": call("spaces.windows"),
     "stream.pip": list("stream.pip"),

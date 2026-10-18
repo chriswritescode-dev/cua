@@ -26,7 +26,6 @@ mod share;
 #[cfg(feature = "spaces")]
 mod spaces;
 mod spacesd;
-pub(crate) mod telemetry;
 #[cfg(feature = "spaces")]
 mod teleport_types;
 
@@ -55,7 +54,6 @@ pub use sandbox::*;
 pub use share::*;
 pub use spaces::*;
 pub use spacesd::*;
-pub use telemetry::*;
 #[cfg(feature = "spaces")]
 pub use teleport_types::*;
 

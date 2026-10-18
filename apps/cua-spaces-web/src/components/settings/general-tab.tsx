@@ -24,8 +24,6 @@ const APPEARANCE: { value: ThemePreference; label: React.ReactNode }[] = [
   { value: "dark", label: <><MoonIcon className="size-3.5" /> Dark</> },
 ];
 
-const TELEMETRY_HELP = "Which features you use and when something goes wrong. Never your files, what you type or your screen.";
-
 /** The core's notch row in plain words: "Show Cua in", Notch and menu bar or Menu bar only. */
 export const showCuaIn = (row: CoreRow): CoreRow => ({
   ...row,
@@ -35,7 +33,7 @@ export const showCuaIn = (row: CoreRow): CoreRow => ({
 
 /**
  * Settings, General: the few things a person sets every day. Start at login,
- * where Cua lives (Mac), appearance, the shortcut (Mac) and usage data.
+ * where Cua lives (Mac), appearance and the shortcut (Mac).
  * Everything else moved: Advanced, Connectors, Trusted machines, the Volume
  * and Keyvault pages.
  */
@@ -45,12 +43,8 @@ export function GeneralTab() {
   const mac = showsMacShellSettings();
   const page = settings?.page;
   const general = page?.sections.find((s) => s.id === "general");
-  const telemetry = page?.sections.find((s) => s.id === "privacy");
   const notch = general?.rows.find((r) => r.id === "notch");
-  const telemetryRow = telemetry?.rows.find((r) => r.id === "telemetry");
-  const dataLink = telemetry?.rows.find((r) => r.id === "telemetry-note");
   const values = settings?.values;
-  const { openExternal } = useSession();
   const { core } = useBridge();
   const tips = useTips();
   // Show tips and Reset tips: what the core makes of the row (`settings.choose`), saved with the settings.
@@ -59,21 +53,7 @@ export function GeneralTab() {
 
   return (
     <div data-settings-tab="general">
-      <SettingsGroup
-        title="Everyday"
-        footer={
-          dataLink?.linkLabel && dataLink.linkUrl ? (
-            <button
-              type="button"
-              data-telemetry-link=""
-              className="text-brand-strong outline-none hover:underline focus-visible:underline"
-              onClick={() => void openExternal(dataLink.linkUrl!).catch(fail("Couldn't open the page"))}
-            >
-              {dataLink.linkLabel}
-            </button>
-          ) : null
-        }
-      >
+      <SettingsGroup title="Everyday">
         <LaunchAtLogin />
         {mac && notch ? (
           <CoreSettingsRow
@@ -108,20 +88,6 @@ export function GeneralTab() {
         ))}
         <SettingsRow label="Appearance" control={<Segmented aria-label="Appearance" value={preference} options={APPEARANCE} onValueChange={setPreference} />} />
         <ShortcutRow shortcut={settings?.globalShortcut} onChange={(accelerator) => chooseSetting("global-shortcut", accelerator)} />
-        {telemetryRow ? (
-          <CoreSettingsRow
-            row={{ ...telemetryRow, kind: "toggle" }}
-            description={TELEMETRY_HELP}
-            onChoose={(_, option) => void updateSetting("telemetry", option === "on").catch(fail("Couldn't change usage data"))}
-          />
-        ) : values ? (
-          <SettingsRow
-            label="Share usage data to help improve Cua"
-            description={TELEMETRY_HELP}
-            htmlFor="telemetry"
-            control={<Switch id="telemetry" checked={values.telemetry} onCheckedChange={(on) => void updateSetting("telemetry", on).catch(fail("Couldn't change usage data"))} />}
-          />
-        ) : null}
       </SettingsGroup>
       <SharingGroup />
     </div>

@@ -10,7 +10,6 @@ fn permissions_unknown_subcommand_is_a_usage_error() {
         .stdin(Stdio::null())
         .env("HOME", home.path())
         .env("CUA_DRIVER_RS_HOME", home.path())
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "0")
         .output()
         .expect("run cua-driver permissions with an unknown subcommand");
     assert_eq!(output.status.code(), Some(64));

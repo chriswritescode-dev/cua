@@ -101,7 +101,7 @@ describe.skipIf(!wasmBuilt)("the shell as the SwiftUI main window (real routes, 
     const row = (id: string) => dialog.querySelector<HTMLElement>(`[data-setting-row="${id}"]`);
     await waitFor(() => expect(row("keyvault-unlock-prompt")).toBeTruthy());
     expect(row("keyvault-auto-wipe")).toBeTruthy();
-    expect(row("keyvault-site-icons")).toBeTruthy();
+    expect(row("keyvault-site-icons")).toBeNull();
     expect(row("keyvault-protection:Unlock")?.textContent).toContain("Mac login");
     // Plain words, not the core's.
     expect(within(row("keyvault-auto-wipe")!).getByText("Remove saved sign-ins from Spaces after an hour")).toBeTruthy();
@@ -109,7 +109,7 @@ describe.skipIf(!wasmBuilt)("the shell as the SwiftUI main window (real routes, 
     fireEvent.click(within(row("keyvault-unlock-prompt")!).getByRole("switch"));
     await waitFor(() => expect(calls).toContainEqual(["settings.choose", { row: "keyvault-unlock-prompt", option: "off" }]));
     await waitFor(() => expect(within(row("keyvault-unlock-prompt")!).getByRole("switch").getAttribute("aria-checked")).toBe("false"));
-    fireEvent.click(within(row("keyvault-site-icons")!).getByRole("switch"));
-    await waitFor(() => expect(calls).toContainEqual(["settings.choose", { row: "keyvault-site-icons", option: "off" }]));
+    fireEvent.click(within(row("keyvault-auto-wipe")!).getByRole("switch"));
+    await waitFor(() => expect(calls).toContainEqual(["settings.choose", { row: "keyvault-auto-wipe", option: "on" }]));
   });
 });

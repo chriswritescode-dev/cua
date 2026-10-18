@@ -40,12 +40,6 @@ struct Pull: AsyncParsableCommand {
     func run() async throws {
         if verbose { Logger.setVerbose() }
 
-        // Telemetry: the catalog id or `custom`, never the reference.
-        TelemetryClient.shared.record(event: TelemetryEvent.pull, properties: [
-            "image": TelemetryClient.imageId(
-                image, registry: registry, organization: organization)
-        ])
-
         let controller = LumeController()
         try await controller.pullImage(
             image: image,

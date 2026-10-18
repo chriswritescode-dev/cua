@@ -6,11 +6,13 @@
 // No Electron and no Sentry here, so it all runs under test; the SDK is wired
 // in crash-reporting-main.ts.
 //
-// Reports are allowed only when the "Share usage data" switch is on and its
-// first-run notice was shown: the decision `cua-telemetry` makes
-// (libs/cua/crates/cua-telemetry/src/config.rs, notice.rs). The app starts
-// Sentry before the native library loads, so the switch is read here from the
-// same places instead of through `telemetryStatus()`.
+// Reports are allowed only when the machine's usage data is on and its
+// first-run notice was shown: the consent every other usage report follows
+// (config.toml's `[telemetry] enabled`, `DO_NOT_TRACK`, the notice marker).
+// The app starts Sentry before the native library loads, so this is read from
+// the files and environment here.
+import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import * as path from "node:path";
 
 /** `config/spaces-crash-reporting.json`, as bundled at build time. */
@@ -115,6 +117,22 @@ export interface Consent {
   allowed: boolean;
   /** The first rule that decided, for logs and tests. */
   reason: "do_not_track" | "env" | "legacy_env" | "config" | "ci" | "default" | "notice_pending";
+}
+
+/** What the main process reads at start, and the bridge reads per request. */
+export function localConsentSource(): ConsentSource {
+  return {
+    env: process.env,
+    read: (file) => {
+      try {
+        return readFileSync(file, "utf8");
+      } catch {
+        return null;
+      }
+    },
+    exists: (file) => existsSync(file),
+    home: homedir(),
+  };
 }
 
 /** `$CUA_HOME`, else `~/.cua` (config.rs `cua_home`). */

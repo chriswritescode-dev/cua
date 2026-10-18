@@ -7,10 +7,7 @@ import { toMachines } from "../derive";
 import { wizardEnv, wizardInitial, wizardView } from "../new-space";
 import { notSharingOf, realLimits, stoppedSharingLine, withNotSharing } from "../sharing";
 import { DEMO_NEW_SPACE_OPTIONS } from "../adapters/demo/new-space";
-import { createDemoAdapter } from "../adapters/demo";
-import { ShareStore } from "../share";
-import type { TelemetrySignal } from "../telemetry";
-import { testCore, until, wasmBuilt } from "./testCore";
+import { testCore, wasmBuilt } from "./testCore";
 
 const NOW = 1_800_000_000;
 const LINE = "gamma-4 Mac Studio stopped sharing: ask its owner to Resume sharing (or run `cua host start` there)";
@@ -92,55 +89,5 @@ describe.skipIf(!wasmBuilt)("the Machines page and New Space's Run on (wasm core
     const env = wizardEnv(core, { options, clouds: null, defaultLocation: "local", machines: [] });
     const gamma = wizardView(core, wizardInitial(core, env), env).placements.find((p) => p.id === "host:gamma");
     expect(gamma).toMatchObject({ id: "host:gamma", label: "gamma-4 Mac Studio (not sharing)", enabled: false, detail: `${LINE}.` });
-  });
-});
-
-describe.skipIf(!wasmBuilt)("share usage events", () => {
-  const space = { id: "local:design-review", name: "design-review", sdk: { features: ["relay_attach"], reachable: true, spacesdVersion: "0.6.0" } };
-
-  it("records a share, a role change and an unshare as the SwiftUI ShareModel does, never who", async () => {
-    const sent: TelemetrySignal[] = [];
-    const s = new ShareStore(createDemoAdapter({ latencyMs: 0, stepMs: 2 }), await testCore(), (signals) => sent.push(...signals));
-    s.open(space, true);
-    await until(() => expect(s.getSession()!.view.rows.map((r) => r.who)).toEqual(["grace@cua.ai"]));
-
-    await s.send({ type: "set-who", who: "bob@example.com" });
-    expect(sent).toEqual([]);
-    await s.send({ type: "submit" });
-    await s.send({ type: "remove", who: "grace@cua.ai" });
-    expect(sent).toEqual([
-      { type: "share", action: "share", role: "viewer", outcome: "ok", errorKind: "none", failedStage: "none" },
-      { type: "share", action: "unshare", role: "none", outcome: "ok", errorKind: "none", failedStage: "none" },
-    ]);
-    expect(JSON.stringify(sent)).not.toMatch(/@/);
-  });
-
-  it("records a share that failed", async () => {
-    const sent: TelemetrySignal[] = [];
-    const demo = createDemoAdapter({ latencyMs: 0, stepMs: 2 });
-    const failing = { ...demo, call: (op: string, args: unknown) => (op === "sharing.share" ? Promise.reject(new Error("relay: error sending request for url (https://relay.cua.ai/v1/machines)")) : demo.call(op as never, args as never)) };
-    const s = new ShareStore(failing as typeof demo, await testCore(), (signals) => sent.push(...signals));
-    s.open(space, true);
-    await s.send({ type: "set-who", who: "bob@example.com" });
-    await s.send({ type: "submit" });
-    expect(sent).toEqual([{ type: "share", action: "share", role: "viewer", outcome: "error", errorKind: "relay_unreachable", failedStage: "relay" }]);
-  });
-
-  it("records a dismissed confirmation as cancelled, and says why a share failed (CUA-1855)", async () => {
-    const sent: TelemetrySignal[] = [];
-    const demo = createDemoAdapter({ latencyMs: 0, stepMs: 2 });
-    let why = "not shared: user presence was not confirmed: biometric authorization was cancelled";
-    const failing = { ...demo, call: (op: string, args: unknown) => (op === "sharing.share" ? Promise.reject(new Error(why)) : demo.call(op as never, args as never)) };
-    const s = new ShareStore(failing as typeof demo, await testCore(), (signals) => sent.push(...signals));
-    s.open(space, true);
-    await s.send({ type: "set-who", who: "bob@example.com" });
-    await s.send({ type: "submit" });
-    why = "not shared: user presence was not confirmed: user confirmation is unavailable: on Linux this needs Cua Spaces installed from the .deb";
-    await s.send({ type: "submit" });
-    expect(sent).toEqual([
-      { type: "share", action: "share", role: "viewer", outcome: "cancelled", errorKind: "presence_cancelled", failedStage: "presence" },
-      { type: "share", action: "share", role: "viewer", outcome: "error", errorKind: "presence_unavailable", failedStage: "presence" },
-    ]);
-    expect(JSON.stringify(sent)).not.toMatch(/@|deb/);
   });
 });

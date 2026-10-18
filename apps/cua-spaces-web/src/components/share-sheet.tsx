@@ -5,7 +5,6 @@ import { useEffect } from "react";
 
 import {
   teamName,
-  useFeatureRecorded,
   useFlag,
   useSession,
   useShareSheet,
@@ -32,7 +31,6 @@ import { cn } from "@/lib/utils";
  */
 export default function ShareSheet() {
   const { session, sharing } = useShareSheet();
-  useFeatureRecorded("share_open", Boolean(session));
   const choices = useTeamChoices(Boolean(session?.input.signedIn && session.input.shareable));
   const { openExternal } = useSession();
   const { hasTeam } = choices;

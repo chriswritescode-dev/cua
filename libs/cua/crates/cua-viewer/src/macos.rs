@@ -15,7 +15,7 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use crate::telemetry::{percentile_f64, unix_timestamp_ms, MetricBucket};
+use crate::metrics::{percentile_f64, unix_timestamp_ms, MetricBucket};
 #[cfg(target_os = "macos")]
 use block2::RcBlock;
 use cua_media_protocol::{
@@ -771,8 +771,6 @@ struct LatencyTelemetry {
     scroll_events_sent: u64,
     last_scroll_captured: Option<Instant>,
     pending_input_started: Option<Instant>,
-    /// Session totals for `cua_stream_stats` (never reset).
-    totals: crate::telemetry::StreamTotals,
 }
 
 impl LatencyTelemetry {
@@ -810,7 +808,6 @@ impl LatencyTelemetry {
             scroll_events_sent: 0,
             last_scroll_captured: None,
             pending_input_started: None,
-            totals: crate::telemetry::StreamTotals::new(now),
         }
     }
 
@@ -822,7 +819,6 @@ impl LatencyTelemetry {
         replaced: bool,
     ) {
         self.frames_received = self.frames_received.saturating_add(1);
-        self.totals.frames = self.totals.frames.saturating_add(1);
         self.bytes_received = self
             .bytes_received
             .saturating_add(u64::try_from(bytes).unwrap_or(u64::MAX));
@@ -1034,7 +1030,6 @@ impl LatencyTelemetry {
             &mut metric.input_to_present_p99_ms,
         );
         metric.scroll_gap_p95_ms = percentile_f64(&self.scroll_gap_samples_ms, 0.95);
-        self.totals.observe_p95(metric.input_to_present_p95_ms);
         self.window_started = now;
         self.frames_received = 0;
         self.bytes_received = 0;
@@ -1744,12 +1739,6 @@ pub(super) fn run() -> ClientResult<()> {
                 WindowEvent::CloseRequested => {
                     tracing::info!("client window close requested");
                     let _ = input_tx.send(InputCommand::Close);
-                    let totals = telemetry
-                        .lock()
-                        .unwrap_or_else(std::sync::PoisonError::into_inner)
-                        .totals
-                        .clone();
-                    totals.send(Instant::now(), Duration::from_millis(400));
                     target.exit();
                 }
                 WindowEvent::Resized(size) => {
@@ -2172,11 +2161,6 @@ async fn network_session(
 
     emit(proxy, ui_tx, UiEvent::Status("Connecting".into()));
     let transport_name = endpoint.url.split(':').next().unwrap_or("unknown");
-    telemetry
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .totals
-        .transport = crate::telemetry::StreamTotals::transport_of(&endpoint.url);
     tracing::info!(transport = transport_name, "connecting remote transport");
     let mut transport = tokio::time::timeout(
         CONNECTION_ATTEMPT_TIMEOUT,
@@ -2738,15 +2722,6 @@ async fn network_session(
                                 video_probe_started = None;
                                 let received_at = Instant::now();
                                 let payload_bytes = payload.len();
-                                {
-                                    let mut t = telemetry
-                                        .lock()
-                                        .unwrap_or_else(std::sync::PoisonError::into_inner);
-                                    t.totals.max_height = t.totals.max_height.max(frame.height_px);
-                                    if t.totals.codec.is_empty() {
-                                        t.totals.codec = format!("{:?}", frame.codec).to_ascii_lowercase();
-                                    }
-                                }
                                 let host_encode_us = frame.encode_duration_us;
                                 let decode_started = Instant::now();
                                 let decoded = match frame.codec {

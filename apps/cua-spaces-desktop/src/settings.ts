@@ -23,9 +23,8 @@ export interface SwiftMigration {
   copied: string[];
   /** The version the Swift app last ran as. */
   from?: string;
-  /** Sparkle's "check automatically" / "download and install" when the user had changed them. */
+  /** Sparkle's "check automatically" when the user had changed it. */
   sparkleAutomaticChecks?: boolean;
-  sparkleAutomaticDownloads?: boolean;
 }
 
 export interface Settings {
@@ -33,8 +32,6 @@ export interface Settings {
   themeSource?: ThemeSource;
   /** Automatic update checks, as chosen in this app (unset: see update-prefs.ts). */
   autoUpdate?: boolean;
-  /** Download and install updates on their own (Settings → About; unset: see update-prefs.ts). */
-  autoInstall?: boolean;
   /** The last update check (ms). */
   lastUpdateCheck?: number;
   /** Update channel; defaults to the one the build was cut for (see updater.ts). */

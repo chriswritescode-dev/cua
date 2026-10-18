@@ -206,8 +206,8 @@ public final class FixtureDevices: DevicesRunning, @unchecked Sendable {
         let code = "K7QM-4XPB-\(String(format: "%04d", pairing.count + 1))"
         let made = PairingCode(
             id: "pc_fixture\(pairing.count + 1)", code: code, url: "https://cua.ai/add/\(code)",
-            installSh: "curl -fsSL https://cua.ai/install.sh | sh -s -- --pair \(code)",
-            installPowershell: "& ([scriptblock]::Create((irm https://cua.ai/install.ps1))) -Pair \(code)",
+            installSh: "git clone https://github.com/trycua/cua.git ~/.cua/cua 2>/dev/null; git -C ~/.cua/cua pull --ff-only; cargo build --release -p cua-cli --manifest-path ~/.cua/cua/libs/cua/Cargo.toml && ~/.cua/cua/libs/cua/target/release/cua host setup --pair \(code)",
+            installPowershell: "git clone https://github.com/trycua/cua.git $HOME\\.cua\\cua 2>$null; git -C $HOME\\.cua\\cua pull --ff-only; cargo build --release -p cua-cli --manifest-path $HOME\\.cua\\cua\\libs\\cua\\Cargo.toml; & $HOME\\.cua\\cua\\libs\\cua\\target\\release\\cua.exe host setup --pair \(code)",
             state: "active", team: team, createdAt: now, expiresAt: now + 1800, usedAt: nil, machine: nil)
         pairing.insert(made, at: 0)
         return made
@@ -378,9 +378,9 @@ public final class DevicesModel {
     /// The relay just refused a new session over the plan's cap: the sentence
     /// with Upgrade, shown until dismissed or a session starts.
     public private(set) var refusal: AppRelayAllowanceNotice?
-    /// Where the refusal came from, for usage data and the upgrade link's
-    /// `?from=`: `app_create` (a Space create) or `app_connect` (opening or
-    /// starting one).
+    /// Where the refusal came from, for the upgrade link's `?from=`:
+    /// `app_create` (a Space create) or `app_connect` (opening or starting
+    /// one).
     public private(set) var refusalSurface = "app_connect"
 
     public init(devices: DevicesRunning?, presence: PresenceChecking = LivePresence(),
@@ -518,12 +518,6 @@ public final class DevicesModel {
         return notice
     }
 
-    /// One usage event for a Pro or Teams surface (`upsell_<surface>_<action>`,
-    /// fixed names in the app core's telemetry schema).
-    public func recordUpsell(_ feature: String) {
-        telemetry?.record(appTelemetryFeature(feature: feature))
-    }
-
     /// Keeps an error's text when it is the relay refusing a session over
     /// the plan's cap (the core's `appPlanLimitNotice`); any other error is
     /// not a refusal and leaves the notice alone. `surface`: `app_create`
@@ -534,37 +528,16 @@ public final class DevicesModel {
         refusalSurface = surface
     }
 
-    /// The notice is on screen: a refusal is `cua_plan_limit_shown` at its
-    /// surface; the meter is `upsell_meter_shown`, and past a limit also
-    /// `cua_plan_limit_shown` at `app_meter` (CUA-1881).
-    public func recordNoticeShown(_ notice: AppRelayAllowanceNotice) {
-        if notice == refusal {
-            telemetry?.record(appTelemetryPlanLimit(action: "shown", surface: refusalSurface, kind: notice.kind, plan: notice.plan))
-        } else {
-            telemetry?.record(appTelemetryUpsell(surface: "meter", action: "shown", kind: notice.kind, plan: notice.plan))
-        }
-    }
-
-    /// Upgrade on the notice: records `cua_upgrade_link_opened` (and the
-    /// meter's `upsell_meter_click`) and answers the link to open, saying
-    /// where it was opened from (`?from=`).
+    /// Upgrade on the notice: answers the link to open, saying where it was
+    /// opened from (`?from=`).
     public func openUpgrade(_ notice: AppRelayAllowanceNotice) -> URL? {
         guard let link = notice.upgradeUrl else { return nil }
-        let surface: String
-        if notice == refusal {
-            surface = refusalSurface
-            telemetry?.record(appTelemetryPlanLimit(action: "opened", surface: surface, kind: notice.kind, plan: notice.plan))
-        } else {
-            surface = "app_meter"
-            telemetry?.record(appTelemetryUpsell(surface: "meter", action: "click", kind: notice.kind, plan: notice.plan))
-        }
+        let surface = notice == refusal ? refusalSurface : "app_meter"
         return URL(string: appUpgradeLink(url: link, surface: surface))
     }
 
-    /// A plan card link in Settings: `upsell_plan_card_click` and
-    /// `cua_upgrade_link_opened`; the link says it came from there.
+    /// A plan card link in Settings: the link says it came from there.
     public func openPlanLink(_ link: String) -> URL? {
-        telemetry?.record(appTelemetryUpsell(surface: "plan_card", action: "click", kind: nil, plan: relayUsage?.plan))
         return URL(string: appUpgradeLink(url: link, surface: "app_plan_card"))
     }
 
@@ -574,7 +547,6 @@ public final class DevicesModel {
             return
         }
         guard let key = relayUsageView?.notice?.dismissKey else { return }
-        recordUpsell("upsell_meter_dismiss")
         relayNoticeDismissed = key
         defaults.set(key, forKey: Self.relayNoticeDismissedKey)
     }
@@ -607,13 +579,8 @@ public final class DevicesModel {
 
     public func closeEnroll() { enroll = nil }
 
-    /// Where usage events go (enrolled by a sign-in or an approval, or
-    /// failed; the app core's, like the Tauri app).
-    public var telemetry: TelemetryRunning?
-
     func sendEnroll(_ action: AppEnrollAction) {
         guard let s = enroll else { return }
-        telemetry?.record(appTelemetryEnroll(state: s, action: action))
         enroll = appEnrollReduce(state: s, action: action)
     }
 

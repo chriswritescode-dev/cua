@@ -173,7 +173,6 @@ class Qwen35Agent(BaseAgent):
             tools=[custom_computer],
             only_n_most_recent_images=3,
             trajectory_dir=trajectory_dir,
-            telemetry_enabled=False,
             instructions=(
                 "Use the provided tools to interact with the computer (click, type, scroll, etc.) to accomplish the task. When the task is complete, indicate so clearly by outputting 'DONE'."
             ),

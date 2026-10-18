@@ -25,7 +25,6 @@ let
     socket=/tmp/cua-driver-policy-yaml.sock
     env \
       CUA_DRIVER_POLICY_FILE=/tmp/policy.yaml \
-      CUA_DRIVER_RS_TELEMETRY_ENABLED=false \
       cua-driver serve --socket "$socket" --no-permissions-gate --no-overlay \
       >/tmp/daemon.log 2>&1 &
     daemon_pid=$!
@@ -37,8 +36,7 @@ let
     cua-driver status --socket "$socket" >/dev/null
 
     coproc DRIVER {
-      env CUA_DRIVER_RS_TELEMETRY_ENABLED=false \
-        cua-driver mcp --socket "$socket" 2>/tmp/driver.log
+      env cua-driver mcp --socket "$socket" 2>/tmp/driver.log
     }
     exec 3>&"''${DRIVER[1]}"
     exec 4<&"''${DRIVER[0]}"

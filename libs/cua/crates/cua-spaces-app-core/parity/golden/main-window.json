@@ -700,9 +700,6 @@
         "- runtime:container choice: Containers {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:vm choice: Virtual machines {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:microvm choice: MicroVMs {*Automatic|Cua’s own|Already installed} ?Checking…",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share usage data to help improve Cua {On|*Off} (disabled) ?Set by DO_NOT_TRACK",
-        "- telemetry-note note: Which features you use and when something goes wrong. Linked to your account through a random ID while you're signed in. Never your files, what you type or your screen. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
       ],
       "settings": 1
@@ -725,9 +722,6 @@
         "- runtime:container choice: Containers {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:vm choice: Virtual machines {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:microvm choice: MicroVMs {*Automatic|Cua’s own|Already installed} ?Checking…",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share usage data to help improve Cua {*On|Off}",
-        "- telemetry-note note: Which features you use and when something goes wrong. Linked to your account through a random ID while you're signed in. Never your files, what you type or your screen. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents]",
         "- agent:codex text: Codex = skills and MCP configured [Remove]",
         "- agent:cursor text: Cursor = working…",
@@ -755,9 +749,6 @@
         "- runtime:container choice: Containers {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:vm choice: Virtual machines {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:microvm choice: MicroVMs {*Automatic|Cua’s own|Already installed} ?Checking…",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share usage data to help improve Cua {*On|Off}",
-        "- telemetry-note note: Which features you use and when something goes wrong. Linked to your account through a random ID while you're signed in. Never your files, what you type or your screen. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configuring…] (disabled)",
         "- agent:codex text: Codex = skills and MCP configured [Remove] (disabled)",
         "- agent:cursor text: Cursor = skills 1/3, MCP not configured [Configure] (disabled)",
@@ -776,8 +767,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Computers for you and your AI agents. Setup takes about a minute.",
-        "notice": "Cua collects usage data, like which features you use and when something goes wrong. When you're signed in, it's linked to your account through a random ID. Never your files, what you type or your screen. Change this here or in Settings, Privacy.",
-        "noticeLink": "What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry",
         "presentations": [],
         "primary": "Get started",
         "prompts": [],
@@ -785,8 +774,7 @@
         "step": "welcome",
         "summary": [],
         "title": "Welcome to Cua Spaces",
-        "todos": [],
-        "usage": "Share usage data to help improve Cua [x]"
+        "todos": []
       },
       "onboarding": "initial"
     },
@@ -799,8 +787,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Computers for you and your AI agents. Setup takes about a minute.",
-        "notice": "Cua collects usage data, like which features you use and when something goes wrong. When you're signed in, it's linked to your account through a random ID. Never your files, what you type or your screen. Change this here or in Settings, Privacy.",
-        "noticeLink": "What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry",
         "presentations": [],
         "primary": "Get started",
         "prompts": [],
@@ -808,8 +794,7 @@
         "step": "welcome",
         "summary": [],
         "title": "Welcome to Cua Spaces",
-        "todos": [],
-        "usage": "Share usage data to help improve Cua [x]"
+        "todos": []
       },
       "onboarding": "cli-installed"
     },
@@ -822,8 +807,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Sign in to reach your machines and Spaces from any of your machines. You can skip this and sign in later.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -831,8 +814,7 @@
         "step": "signin",
         "summary": [],
         "title": "Sign in",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "onboarding": "start"
     },
@@ -845,8 +827,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Sign in to reach your machines and Spaces from any of your machines. You can skip this and sign in later.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -854,8 +834,7 @@
         "step": "signin",
         "summary": [],
         "title": "Sign in",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "onboarding": "signed-in"
     },
@@ -868,8 +847,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Give your coding agents the cua skills and MCP server.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -877,8 +854,7 @@
         "step": "agents",
         "summary": [],
         "title": "AI agents",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "onboarding": "signin-done"
     },
@@ -891,8 +867,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "You can change this in Settings.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [
           "Notch and menu bar [onboarding-notch] (selected)",
           "Menu bar only [onboarding-menu-bar]"
@@ -903,8 +877,7 @@
         "step": "presentation",
         "summary": [],
         "title": "Where should Cua Spaces show up?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "onboarding": "agents-done"
     },
@@ -917,8 +890,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Give your coding agents the cua skills and MCP server.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -926,8 +897,7 @@
         "step": "agents",
         "summary": [],
         "title": "AI agents",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "onboarding": "back"
     },
@@ -940,8 +910,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "You can change this in Settings.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [
           "Notch and menu bar [onboarding-notch] (selected)",
           "Menu bar only [onboarding-menu-bar]"
@@ -952,8 +920,7 @@
         "step": "presentation",
         "summary": [],
         "title": "Where should Cua Spaces show up?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "onboarding": "agents-done"
     },
@@ -966,8 +933,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "You can change this in Settings.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [
           "Notch and menu bar [onboarding-notch]",
           "Menu bar only [onboarding-menu-bar] (selected)"
@@ -978,8 +943,7 @@
         "step": "presentation",
         "summary": [],
         "title": "Where should Cua Spaces show up?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "onboarding": "presentation-picked"
     },
@@ -992,8 +956,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "You can change this in Settings.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [
           "Notch and menu bar [onboarding-notch] (selected)",
           "Menu bar only [onboarding-menu-bar]"
@@ -1004,8 +966,7 @@
         "step": "presentation",
         "summary": [],
         "title": "Where should Cua Spaces show up?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "onboarding": "presentation-picked"
     },
@@ -1018,8 +979,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "You can change this in Settings.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [
           "Notch and menu bar [onboarding-notch]",
           "Menu bar only [onboarding-menu-bar] (selected)"
@@ -1030,8 +989,7 @@
         "step": "presentation",
         "summary": [],
         "title": "Where should Cua Spaces show up?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "onboarding": "presentation-picked"
     },
@@ -1047,8 +1005,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Use it only to open your other machines, or let your other machines reach it too. You can change this later.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -1056,8 +1012,7 @@
         "step": "mode",
         "summary": [],
         "title": "How do you want to use this Mac?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "onboarding": "presentation-done"
     },
@@ -1070,8 +1025,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "You can change this in Settings.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [
           "Notch and menu bar [onboarding-notch]",
           "Menu bar only [onboarding-menu-bar] (selected)"
@@ -1082,8 +1035,7 @@
         "step": "presentation",
         "summary": [],
         "title": "Where should Cua Spaces show up?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "onboarding": "back"
     },
@@ -1099,8 +1051,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Use it only to open your other machines, or let your other machines reach it too. You can change this later.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -1108,8 +1058,7 @@
         "step": "mode",
         "summary": [],
         "title": "How do you want to use this Mac?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "onboarding": "presentation-done"
     },
@@ -1125,8 +1074,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Use it only to open your other machines, or let your other machines reach it too. You can change this later.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -1134,8 +1081,7 @@
         "step": "mode",
         "summary": [],
         "title": "How do you want to use this Mac?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "onboarding": "drive-continue"
     },
@@ -1149,8 +1095,6 @@
         "driveStorage": null,
         "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
         "lede": "Cua Spaces is in your menu bar.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Start using Cua Spaces",
         "prompts": [
@@ -1170,8 +1114,7 @@
           "[x] Account ~Signed in as ada@example.com.",
           "[x] AI agents ~Codex, Pi can use Cua.",
           "[ ] Cua Volume ~Shared folder: files your agents can share across your machines. -> Turn on (optional)"
-        ],
-        "usage": null
+        ]
       },
       "onboarding": "mode-chosen"
     },
@@ -1182,7 +1125,7 @@
         "continueLabel: Continue",
         "tryAgain: Try again",
         "checking: Checking…",
-        "installScript: curl -fsSL https://cua.ai/install.sh | sh",
+        "installScript: git clone https://github.com/trycua/cua.git ~/.cua/cua 2>/dev/null; git -C ~/.cua/cua pull --ff-only; cargo build --release -p cua-cli --manifest-path ~/.cua/cua/libs/cua/Cargo.toml",
         "install: Install",
         "installing: Installing…",
         "addToPath: Add to PATH",

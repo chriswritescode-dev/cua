@@ -36,8 +36,6 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_NET_RETRY: "10"
-  CUA_TELEMETRY: "0"
-  DO_NOT_TRACK: "1"
 
 jobs:
   linux-kvm:

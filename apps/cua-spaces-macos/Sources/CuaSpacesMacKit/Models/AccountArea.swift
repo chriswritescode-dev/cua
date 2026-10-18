@@ -43,13 +43,12 @@ extension AppModel {
 }
 
 extension DevicesModel {
-    /// Plan in the account menu, and the Pro banner's Upgrade: records
-    /// `upsell_account_menu_click` and answers the plan card's link (Pro's
-    /// checkout on Free), else the relay's upgrade link, else the account
-    /// app, saying where it was opened from (`?from=app_account_menu`).
+    /// Plan in the account menu, and the Pro banner's Upgrade: answers the
+    /// plan card's link (Pro's checkout on Free), else the relay's upgrade
+    /// link, else the account app, saying where it was opened from
+    /// (`?from=app_account_menu`).
     public func openAccountPlanLink() -> URL? {
         let link = relayUsageView?.planCard.primary?.url ?? relayUsage?.upgradeUrl ?? appAccountAppUrl()
-        telemetry?.record(appTelemetryUpsell(surface: "account_menu", action: "click", kind: nil, plan: relayUsage?.plan))
         return URL(string: appUpgradeLink(url: link, surface: "app_account_menu"))
     }
 }

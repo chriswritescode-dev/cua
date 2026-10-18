@@ -800,7 +800,6 @@ def main():
     env = dict(os.environ)
     env.update(
         {
-            "CUA_DRIVER_RS_TELEMETRY_ENABLED": "false",
             # Disposable CI desktop: no interactive approvals.
             "CUA_DRIVER_PERMISSION_MODE": "unrestricted",
             "CUA_DRIVER_DANGEROUSLY_BYPASS_APPROVALS": "1",

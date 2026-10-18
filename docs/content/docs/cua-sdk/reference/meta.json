@@ -27,11 +27,6 @@
     "typescript",
     "rust",
     "---Protocol---",
-    "protocol",
-    "---Telemetry---",
-    "../concepts/telemetry",
-    "../concepts/telemetry-events",
-    "../concepts/telemetry-counting",
-    "../concepts/telemetry-error-kinds"
+    "protocol"
   ]
 }

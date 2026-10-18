@@ -91,22 +91,23 @@ class CloudHome:
         if self.path == REAL_CUA_HOME.resolve():
             raise SystemExit("refusing to run against the real ~/.cua")
         if not self.path.is_dir():
-            raise SystemExit(f"{self.path}: no signed-in test home (sign it in with `cua auth login --remote`)")
+            raise SystemExit(
+                f"{self.path}: no signed-in test home (sign it in with `cua auth login --remote`)"
+            )
         self.cua = cua
 
     def env(self, **over):
         # The caller's CUA_* settings never leak in, except the ones that
         # say where a provider's helper or the relay is.
         e = {k: v for k, v in os.environ.items() if not k.startswith("CUA_") or k in PASS_ENV}
-        e.update({
-            "CUA_HOME": str(self.path),
-            "CUA_CREDENTIAL_STORE": "file",
-            "CUA_NO_BROWSER": "1",
-            "CUA_TELEMETRY": "0",
-            "CUA_TELEMETRY_FORBID_NETWORK": "1",
-            "DO_NOT_TRACK": "1",
-            "CUA_SPACES_TELEPORT_HOME": str(self.path / "teleport"),
-        })
+        e.update(
+            {
+                "CUA_HOME": str(self.path),
+                "CUA_CREDENTIAL_STORE": "file",
+                "CUA_NO_BROWSER": "1",
+                "CUA_SPACES_TELEPORT_HOME": str(self.path / "teleport"),
+            }
+        )
         for k, v in over.items():
             if v is None:
                 e.pop(k, None)
@@ -218,7 +219,9 @@ class Suite:
         j = jsonl(r) or {}
         rows = [p for p in j.get("providers", []) if p.get("name") == provider]
         if not rows or not rows[0].get("connected"):
-            raise StepFailed(f"{provider} is not connected in {self.home.path} (`cua cloud connect {provider}`)")
+            raise StepFailed(
+                f"{provider} is not connected in {self.home.path} (`cua cloud connect {provider}`)"
+            )
         return rows[0], j.get("resources", [])
 
     def price(self, row, family="linux"):
@@ -240,8 +243,11 @@ class Suite:
         if mine:
             raise StepFailed(f"cloud status still records {mine}")
         sweep = jsonl(self.home.run(["--json", "cloud", "sweep", provider], 300)) or {}
-        seen = [r for r in sweep.get("resources", [])
-                if name in json.dumps(r) and r.get("action") not in ("keep",)]
+        seen = [
+            r
+            for r in sweep.get("resources", [])
+            if name in json.dumps(r) and r.get("action") not in ("keep",)
+        ]
         changed, leftover = self.diff(before, after, self.baseline)
         # Other Cua runs in the same account (another suite, a developer)
         # create and delete their own tagged resources meanwhile: a change
@@ -251,8 +257,11 @@ class Suite:
         # Shared resources Cua keeps and reuses (a security group, a
         # network) are recorded with no sandbox; they are not leftovers.
         shared = {r.get("id") for r in resources if not r.get("sandbox") and r.get("id")}
-        leftover = [l for l in leftover if (name in l or self.prefix in l or "cua-" in l)
-                    and not any(i in l for i in shared)]
+        leftover = [
+            l
+            for l in leftover
+            if (name in l or self.prefix in l or "cua-" in l) and not any(i in l for i in shared)
+        ]
         problems = []
         if changed:
             problems.append(f"pre-existing resources changed: {changed[:5]}")
@@ -272,16 +281,24 @@ class Suite:
         run.notes.append(f"{row.get('label')} {machine_type} ~${usd:.4f}/h")
         name = f"{self.prefix}-{provider[:3]}-{n}"
         ref = f"{provider}:{name}"
-        before = run.step("inventory before", lambda: str(self.snapshot(f"before-{self.prefix}-{provider}-{n}")), 600)
+        before = run.step(
+            "inventory before",
+            lambda: str(self.snapshot(f"before-{self.prefix}-{provider}-{n}")),
+            600,
+        )
         before = pathlib.Path(before) if before and before != "None" else None
         relay_before = self.relay_ids()
         if len(relay_before) > 24:
-            raise StepFailed(f"{len(relay_before)} relay machines already on the account (cap 32); not creating more")
+            raise StepFailed(
+                f"{len(relay_before)} relay machines already on the account (cap 32); not creating more"
+            )
         t0 = time.monotonic()
         sid = {}
 
         def create():
-            r = self.home.run(["--json", "spaces", "create", self.image, "--on", provider, "--name", name], 1800)
+            r = self.home.run(
+                ["--json", "spaces", "create", self.image, "--on", provider, "--name", name], 1800
+            )
             need(r, "spaces create")
             j = jsonl(r) or {}
             rows = j.get("spaces", [j]) if isinstance(j, dict) else j
@@ -301,14 +318,21 @@ class Suite:
                     r = self.home.run(["--json", "doctor", ref, "--no-host"], 180)
                     rep = r.json()
                     checks = (rep or {}).get("checks", [])
-                    fails = [c for c in checks if c.get("status") in ("fail", "error")
-                             and not str(c.get("id", "")).startswith("time.")]
+                    fails = [
+                        c
+                        for c in checks
+                        if c.get("status") in ("fail", "error")
+                        and not str(c.get("id", "")).startswith("time.")
+                    ]
                     # Known platform limits (documented in the guide): the
                     # published image's driver checks for its own init and
                     # systemd units, which a Modal sandbox replaces with
                     # Modal's PID 1. Recorded, not a failure.
-                    limits = [c for c in fails
-                              if str(c.get("id", "")).startswith(KNOWN_LIMITS.get(provider, ()))]
+                    limits = [
+                        c
+                        for c in fails
+                        if str(c.get("id", "")).startswith(KNOWN_LIMITS.get(provider, ()))
+                    ]
                     fails = [c for c in fails if c not in limits]
                     if limits and not any(n.startswith("known limits") for n in run.notes):
                         run.notes.append("known limits: " + ", ".join(c.get("id") for c in limits))
@@ -317,8 +341,11 @@ class Suite:
                     if rep is not None and not fails and len(checks) >= 5:
                         return f"{len(rep.get('checks', []))} doctor checks, settled in {time.monotonic() - t:.0f}s"
                     if time.monotonic() - t > 300:
-                        raise StepFailed(f"doctor: {[c.get('id') for c in fails][:6] or r.text()[-300:]}")
+                        raise StepFailed(
+                            f"doctor: {[c.get('id') for c in fails][:6] or r.text()[-300:]}"
+                        )
                     time.sleep(5)
+
             run.step("ready (spacesd + doctor)", ready, 330)
 
             def screenshot():
@@ -328,6 +355,7 @@ class Suite:
                 if not data.startswith(b"\x89PNG") or len(data) < 4096:
                     raise StepFailed(f"not a real PNG ({len(data)} bytes)")
                 return f"{len(data)} bytes"
+
             run.step("screenshot", screenshot, 120)
 
             def exec_():
@@ -335,38 +363,58 @@ class Suite:
                 if "cua-ok" not in r.out:
                     raise StepFailed(f"exec printed {r.out[-200:]!r}")
                 return "cua-ok"
+
             run.step("exec", exec_, 90)
 
             def files():
                 src = self.tmp / f"{name}.bin"
                 src.write_bytes(os.urandom(256 * 1024))
                 back = self.tmp / f"{name}.back"
-                need(self.home.run(["sb", "cp", str(src), f"{ref}:/tmp/cua-conf.bin"], 180), "cp up")
-                need(self.home.run(["sb", "cp", f"{ref}:/tmp/cua-conf.bin", str(back)], 180), "cp down")
+                need(
+                    self.home.run(["sb", "cp", str(src), f"{ref}:/tmp/cua-conf.bin"], 180), "cp up"
+                )
+                need(
+                    self.home.run(["sb", "cp", f"{ref}:/tmp/cua-conf.bin", str(back)], 180),
+                    "cp down",
+                )
                 h1 = hashlib.sha256(src.read_bytes()).hexdigest()
                 h2 = hashlib.sha256(back.read_bytes()).hexdigest() if back.exists() else ""
                 if h1 != h2:
                     raise StepFailed("the file came back different")
                 return f"256 KiB round trip, sha256 {h1[:12]}"
+
             run.step("files", files, 360)
 
             def stream(extra, what):
-                r = need(self.home.run(["sb", "stream-probe", ref, "--seconds", "5", *extra], 180), what)
+                r = need(
+                    self.home.run(["sb", "stream-probe", ref, "--seconds", "5", *extra], 180), what
+                )
                 j = jsonl(r) or {}
                 if int(j.get("frames") or 0) < 1:
                     raise StepFailed(f"{what}: no frames: {r.text()[-300:]}")
                 return j
-            run.step("desktop stream over the relay",
-                     lambda: "{frames} frames, {fps} fps, first frame {first_frame_ms} ms, {width}x{height}".format(
-                         **stream([], "desktop stream")), 180)
+
+            run.step(
+                "desktop stream over the relay",
+                lambda: (
+                    "{frames} frames, {fps} fps, first frame {first_frame_ms} ms, {width}x{height}".format(
+                        **stream([], "desktop stream")
+                    )
+                ),
+                180,
+            )
 
             def window():
-                need(self.home.run(["sb", "exec", ref,
-                                    "DISPLAY=:1 nohup xfce4-terminal >/dev/null 2>&1 &"], 60),
-                     "open a terminal")
+                need(
+                    self.home.run(
+                        ["sb", "exec", ref, "DISPLAY=:1 nohup xfce4-terminal >/dev/null 2>&1 &"], 60
+                    ),
+                    "open a terminal",
+                )
                 time.sleep(5)
                 j = stream(["--window-app", "terminal"], "window stream")
                 return f"{j['target']}: {j['frames']} frames"
+
             run.step("window stream", window, 240)
 
             def presence():
@@ -375,27 +423,46 @@ class Suite:
                 if p is None:
                     raise StepFailed("the probe reported no presence roster")
                 return f"presence: {json.dumps(p)[:120]}"
+
             run.step("presence", presence, 180)
 
             # The published linux:24.04 still runs cua-guestd (from before the
             # cua-spacesd rename), which has no Cua Volume guest mount: n/a
             # there, measured on images whose driver has it.
-            legacy = "legacy" in self.home.run(
-                ["sb", "exec", ref, "test -x /usr/local/bin/cua-spacesd && echo current || echo legacy"],
-                60).out
+            legacy = (
+                "legacy"
+                in self.home.run(
+                    [
+                        "sb",
+                        "exec",
+                        ref,
+                        "test -x /usr/local/bin/cua-spacesd && echo current || echo legacy",
+                    ],
+                    60,
+                ).out
+            )
             if self.spaces_build and legacy:
-                run.notes.append("Cua Volume: n/a (the image's driver is the pre-rename cua-guestd, "
-                                 "which has no guest volume mount; the next linux image has it)")
+                run.notes.append(
+                    "Cua Volume: n/a (the image's driver is the pre-rename cua-guestd, "
+                    "which has no guest volume mount; the next linux image has it)"
+                )
             elif self.spaces_build:
+
                 def volume():
                     st = jsonl(self.home.run(["--json", "volume", "status"], 60)) or {}
-                    v = next((v for v in st.get("volumes") or [] if v.get("space") == sid["id"]), None)
-                    err = next((e for e in st.get("volume_errors") or [] if e.get("space") == sid["id"]), None)
+                    v = next(
+                        (v for v in st.get("volumes") or [] if v.get("space") == sid["id"]), None
+                    )
+                    err = next(
+                        (e for e in st.get("volume_errors") or [] if e.get("space") == sid["id"]),
+                        None,
+                    )
                     if v:
                         return f"mounted at {v.get('mount_path')}"
                     if err:
                         raise StepFailed(f"volume error: {err.get('error')}")
                     raise StepFailed("no volume verdict for the Space")
+
                 # Recorded, and the run goes on: stop, start and delete are
                 # measured whatever the Volume did.
                 try:
@@ -407,11 +474,36 @@ class Suite:
                 run.notes.append("Cua Volume: n/a (needs the Cua Spaces `cua`)")
 
             if CAN_STOP[provider]:
-                run.step("stop", lambda: need(self.home.run(["spaces", "stop", sid["id"]], 600), "stop").out.strip()[-120:], 600)
-                run.step("start", lambda: need(self.home.run(["spaces", "start", sid["id"]], 1200), "start").out.strip()[-120:], 1200)
-                run.step("exec after start", lambda: wait_until(
-                    lambda: "cua-ok" in self.home.run(["sb", "exec", ref, "echo", "cua-ok"], 60).out,
-                    300, 5, "exec after start") and "cua-ok", 300)
+                run.step(
+                    "stop",
+                    lambda: need(
+                        self.home.run(["spaces", "stop", sid["id"]], 600), "stop"
+                    ).out.strip()[-120:],
+                    600,
+                )
+                run.step(
+                    "start",
+                    lambda: need(
+                        self.home.run(["spaces", "start", sid["id"]], 1200), "start"
+                    ).out.strip()[-120:],
+                    1200,
+                )
+                run.step(
+                    "exec after start",
+                    lambda: (
+                        wait_until(
+                            lambda: (
+                                "cua-ok"
+                                in self.home.run(["sb", "exec", ref, "echo", "cua-ok"], 60).out
+                            ),
+                            300,
+                            5,
+                            "exec after start",
+                        )
+                        and "cua-ok"
+                    ),
+                    300,
+                )
             else:
                 run.notes.append("stop/start: n/a (a Modal sandbox cannot stop)")
 
@@ -421,6 +513,7 @@ class Suite:
                     raise StepFailed(f"{sid['id']} still on the relay")
                 sid.pop("id")
                 return "deleted"
+
             run.step("delete", delete, 900)
         finally:
             uptime = time.monotonic() - t0
@@ -443,18 +536,39 @@ class Suite:
         row, _ = self.status(provider)
         usd, _ = self.price(row)
         before = self.snapshot(f"before-{self.prefix}-bench-{provider}-{n}")
-        bench = self.bench_dir or (pathlib.Path(__file__).resolve().parents[4] / "libs" / "cua-bench")
+        bench = self.bench_dir or (
+            pathlib.Path(__file__).resolve().parents[4] / "libs" / "cua-bench"
+        )
         t0 = time.monotonic()
 
         def run_task():
-            r = sh(["uv", "run", "--frozen", "cb", "run", "cua-bench-basic", "--on", provider,
-                    "--task-filter", self.bench_task, "--max-variants", "1", "-j", "1"],
-                   3600, env=self.home.env(), cwd=str(bench))
+            r = sh(
+                [
+                    "uv",
+                    "run",
+                    "--frozen",
+                    "cb",
+                    "run",
+                    "cua-bench-basic",
+                    "--on",
+                    provider,
+                    "--task-filter",
+                    self.bench_task,
+                    "--max-variants",
+                    "1",
+                    "-j",
+                    "1",
+                ],
+                3600,
+                env=self.home.env(),
+                cwd=str(bench),
+            )
             need(r, "cb run")
             tail = r.text()[-400:]
             if "error" in tail.lower() and "0 error" not in tail.lower():
                 raise StepFailed(tail)
             return tail.strip().splitlines()[-1] if tail.strip() else "ran"
+
         try:
             run.step(f"cua-bench-basic {self.bench_task} on {provider}", run_task, 3600)
         finally:
@@ -465,12 +579,18 @@ class Suite:
 
     def bench_orphans(self, provider, before):
         _, resources = self.status(provider)
-        eph = [r for r in resources if ":cua-eph-" in str(r.get("sandbox", "")) or not r.get("sandbox")
-               and r.get("type") in ("instance", "sandbox")]
+        eph = [
+            r
+            for r in resources
+            if ":cua-eph-" in str(r.get("sandbox", ""))
+            or not r.get("sandbox")
+            and r.get("type") in ("instance", "sandbox")
+        ]
         if eph:
             raise StepFailed(f"cloud status still records {eph}")
-        changed, leftover = self.diff(before, self.snapshot(f"after-{self.prefix}-bench-{provider}"),
-                                      self.baseline)
+        changed, leftover = self.diff(
+            before, self.snapshot(f"after-{self.prefix}-bench-{provider}"), self.baseline
+        )
         changed = [c for c in changed if "cua-" not in c]
         shared = {r.get("id") for r in resources if not r.get("sandbox") and r.get("id")}
         leftover = [l for l in leftover if "cua-" in l and not any(i in l for i in shared)]
@@ -481,8 +601,11 @@ class Suite:
     # -- driver
 
     def main(self):
-        print(f"cloud suite {self.prefix}: {self.cua} in {self.home.path}; "
-              f"{', '.join(self.providers)} x {self.runs}; {', '.join(self.scenarios)}", flush=True)
+        print(
+            f"cloud suite {self.prefix}: {self.cua} in {self.home.path}; "
+            f"{', '.join(self.providers)} x {self.runs}; {', '.join(self.scenarios)}",
+            flush=True,
+        )
         for provider in self.providers:
             for scen in self.scenarios:
                 fn = {"space": self.s_space, "bench": self.s_bench}[scen]
@@ -501,23 +624,45 @@ class Suite:
                         traceback.print_exc()
                     run.secs = round(time.monotonic() - run.t0, 1)
                     self.results.append(run)
-                    print(f"   -> {'PASS' if run.ok else 'FAIL'} ({run.secs}s, ~${run.cost:.4f})"
-                          f"{' ' + run.error[:300] if run.error else ''}", flush=True)
+                    print(
+                        f"   -> {'PASS' if run.ok else 'FAIL'} ({run.secs}s, ~${run.cost:.4f})"
+                        f"{' ' + run.error[:300] if run.error else ''}",
+                        flush=True,
+                    )
         self.home.run(["daemon", "stop"], 30)
         return self.report()
 
     def report(self):
         stamp = dt.datetime.now().strftime("%Y%m%dT%H%M%S")
-        rows = [{"scenario": r.scenario, "run": r.n, "ok": r.ok, "secs": r.secs,
-                 "cost_usd": round(getattr(r, "cost", 0.0), 4), "error": r.error,
-                 "notes": r.notes, "steps": r.steps} for r in self.results]
+        rows = [
+            {
+                "scenario": r.scenario,
+                "run": r.n,
+                "ok": r.ok,
+                "secs": r.secs,
+                "cost_usd": round(getattr(r, "cost", 0.0), 4),
+                "error": r.error,
+                "notes": r.notes,
+                "steps": r.steps,
+            }
+            for r in self.results
+        ]
         out = self.work / "results" / f"{stamp}.json"
-        out.write_text(json.dumps({"prefix": self.prefix, "cua": str(self.cua), "runs": rows}, indent=2))
-        lines = ["| Scenario | Run | Result | Time | Est. cost | Steps (s) |", "|---|---|---|---|---|---|"]
+        out.write_text(
+            json.dumps({"prefix": self.prefix, "cua": str(self.cua), "runs": rows}, indent=2)
+        )
+        lines = [
+            "| Scenario | Run | Result | Time | Est. cost | Steps (s) |",
+            "|---|---|---|---|---|---|",
+        ]
         for r in self.results:
-            steps = ", ".join(f"{s['step']} {s['secs']}" + ("" if s["ok"] else " FAIL") for s in r.steps)
-            lines.append(f"| {r.scenario} | {r.n} | {'pass' if r.ok else 'FAIL'} | {r.secs}s | "
-                         f"${getattr(r, 'cost', 0.0):.4f} | {steps} |")
+            steps = ", ".join(
+                f"{s['step']} {s['secs']}" + ("" if s["ok"] else " FAIL") for s in r.steps
+            )
+            lines.append(
+                f"| {r.scenario} | {r.n} | {'pass' if r.ok else 'FAIL'} | {r.secs}s | "
+                f"${getattr(r, 'cost', 0.0):.4f} | {steps} |"
+            )
         total = sum(getattr(r, "cost", 0.0) for r in self.results)
         lines.append(f"\nEstimated compute cost, all runs: ${total:.4f}")
         md = "\n".join(lines)

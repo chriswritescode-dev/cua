@@ -44,10 +44,9 @@ dependencies = [
     "pillow>=11.0.0",
     "python-dotenv>=1.0.0",
     "datasets>=3.0.0",
-    # CUA SDK. No direct cua-core pin: cua-bench's telemetry uses it when
-    # present, and harnesses pinned to cua-core 0.1 (cua-computer 0.5 /
-    # cua-agent 0.7, e.g. Agents' Last Exam) must co-install. cua-agent stays
-    # unpinned for the same reason; the bundled agents need cua-agent >= 0.8.
+    # CUA SDK. cua-agent stays unpinned so harnesses pinned to cua-agent 0.5 /
+    # 0.7 (e.g. Agents' Last Exam) can co-install; the bundled agents need
+    # cua-agent >= 0.8.
     "cua-sandbox>=0.8.0,<0.10.0",
     "cua-agent",
 ]
@@ -55,7 +54,7 @@ dependencies = [
 [project.optional-dependencies]
 # Full installation with all features
 all = [
-    "cua-bench[browser,agents,otel,spice]",
+    "cua-bench[browser,agents,cloud,spice]",
 ]
 
 # Packaging scripts (e.g. package_kicad_submission.py)
@@ -73,12 +72,9 @@ agents = [
     "anthropic>=0.26.0",
 ]
 
-# OpenTelemetry tracing and metrics export
-otel = [
-    "opentelemetry-api>=1.20.0",
-    "opentelemetry-sdk>=1.20.0",
-    "opentelemetry-exporter-otlp-proto-http>=1.20.0",
-]
+# Deprecated and empty: cloud runs need no extra packages. Kept so
+# `pip install 'cua-bench[cloud]'` still resolves.
+cloud = []
 
 # SPICE circuit simulation (for KiCad netlist evaluation)
 spice = [

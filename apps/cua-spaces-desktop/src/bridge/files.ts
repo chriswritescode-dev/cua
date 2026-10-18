@@ -61,7 +61,6 @@ export async function sendOffered(model: AppModel, offers: FileOffers, spaceId: 
   if (paths.length === 0) throw Failure.badArgs("paths: [string]");
   if (!paths.every((p) => offers.has(p))) throw new Failure("forbidden", "only files picked or dropped here are sent");
   if (!model.spaces.some((s) => s.id === spaceId)) throw Failure.notFound(`no Space ${spaceId}`);
-  model.recordFeature("file_send");
   return model.backend.sendFiles(spaceId, paths);
 }
 

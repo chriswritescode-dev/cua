@@ -422,8 +422,6 @@ impl TeleportService for TeleportServiceImpl {
             .await
             .map_err(|e| io_status(&e, &staging))?;
         let options = body.options.unwrap_or_default();
-        // Opt-in aggregate telemetry: a count per grant state, nothing else.
-        crate::telemetry::counters().delivery(&options.broker_grant);
         let receiver = self.receiver.clone();
         let app = import.app.clone();
         let path = staging.clone();
@@ -477,9 +475,6 @@ impl TeleportService for TeleportServiceImpl {
             .lock()
             .expect("imports")
             .remove(&body.import_id);
-        if outcome.is_err() {
-            crate::telemetry::counters().import_failed();
-        }
         let outcome = outcome.map_err(|e| match e {
             cua_spacesd_teleport::ImportError::InvalidBundle(m) => crate::error::invalid(m),
             cua_spacesd_teleport::ImportError::AppMismatch { .. } => {
@@ -969,19 +964,6 @@ mod tests {
 
     async fn import(h: &Harness, id: &str, tag: &str, expires_at_ms: u64) -> ImportResult {
         import_with_grant(h, id, tag, expires_at_ms, "").await
-    }
-
-    /// Session deliveries are counted by grant state on arrival (opt-in
-    /// aggregate telemetry), and nothing about them is kept.
-    #[tokio::test]
-    async fn deliveries_are_counted_by_broker_grant_presence() {
-        let h = harness();
-        let before = crate::telemetry::counters().peek();
-        import_with_grant(&h, "imp-absent", "a", 0, "").await;
-        import_with_grant(&h, "imp-present", "b", 0, "keyvault").await;
-        let after = crate::telemetry::counters().peek();
-        assert!(after.grant_absent > before.grant_absent);
-        assert!(after.grant_present > before.grant_present);
     }
 
     async fn import_with_grant(

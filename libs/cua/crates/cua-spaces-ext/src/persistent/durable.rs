@@ -256,8 +256,7 @@ impl Persistent {
             r.run_id = None;
         })?;
         let files = restored.files;
-        self.start_with(name, "", "durable", Some((epoch, files)))
-            .await?;
+        self.start_with(name, "", Some((epoch, files))).await?;
         self.update(name, |r| r.relaunch = false)?;
         let rec = self.get(name)?;
         let _ = self.thread_store(&rec.space).append(Draft::note(

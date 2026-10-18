@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { BridgeMode, DataAdapter } from "../../bridge/adapter";
 import type { CrashReportingConfig } from "../../bridge/contracts/host";
 import type { HostEvent } from "../../bridge/protocol";
-import { crashConfigFromHost } from "../../bridge/ops/telemetry";
+import { crashConfigFromHost } from "../../bridge/ops/crash-reporting";
 import { sentryOptions, startCrashReporting, wantsUiTestCrash, type SentryLike } from "..";
 import { scrubEvent, scrubString, stripUrl } from "../scrub";
 

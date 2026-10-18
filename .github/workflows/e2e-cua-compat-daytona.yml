@@ -19,10 +19,8 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_BUILD_JOBS: "4"
-  CUA_TELEMETRY: "0"
   # a VM restored from the auto pool cannot be checkpointed again (BUGS.md, cua-vmm): the snapshot and fork cases need cold VMs
   CUA_POOL_AUTO: "off"
-  DO_NOT_TRACK: "1"
 
 jobs:
   spaces:

@@ -22,7 +22,7 @@ import { HostModel } from "../src/model/host";
 import { StartupModel } from "../src/model/startup";
 import { devDirName, nativeFiles } from "../src/native/location";
 import { loadNative, type Native } from "../src/native/load";
-import { FixtureAccount, FixtureSpacesBackend, FixtureTelemetry, fixtureHost } from "./fixtures";
+import { FixtureAccount, FixtureSpacesBackend, fixtureHost } from "./fixtures";
 import { FixtureDevices } from "./host-fixtures";
 
 const dir = path.resolve(__dirname, "../native", devDirName(process.platform, process.arch));
@@ -40,7 +40,7 @@ describe.skipIf(!built)("the Machines page on the app core", () => {
 
   beforeAll(async () => {
     home = mkdtempSync(path.join(tmpdir(), "cua-machines-"));
-    Object.assign(process.env, { HOME: home, USERPROFILE: home, CUA_HOME: path.join(home, ".cua"), CUA_TELEMETRY: "0", DO_NOT_TRACK: "1", CUA_KEYCHAIN_NONINTERACTIVE: "1" });
+    Object.assign(process.env, { HOME: home, USERPROFILE: home, CUA_HOME: path.join(home, ".cua"), CUA_KEYCHAIN_NONINTERACTIVE: "1" });
     native = await loadNative(dir);
   });
 
@@ -62,7 +62,6 @@ describe.skipIf(!built)("the Machines page on the app core", () => {
       devices: new DevicesModel(native, () => devices.like),
       cloud: new CloudModel(native, () => backend),
       account: new FixtureAccount("ada@example.com"),
-      telemetry: new FixtureTelemetry(),
       servicesIn: () => true,
       cpus: 8,
       about: () => ({ computerName: "Ada's MacBook Pro", appVersion: "0.9.1", osVersion: "macOS 26.5.2" }),

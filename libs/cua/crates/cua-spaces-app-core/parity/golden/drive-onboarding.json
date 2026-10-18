@@ -29,8 +29,6 @@
           "continue true"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -38,8 +36,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "mac",
@@ -59,8 +56,6 @@
           "continue true"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -68,8 +63,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "mac",
@@ -89,8 +83,6 @@
           "continue true"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -98,8 +90,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "mac",
@@ -119,8 +110,6 @@
           "continue false"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Mounting…",
         "prompts": [],
@@ -128,8 +117,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": "mount",
       "run": "mac",
@@ -149,8 +137,6 @@
           "continue true"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -158,8 +144,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "mac",
@@ -178,8 +163,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Use it only to open your other machines, or let your other machines reach it too. You can change this later.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -187,8 +170,7 @@
         "step": "mode",
         "summary": [],
         "title": "How do you want to use this Mac?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "mac",
@@ -205,8 +187,6 @@
         "driveStorage": null,
         "launchAtLogin": "[x] Launch at login ~Keeps your Spaces, agents and Cua Volume available after a restart.",
         "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Start using Cua Spaces",
         "prompts": [
@@ -226,8 +206,7 @@
           "[ ] Account ~Reach your machines from any machine. -> Sign in",
           "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
           "[ ] Cua Volume ~Shared folder: files your agents can share across your machines. Waiting for approval. -> Turn on (optional)"
-        ],
-        "usage": null
+        ]
       },
       "request": null,
       "run": "mac",
@@ -243,8 +222,6 @@
         "drive": "Mount Cua Volume [ ] | Files from a Space arriving in the mounted Cua Volume",
         "driveStorage": null,
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -252,8 +229,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "linux",
@@ -269,8 +245,6 @@
         "drive": "Mount Cua Volume [x] | Files from a Space arriving in the mounted Cua Volume",
         "driveStorage": null,
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -278,8 +252,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "linux",
@@ -295,8 +268,6 @@
         "drive": "Mount Cua Volume [x] (disabled) (busy) | Files from a Space arriving in the mounted Cua Volume",
         "driveStorage": null,
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Mounting…",
         "prompts": [],
@@ -304,8 +275,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": "mount",
       "run": "linux",
@@ -324,8 +294,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Use it only to open your other machines, or let your other machines reach it too. You can change this later.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -333,8 +301,7 @@
         "step": "mode",
         "summary": [],
         "title": "How do you want to use this Mac?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "linux",
@@ -351,8 +318,6 @@
         "driveStorage": null,
         "launchAtLogin": "[x] Launch at login ~Keeps your Spaces, agents and Cua Volume available after a restart.",
         "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Start using Cua Spaces",
         "prompts": [
@@ -372,8 +337,7 @@
           "[ ] Account ~Reach your machines from any machine. -> Sign in",
           "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
           "[x] Cua Volume ~Shared folder: files your agents can share across your machines. /home/maya/Cua Volume. (optional)"
-        ],
-        "usage": null
+        ]
       },
       "request": null,
       "run": "linux",
@@ -389,8 +353,6 @@
         "drive": "Add Cua Volume to Finder [ ] (disabled) ~Not available on this Mac yet | Files from a Space arriving in Cua Volume in Finder",
         "driveStorage": null,
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -398,8 +360,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "no daemon",
@@ -415,8 +376,6 @@
         "drive": "Add Cua Volume to Finder [ ] (disabled) ~Not available on this Mac yet | Files from a Space arriving in Cua Volume in Finder",
         "driveStorage": null,
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -424,8 +383,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "no daemon",
@@ -444,8 +402,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Use it only to open your other machines, or let your other machines reach it too. You can change this later.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -453,8 +409,7 @@
         "step": "mode",
         "summary": [],
         "title": "How do you want to use this Mac?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "no daemon",
@@ -470,8 +425,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "You can change this in Settings.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [
           "Notch and menu bar [onboarding-notch] (selected)",
           "Menu bar only [onboarding-menu-bar]"
@@ -482,8 +435,7 @@
         "step": "presentation",
         "summary": [],
         "title": "Where should Cua Spaces show up?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "windows",
@@ -502,8 +454,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Use it only to open your other machines, or let your other machines reach it too. You can change this later.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -511,8 +461,7 @@
         "step": "mode",
         "summary": [],
         "title": "How do you want to use this Mac?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "windows",
@@ -528,8 +477,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "You can change this in Settings.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [
           "Notch and menu bar [onboarding-notch] (selected)",
           "Menu bar only [onboarding-menu-bar]"
@@ -540,8 +487,7 @@
         "step": "presentation",
         "summary": [],
         "title": "Where should Cua Spaces show up?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "windows",
@@ -558,8 +504,6 @@
         "driveStorage": null,
         "launchAtLogin": "[x] Launch at login ~Keeps your Spaces, agents and Cua Volume available after a restart.",
         "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Start using Cua Spaces",
         "prompts": [
@@ -578,8 +522,7 @@
           "[ ] Cua CLI ~Command-line tools for you and your agents. -> Install the Cua CLI",
           "[ ] Account ~Reach your machines from any machine. -> Sign in",
           "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent"
-        ],
-        "usage": null
+        ]
       },
       "request": null,
       "run": "windows",
@@ -600,8 +543,6 @@
           "continue true"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -609,8 +550,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "this mac",
@@ -629,8 +569,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Use it only to open your other machines, or let your other machines reach it too. You can change this later.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -638,8 +576,7 @@
         "step": "mode",
         "summary": [],
         "title": "How do you want to use this Mac?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "this mac",
@@ -660,8 +597,6 @@
           "continue false"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -669,8 +604,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "your bucket",
@@ -697,8 +631,6 @@
           "continue false"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -706,8 +638,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "your bucket",
@@ -734,8 +665,6 @@
           "continue true"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -743,8 +672,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "your bucket",
@@ -771,8 +699,6 @@
           "continue false"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -780,8 +706,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "your bucket",
@@ -809,8 +734,6 @@
           "continue false"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -818,8 +741,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "your bucket",
@@ -846,8 +768,6 @@
           "continue true"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -855,8 +775,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "your bucket",
@@ -883,8 +802,6 @@
           "continue true"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -892,8 +809,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "your bucket",
@@ -920,8 +836,6 @@
           "continue false"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Saving…",
         "prompts": [],
@@ -929,8 +843,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "your bucket",
@@ -956,8 +869,6 @@
           "continue false"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Mounting…",
         "prompts": [],
@@ -965,8 +876,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": "mount",
       "run": "your bucket",
@@ -985,8 +895,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Use it only to open your other machines, or let your other machines reach it too. You can change this later.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -994,8 +902,7 @@
         "step": "mode",
         "summary": [],
         "title": "How do you want to use this Mac?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "your bucket",
@@ -1016,8 +923,6 @@
           "continue false"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -1025,8 +930,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "agent prompt",
@@ -1047,8 +951,6 @@
           "continue false"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -1056,8 +958,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "agent prompt",
@@ -1079,8 +980,6 @@
           "continue false"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -1088,8 +987,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "agent prompt",
@@ -1115,8 +1013,6 @@
           "continue true"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -1124,8 +1020,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "agent prompt",
@@ -1144,8 +1039,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Use it only to open your other machines, or let your other machines reach it too. You can change this later.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -1153,8 +1046,7 @@
         "step": "mode",
         "summary": [],
         "title": "How do you want to use this Mac?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "agent prompt",
@@ -1174,8 +1066,6 @@
           "continue true"
         ],
         "lede": "Memory and files your agents share, across every Space.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -1183,8 +1073,7 @@
         "step": "drive",
         "summary": [],
         "title": "Cua Volume",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "later",
@@ -1203,8 +1092,6 @@
         "drive": null,
         "driveStorage": null,
         "lede": "Use it only to open your other machines, or let your other machines reach it too. You can change this later.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Continue",
         "prompts": [],
@@ -1212,8 +1099,7 @@
         "step": "mode",
         "summary": [],
         "title": "How do you want to use this Mac?",
-        "todos": [],
-        "usage": null
+        "todos": []
       },
       "request": null,
       "run": "later",

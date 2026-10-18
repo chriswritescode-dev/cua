@@ -26,7 +26,7 @@ import { CloudLogo } from "@/components/cloud-logo";
 import { UpsellPrompt } from "@/components/upsell-prompt";
 import { OsIcon } from "@/components/os-icon";
 import { EmptyState, Page, PageHeader } from "@/components/page";
-import { RestartDialog, useUpdateIndicator } from "@/components/shell/update-indicator";
+import { useUpdateIndicator } from "@/components/shell/update-indicator";
 import { ThisMachineExtras } from "@/components/this-machine";
 import { ConfirmDialog } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -628,8 +628,7 @@ function MachineIssues({ machine: m, hidePermissions, onFail }: { machine: Machi
   if (!issues.length) return null;
   const act = (i: MachinesViewIssue) => {
     const a = i.action!;
-    // Restart into the downloaded Cua Spaces update: the sidebar's own flow, which asks first while an agent is running.
-    if (a.appUpdate) return update.restart();
+    if (a.appUpdate) return update.whatsNew?.();
     const done = a.url ? host.openSettings(a.url) : a.hostAction ? host.run(a.hostAction) : Promise.resolve();
     void Promise.resolve(done).catch(onFail(`Couldn't ${a.label.charAt(0).toLowerCase()}${a.label.slice(1)}`));
   };
@@ -648,14 +647,13 @@ function MachineIssues({ machine: m, hidePermissions, onFail }: { machine: Machi
             )}
             <span className="min-w-0 flex-1 text-[13px]">{i.text}</span>
             {i.action ? (
-              <Button size="sm" variant="outline" className="shrink-0" disabled={host.busy || (i.action.appUpdate && update.installing)} onClick={() => act(i)} data-machine-issue-action={i.id}>
+              <Button size="sm" variant="outline" className="shrink-0" disabled={host.busy} onClick={() => act(i)} data-machine-issue-action={i.id}>
                 {i.action.label}
               </Button>
             ) : null}
           </div>
         ))}
       </div>
-      <RestartDialog ui={update} />
     </>
   );
 }

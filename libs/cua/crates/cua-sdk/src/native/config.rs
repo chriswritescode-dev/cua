@@ -16,8 +16,7 @@ use cua_sandbox_core::settings::{self, Entry, Settings};
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
 pub struct ConfigEntry {
     /// `default.on`, `default.kind`, `default.runtime`, `runtime.container`,
-    /// `runtime.vm`, `runtime.microvm` (and their `_path`) or
-    /// `telemetry.enabled`.
+    /// `runtime.vm`, `runtime.microvm` (and their `_path`).
     pub key: String,
     /// The effective value.
     pub value: String,

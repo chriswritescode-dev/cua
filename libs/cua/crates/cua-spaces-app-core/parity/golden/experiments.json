@@ -28,8 +28,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
           "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -49,8 +47,7 @@
             "[ ] Account ~Reach your machines from any machine. -> Sign in",
             "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
             "[ ] Cua Volume ~Shared folder: files your agents can share across your machines. -> Turn on (optional)"
-          ],
-          "usage": null
+          ]
         },
         "pages": [
           "welcome",
@@ -80,12 +77,8 @@
         "- runtime:container choice: Containers {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:vm choice: Virtual machines {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:microvm choice: MicroVMs {*Automatic|Cua’s own|Already installed} ?Checking…",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share usage data to help improve Cua {*On|Off}",
-        "- telemetry-note note: Which features you use and when something goes wrong. Linked to your account through a random ID while you're signed in. Never your files, what you type or your screen. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
       ],
-      "signals": [],
       "step": "defaults",
       "tab": [
         "= Experiments",
@@ -147,8 +140,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces, agents and Cua Volume available after a restart.",
           "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -168,8 +159,7 @@
             "[ ] Account ~Reach your machines from any machine. -> Sign in",
             "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
             "[x] Cua Volume ~Shared folder: files your agents can share across your machines. In Finder. (optional)"
-          ],
-          "usage": null
+          ]
         },
         "pages": [
           "welcome",
@@ -205,25 +195,7 @@
         "- runtime:container choice: Containers {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:vm choice: Virtual machines {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:microvm choice: MicroVMs {*Automatic|Cua’s own|Already installed} ?Checking…",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share usage data to help improve Cua {*On|Off}",
-        "- telemetry-note note: Which features you use and when something goes wrong. Linked to your account through a random ID while you're signed in. Never your files, what you type or your screen. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
-      ],
-      "signals": [
-        {
-          "action": "experiment_on",
-          "experiment": "cua_volume",
-          "type": "experiment"
-        },
-        {
-          "experiments": [
-            "cua_volume",
-            "your_cloud",
-            "sharing"
-          ],
-          "type": "experiments-on"
-        }
       ],
       "step": "cua volume on",
       "tab": [
@@ -286,8 +258,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces, agents and Cua Volume available after a restart.",
           "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -307,8 +277,7 @@
             "[ ] Account ~Reach your machines from any machine. -> Sign in",
             "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
             "[x] Cua Volume ~Shared folder: files your agents can share across your machines. In Finder. (optional)"
-          ],
-          "usage": null
+          ]
         },
         "pages": [
           "welcome",
@@ -344,24 +313,7 @@
         "- runtime:container choice: Containers {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:vm choice: Virtual machines {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:microvm choice: MicroVMs {*Automatic|Cua’s own|Already installed} ?Checking…",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share usage data to help improve Cua {*On|Off}",
-        "- telemetry-note note: Which features you use and when something goes wrong. Linked to your account through a random ID while you're signed in. Never your files, what you type or your screen. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
-      ],
-      "signals": [
-        {
-          "action": "experiment_off",
-          "experiment": "your_cloud",
-          "type": "experiment"
-        },
-        {
-          "experiments": [
-            "cua_volume",
-            "sharing"
-          ],
-          "type": "experiments-on"
-        }
       ],
       "step": "your cloud off",
       "tab": [
@@ -421,8 +373,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces, agents and Cua Volume available after a restart.",
           "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -442,8 +392,7 @@
             "[ ] Account ~Reach your machines from any machine. -> Sign in",
             "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
             "[x] Cua Volume ~Shared folder: files your agents can share across your machines. In Finder. (optional)"
-          ],
-          "usage": null
+          ]
         },
         "pages": [
           "welcome",
@@ -479,12 +428,8 @@
         "- runtime:container choice: Containers {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:vm choice: Virtual machines {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:microvm choice: MicroVMs {*Automatic|Cua’s own|Already installed} ?Checking…",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share usage data to help improve Cua {*On|Off}",
-        "- telemetry-note note: Which features you use and when something goes wrong. Linked to your account through a random ID while you're signed in. Never your files, what you type or your screen. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
       ],
-      "signals": [],
       "step": "sharing on",
       "tab": [
         "= Experiments",
@@ -543,8 +488,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces, agents and Cua Volume available after a restart.",
           "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -564,8 +507,7 @@
             "[ ] Account ~Reach your machines from any machine. -> Sign in",
             "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
             "[x] Cua Volume ~Shared folder: files your agents can share across your machines. In Finder. (optional)"
-          ],
-          "usage": null
+          ]
         },
         "pages": [
           "welcome",
@@ -601,12 +543,8 @@
         "- runtime:container choice: Containers {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:vm choice: Virtual machines {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:microvm choice: MicroVMs {*Automatic|Cua’s own|Already installed} ?Checking…",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share usage data to help improve Cua {*On|Off}",
-        "- telemetry-note note: Which features you use and when something goes wrong. Linked to your account through a random ID while you're signed in. Never your files, what you type or your screen. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
       ],
-      "signals": [],
       "step": "on again changes nothing",
       "tab": [
         "= Experiments",
@@ -665,8 +603,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces, agents and Cua Volume available after a restart.",
           "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -686,8 +622,7 @@
             "[ ] Account ~Reach your machines from any machine. -> Sign in",
             "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
             "[x] Cua Volume ~Shared folder: files your agents can share across your machines. In Finder. (optional)"
-          ],
-          "usage": null
+          ]
         },
         "pages": [
           "welcome",
@@ -723,12 +658,8 @@
         "- runtime:container choice: Containers {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:vm choice: Virtual machines {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:microvm choice: MicroVMs {*Automatic|Cua’s own|Already installed} ?Checking…",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share usage data to help improve Cua {*On|Off}",
-        "- telemetry-note note: Which features you use and when something goes wrong. Linked to your account through a random ID while you're signed in. Never your files, what you type or your screen. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
       ],
-      "signals": [],
       "step": "another row changes nothing",
       "tab": [
         "= Experiments",
@@ -786,8 +717,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
           "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -807,8 +736,7 @@
             "[ ] Account ~Reach your machines from any machine. -> Sign in",
             "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
             "[ ] Cua Volume ~Shared folder: files your agents can share across your machines. -> Turn on (optional)"
-          ],
-          "usage": null
+          ]
         },
         "pages": [
           "welcome",
@@ -838,23 +766,7 @@
         "- runtime:container choice: Containers {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:vm choice: Virtual machines {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:microvm choice: MicroVMs {*Automatic|Cua’s own|Already installed} ?Checking…",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share usage data to help improve Cua {*On|Off}",
-        "- telemetry-note note: Which features you use and when something goes wrong. Linked to your account through a random ID while you're signed in. Never your files, what you type or your screen. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
-      ],
-      "signals": [
-        {
-          "action": "experiment_off",
-          "experiment": "cua_volume",
-          "type": "experiment"
-        },
-        {
-          "experiments": [
-            "sharing"
-          ],
-          "type": "experiments-on"
-        }
       ],
       "step": "cua volume off",
       "tab": [
@@ -913,8 +825,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
           "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -934,8 +844,7 @@
             "[ ] Account ~Reach your machines from any machine. -> Sign in",
             "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
             "[ ] Cua Volume ~Shared folder: files your agents can share across your machines. -> Turn on (optional)"
-          ],
-          "usage": null
+          ]
         },
         "pages": [
           "welcome",
@@ -965,24 +874,7 @@
         "- runtime:container choice: Containers {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:vm choice: Virtual machines {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:microvm choice: MicroVMs {*Automatic|Cua’s own|Already installed} ?Checking…",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share usage data to help improve Cua {*On|Off}",
-        "- telemetry-note note: Which features you use and when something goes wrong. Linked to your account through a random ID while you're signed in. Never your files, what you type or your screen. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
-      ],
-      "signals": [
-        {
-          "action": "experiment_on",
-          "experiment": "your_cloud",
-          "type": "experiment"
-        },
-        {
-          "experiments": [
-            "your_cloud",
-            "sharing"
-          ],
-          "type": "experiments-on"
-        }
       ],
       "step": "your cloud on again",
       "tab": [
@@ -1043,8 +935,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
           "lede": "3 things are left. You can finish them now, or later from the menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -1064,8 +954,7 @@
             "[ ] Account ~Reach your machines from any machine. -> Sign in",
             "[ ] AI agents ~Let Claude Code, Codex and others use Cua. -> Connect an AI agent",
             "[ ] Cua Volume ~Shared folder: files your agents can share across your machines. -> Turn on (optional)"
-          ],
-          "usage": null
+          ]
         },
         "pages": [
           "welcome",
@@ -1095,23 +984,7 @@
         "- runtime:container choice: Containers {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:vm choice: Virtual machines {*Automatic|Cua’s own|Already installed} ?Checking…",
         "- runtime:microvm choice: MicroVMs {*Automatic|Cua’s own|Already installed} ?Checking…",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share usage data to help improve Cua {*On|Off}",
-        "- telemetry-note note: Which features you use and when something goes wrong. Linked to your account through a random ID while you're signed in. Never your files, what you type or your screen. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
-      ],
-      "signals": [
-        {
-          "action": "experiment_off",
-          "experiment": "sharing",
-          "type": "experiment"
-        },
-        {
-          "experiments": [
-            "your_cloud"
-          ],
-          "type": "experiments-on"
-        }
       ],
       "step": "sharing off",
       "tab": [

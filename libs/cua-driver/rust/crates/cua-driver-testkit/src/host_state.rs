@@ -1,7 +1,7 @@
 //! Per-daemon isolation from the developer's real per-user state.
 //!
 //! The driver resolves its own persistent state (Computer History admission,
-//! the `~/.cua-driver` config, telemetry markers, extension installs, release
+//! the `~/.cua-driver` config, extension installs, release
 //! channel, libei restore tokens, ...) from `HOME`, the XDG base directories,
 //! and on Windows `LOCALAPPDATA` / `USERPROFILE`. A test-owned daemon that
 //! inherits those values reads whatever the developer's installed product left

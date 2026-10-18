@@ -168,7 +168,7 @@ pub enum Error {
         /// How long the proxy asked to wait (`Retry-After`), at least 1.
         retry_after_secs: u64,
     },
-    /// Driver download failed.
+    /// A tool download failed (`uv` for job members).
     #[error("download: {0}")]
     Download(String),
     /// Service install / control failed.
@@ -183,9 +183,9 @@ pub enum Error {
 }
 
 impl Error {
-    /// The HTTP status the relay or the download server answered with,
-    /// when one did. None: the server was not reached (offline, DNS, TLS,
-    /// timeout) or the error is not about HTTP at all.
+    /// The HTTP status the relay answered with, when it did. None: the
+    /// relay was not reached (offline, DNS, TLS, timeout) or the error is
+    /// not about HTTP at all.
     pub fn http_status(&self) -> Option<u16> {
         match self {
             // `relay::http_error` maps these statuses to these variants.

@@ -1091,13 +1091,7 @@ async fn agents(spaces: &Spaces, tool: &str, a: Value) -> Result<ToolOutcome> {
     }
     let agents = match s.agents().await {
         Ok(agents) => agents,
-        Err(e) => {
-            if tool == "agent_start" && a.get("home").is_none_or(Value::is_null) {
-                let harness = a.get("agent").and_then(Value::as_str).unwrap_or_default();
-                ag::telemetry::start_failed(harness, &s.id().to_string(), "spaces_tool", &e);
-            }
-            return Err(e);
-        }
+        Err(e) => return Err(e),
     };
     // Events without their raw ACP payload (the default for a model).
     let compact = |e: &ag::AgentEvent, raw: bool| {
@@ -1139,10 +1133,7 @@ async fn agents(spaces: &Spaces, tool: &str, a: Value) -> Result<ToolOutcome> {
             // The MCP `agent_start`, the SDKs' `Space.agent_start` and the
             // Spaces app all arrive here.
             let started = match started {
-                Ok(started) => {
-                    ag::telemetry::started(&agents, &s.id().to_string(), "spaces_tool", &started);
-                    started
-                }
+                Ok(started) => started,
                 Err(e) => {
                     // A missing credential names the env_from_host keys
                     // this server could not forward.
@@ -1155,7 +1146,6 @@ async fn agents(spaces: &Spaces, tool: &str, a: Value) -> Result<ToolOutcome> {
                         }
                         e => Error::from(e),
                     };
-                    ag::telemetry::start_failed(&a.agent, &s.id().to_string(), "spaces_tool", &e);
                     return Err(e);
                 }
             };
@@ -1212,7 +1202,6 @@ async fn agents(spaces: &Spaces, tool: &str, a: Value) -> Result<ToolOutcome> {
                 )
                 .await?;
             let st = agents.status(&a.run_id).await?;
-            ag::telemetry::observe(&st);
             Ok(ToolOutcome::json(&json!({
                 "run_id": a.run_id, "status": st.status, "phase": st.phase,
                 "events": page.events.iter().map(|e| compact(e, raw)).collect::<Vec<_>>(),
@@ -1222,7 +1211,6 @@ async fn agents(spaces: &Spaces, tool: &str, a: Value) -> Result<ToolOutcome> {
         "agent_status" => {
             let a: i::AgentStatus = args(tool, a)?;
             let st = agents.status(&a.run_id).await?;
-            ag::telemetry::observe(&st);
             let result = agents.result(&a.run_id).await?;
             let tail = agents.events(&a.run_id, 0, 100_000).await?;
             Ok(ToolOutcome::json(&json!({
@@ -1245,9 +1233,7 @@ async fn agents(spaces: &Spaces, tool: &str, a: Value) -> Result<ToolOutcome> {
         }
         "agent_stop" => {
             let a: i::AgentStop = args(tool, a)?;
-            ag::telemetry::before_stop(&agents, &a.run_id).await;
             let st = agents.stop(&a.run_id).await?;
-            ag::telemetry::stopped(&a.run_id);
             Ok(ToolOutcome::json(&json!({
                 "run_id": a.run_id, "stopped": st.alive == Some(false), "alive": st.alive,
                 "reason": match st.alive {
@@ -1260,7 +1246,6 @@ async fn agents(spaces: &Spaces, tool: &str, a: Value) -> Result<ToolOutcome> {
         _ => {
             let _: i::SpaceOnly = args(tool, a)?;
             let runs = agents.list().await?;
-            runs.iter().for_each(ag::telemetry::observe);
             let runs: Vec<Value> = runs.iter().map(list_row).collect();
             Ok(ToolOutcome::json(
                 &json!({"space": s.id().to_string(), "runs": runs}),

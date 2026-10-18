@@ -20,9 +20,7 @@ import { withCreateContext } from "./create-context";
 import { HOST_RUNS_CREATES, loadCreateStreaks, saveCreateStreaks } from "./create-retry";
 import { createReport, reportMailto, type CreateReport, type ReportSend } from "./diagnostic-report";
 import type { AboutInput } from "./contracts/settings";
-import { passedSteps } from "./onboarding";
-import type { MachineRow, MachinesView, OnboardingMode, SettingsPage, SignInFailure, SignInPhase, SignInStart, SpaceCreateConfig, TelemetryView } from "./contracts/host";
-import type { OnboardingAction, OnboardingFlowState } from "./contracts/onboarding";
+import type { MachineRow, MachinesView, OnboardingMode, SettingsPage, SignInFailure, SignInPhase, SignInStart, SpaceCreateConfig } from "./contracts/host";
 import type { KeyvaultOverview, KvGrant, KvListView, KvSelection, VaultAction, VaultState } from "./contracts/keyvault";
 import type { KvAccessCommand } from "./ops/keyvault-manage";
 import type { BulkResult } from "./contracts/spaces-page";
@@ -54,16 +52,6 @@ import type { HostEvent, HostSignIn, HostSignInFailure, SessionSnapshot, Setting
 import { signInFailedFromError, signInFailedPhase, type FailedPhase } from "./sign-in";
 import { createSettingsFeature, type SettingsFeature } from "./settings-feature";
 import { SpaceDetailStore, THIS_MACHINE_ID } from "./space-detail";
-import {
-  HOST_RECORDS_LAUNCH,
-  TelemetryForwarder,
-  telemetryCreates,
-  telemetryLaunched,
-  telemetryOnboarding,
-  telemetryOnboardingFinished,
-  telemetryOnboardingSkipped,
-  telemetrySignInFailure,
-} from "./telemetry";
 import { ThisMachineStore } from "./this-machine";
 import { Transcript, type TranscriptItem } from "./transcript";
 
@@ -233,8 +221,6 @@ export class BridgeStore {
   readonly details: SpaceDetailStore;
   /** This machine's setup form and buttons (`this-machine.ts`). */
   readonly thisMachine: ThisMachineStore;
-  /** Usage events to the host, while the machine's setting allows (`telemetry.ts`). */
-  readonly telemetry: TelemetryForwarder;
   private readonly now: () => number;
   private readonly tickMs: number;
   private readonly eventsPollMs: { live: number; idle: number };
@@ -271,7 +257,6 @@ export class BridgeStore {
   private signInUrl: string | null = null;
   private signInTimer: ReturnType<typeof setTimeout> | undefined;
   /** The sign-in in progress asked for a code instead of the browser's way back. */
-  private signInByCode = false;
   /** Counts `session.signIn` answers: a session read started before the
    * latest one says nothing about it (an earlier attempt's failure). */
   private signInEpoch = 0;
@@ -310,66 +295,6 @@ export class BridgeStore {
     this.extras = createSettingsFeature(this, this.now);
     this.details = new SpaceDetailStore(adapter, core);
     this.thisMachine = new ThisMachineStore(adapter, core, () => this.refresh("machines"));
-    this.telemetry = new TelemetryForwarder(adapter, () => this.telemetryView());
-  }
-
-  /* ---- usage events (telemetry.ts) ---- */
-
-  /** Records `app_launched` where the host doesn't (BridgeProvider, once per page). */
-  launched(): void {
-    if (HOST_RECORDS_LAUNCH[this.adapter.mode]) return;
-    // With whether the first run is still to finish (the session says).
-    void this.launchEligible().then((eligible) => this.telemetry.track(telemetryLaunched(this.core, eligible)));
-  }
-
-  private async launchEligible(): Promise<boolean | null> {
-    try {
-      if (!this.sessionSnap) {
-        this.ensure("session");
-        await this.inflight.get("session");
-      }
-      const done = this.sessionSnap?.onboarding?.completed;
-      return typeof done === "boolean" ? !done : null;
-    } catch {
-      return null;
-    }
-  }
-
-  /** The events a first-run step means, from the state before it. */
-  trackOnboarding(before: OnboardingFlowState, action: OnboardingAction): void {
-    // The pages this host passes through unseen (Menu bar off a Mac) are not reported.
-    const unseen: readonly string[] = passedSteps();
-    const seen = telemetryOnboarding(this.core, before, action).filter(
-      (s) => s.type !== "onboarding-page" || !unseen.includes(s.page),
-    );
-    void this.telemetry.track(seen);
-  }
-
-  /** One first-run funnel event (`cua_onboarding_step_*`, `cua_onboarding_skipped`):
-   * `step` is one of the app core's funnel steps, `action` `step_viewed`,
-   * `step_completed`, `step_failed` or `step_skipped`, `detail` the failure's
-   * reason or how it was skipped. Fixed words only; the host checks the
-   * switch again and fills the step's index, the version, OS and app version. */
-  trackFirstRunStep(step: string, action: string, detail = "none"): void {
-    void this.telemetry.track([{ type: "onboarding-page", page: step, action, choice: detail }]);
-  }
-
-  /** "Set up later": the first run left for now, on its current page. */
-  trackOnboardingSkipped(state: OnboardingFlowState): void {
-    void this.telemetry.track(telemetryOnboardingSkipped(this.core, state));
-  }
-
-  trackOnboardingFinished(state: OnboardingFlowState): void {
-    void this.telemetry.track(telemetryOnboardingFinished(this.core, state));
-  }
-
-  /** The machine's usage-data setting now, loading it first if needed. */
-  private async telemetryView(): Promise<TelemetryView | null> {
-    if (!this.settingsSnap) {
-      this.ensure("settings");
-      await this.inflight.get("settings");
-    }
-    return this.settingsSnap?.telemetry ?? null;
   }
 
   /* ---- subscription (useSyncExternalStore) ---- */
@@ -562,10 +487,6 @@ export class BridgeStore {
   }
 
   private dispatch(action: CreateAction): void {
-    // A host that runs the create records its usage events itself, from
-    // the same core decisions (`AppModel.sendCreate`): sending the page's
-    // copy too counted every create twice.
-    if (!HOST_RUNS_CREATES[this.adapter.mode]) void this.telemetry.track(telemetryCreates(this.core, this.creates, action, this.now()));
     const before = this.creates;
     this.creates = reduceCreates(this.core, this.creates, action);
     if (this.creates.streaks !== before.streaks) saveCreateStreaks(this.creates.streaks);
@@ -1095,14 +1016,12 @@ export class BridgeStore {
           message: failure.message,
           detail: failure.detail,
         },
-        true,
       );
       return;
     }
     if (!waiting) return;
     if (waiting.url) this.signInUrl = waiting.url;
     // The host fell back to a code (no browser, or its way back is blocked).
-    if (waiting.userCode) this.signInByCode = true;
     const opened = waiting.opened !== false;
     if (this.signInPhase.kind === "waiting" && (this.signInPhase.userCode ?? null) === waiting.userCode && (this.signInPhase.opened ?? true) === opened) return;
     this.signInPhase = { kind: "waiting", userCode: waiting.userCode, opened };
@@ -1118,8 +1037,6 @@ export class BridgeStore {
    * browser never gets back to the app. */
   async signIn(opts: { code?: boolean } = {}): Promise<SignInStart> {
     this.stopSignInTimer();
-    this.signInByCode = opts.code === true;
-    if (opts.code) this.trackFeature("sign_in_code_instead");
     this.setSignIn({ kind: "starting" });
     try {
       const start = await this.adapter.call("session.signIn", opts.code ? { code: true } : {});
@@ -1127,9 +1044,6 @@ export class BridgeStore {
       // Cancelled while it started: leave it.
       if (this.signInPhase.kind !== "starting") return start;
       this.signInUrl = start.verificationUri || null;
-      // The way it actually runs: a code when the host gave one (also its own fallback).
-      this.signInByCode = Boolean(start.userCode) || start.method === "device" || opts.code === true;
-      this.trackFeature(this.signInByCode ? "sign_in_started_code" : "sign_in_started_browser");
       this.setSignIn({ kind: "waiting", userCode: start.userCode ?? null });
       this.signInTimer = setTimeout(() => {
         if (this.signInPhase.kind === "waiting") this.signInFailed(signInFailedPhase(this.core, "notConfirmed"));
@@ -1147,23 +1061,13 @@ export class BridgeStore {
   cancelSignIn(): void {
     if (this.signInPhase.kind !== "starting" && this.signInPhase.kind !== "waiting") return;
     this.stopSignInTimer();
-    void this.telemetry.track(telemetrySignInFailure(this.core, null));
     this.setSignIn({ kind: "idle" });
   }
 
-  /** A sign-in failed: shown with its reason, and counted by its kind
-   * (never its words). */
-  private signInFailed(phase: FailedPhase, counted = false): void {
+  /** A sign-in failed: shown with its reason. */
+  private signInFailed(phase: FailedPhase): void {
     this.stopSignInTimer();
-    // The reason's kind, and the way it was tried (browser or code). A host
-    // that ran the sign-in has counted the reason itself.
-    if (!counted) void this.telemetry.track(telemetrySignInFailure(this.core, phase.reason ?? "unknown"));
-    this.trackFeature(this.signInByCode ? "sign_in_failed_code" : "sign_in_failed_browser");
     this.setSignIn(phase);
-  }
-
-  private trackFeature(feature: string): void {
-    void this.telemetry.track([{ type: "feature", feature }]);
   }
 
   private stopSignInTimer(): void {

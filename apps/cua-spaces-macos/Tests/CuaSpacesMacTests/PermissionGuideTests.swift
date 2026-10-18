@@ -100,8 +100,7 @@ struct PermissionGuideTests {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("cua-allow-\(UUID().uuidString)")
         let model = AppModel(backend: FixtureSpacesBackend(rows: []), keyvault: KeyvaultModel(client: nil),
                              onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
-                             settingsPath: dir.appendingPathComponent("settings.json").path,
-                             telemetry: FixtureTelemetry())
+                             settingsPath: dir.appendingPathComponent("settings.json").path)
         let bridge = WebUIBridge(model: model, allowedOrigins: [])
         let (savedOpen, savedShows, savedHook, savedRead, savedStore) =
             (PermissionGuide.openPane, PermissionGuide.showsGuide, PermissionGuide.grantedHook,

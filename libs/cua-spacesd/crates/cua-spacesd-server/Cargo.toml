@@ -22,8 +22,6 @@ cua-snapshot-sync = { path = "../../../cua/crates/cua-snapshot-sync", default-fe
 # Sealed delivery to a pinned machine key (S1): this guest's own keypair
 # and the replay guard for unsealing.
 cua-machine-seal = { path = "../../../cua/crates/cua-machine-seal" }
-# Opt-in aggregate health counts (off unless the host enables them).
-cua-telemetry = { path = "../../../cua/crates/cua-telemetry" }
 cua-driver-core = { path = "../../../cua-driver/rust/crates/cua-driver-core" }
 # Typed Driver envelopes over `/mcp`: the canonical receiver (generations,
 # request ledger, cancellation) and the envelope wire records.

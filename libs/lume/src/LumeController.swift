@@ -714,13 +714,6 @@ final class LumeController {
             throw error
         }
 
-        let provisioningStartedAt = Date()
-        TelemetryClient.shared.recordProvisioningStarted(
-            transport: .cli,
-            guestOS: os,
-            asynchronous: false
-        )
-
         do {
             // Use createInternal which handles all the actual work
             try await createInternal(
@@ -744,28 +737,12 @@ final class LumeController {
             // Clear provisioning marker on success
             vmDir.clearProvisioningMarker()
             Logger.info("Provisioning marker cleared", metadata: ["name": name])
-            TelemetryClient.shared.recordProvisioningCompleted(
-                transport: .cli,
-                guestOS: os,
-                asynchronous: false,
-                success: true,
-                errorClass: .none,
-                elapsed: Date().timeIntervalSince(provisioningStartedAt)
-            )
 
         } catch {
             // Clean up the pre-created directory on failure. If deletion fails, keep the
             // provisioning marker intact so the leftover VM remains discoverable.
             cleanupFailedCreateVMDirectory(vmDir, context: "creation")
             Logger.error("Failed to create VM", metadata: ["error": error.localizedDescription])
-            TelemetryClient.shared.recordProvisioningCompleted(
-                transport: .cli,
-                guestOS: os,
-                asynchronous: false,
-                success: false,
-                errorClass: .operationError,
-                elapsed: Date().timeIntervalSince(provisioningStartedAt)
-            )
             throw error
         }
     }
@@ -795,8 +772,7 @@ final class LumeController {
         ipsw: String?,
         storage: String? = nil,
         unattendedConfig: UnattendedConfig? = nil,
-        networkMode: NetworkMode = .nat,
-        telemetryTransport: TelemetryTransport = .http
+        networkMode: NetworkMode = .nat
     ) throws {
         Logger.info(
             "Starting async VM creation",
@@ -841,12 +817,6 @@ final class LumeController {
             throw error
         }
 
-        let provisioningStartedAt = Date()
-        TelemetryClient.shared.recordProvisioningStarted(
-            transport: telemetryTransport,
-            guestOS: os,
-            asynchronous: true
-        )
         Logger.info("Spawning background task for VM creation", metadata: ["name": name])
 
         // All parameters passed to Task are value types (Sendable)
@@ -875,14 +845,6 @@ final class LumeController {
                 // Clear marker on success
                 vmDir.clearProvisioningMarker()
                 Logger.info("Async VM creation completed successfully", metadata: ["name": name])
-                TelemetryClient.shared.recordProvisioningCompleted(
-                    transport: telemetryTransport,
-                    guestOS: os,
-                    asynchronous: true,
-                    success: true,
-                    errorClass: .none,
-                    elapsed: Date().timeIntervalSince(provisioningStartedAt)
-                )
 
             } catch {
                 // Clean up the pre-created directory on failure. If deletion fails, keep the
@@ -890,14 +852,6 @@ final class LumeController {
                 controller.cleanupFailedCreateVMDirectory(vmDir, context: "async creation")
                 Logger.error("Async VM creation failed",
                             metadata: ["name": name, "error": error.localizedDescription])
-                TelemetryClient.shared.recordProvisioningCompleted(
-                    transport: telemetryTransport,
-                    guestOS: os,
-                    asynchronous: true,
-                    success: false,
-                    errorClass: .operationError,
-                    elapsed: Date().timeIntervalSince(provisioningStartedAt)
-                )
             }
         }
     }
@@ -1347,8 +1301,7 @@ final class LumeController {
         additionalDiskPaths: [Path]? = nil,
         networkMode: NetworkMode? = nil,
         clipboard: Bool = false,
-        vncPolicy: VNCPolicy = .enabled,
-        telemetryTransport: TelemetryTransport = .cli
+        vncPolicy: VNCPolicy = .enabled
     ) async throws {
         let normalizedName = normalizeVMName(name: name)
         let effectiveDisplayMode = displayMode ?? (noDisplay ? .none : .vnc)
@@ -1472,7 +1425,6 @@ final class LumeController {
 
             // Load the VM directly using the located VMDirectory and storage context
             let vm = try self.loadVM(vmDir: vmDir, storage: effectiveStorage, diskPath: diskPath, nvramPath: nvramPath)
-            vm.telemetryTransport = telemetryTransport
 
             // A saved state restores with the MAC address it was saved with:
             // when a running VM already has it (another clone of the same
@@ -1816,20 +1768,6 @@ final class LumeController {
         try SettingsManager.shared.setCachingEnabled(enabled)
 
         Logger.info("Caching setting updated", metadata: ["enabled": "\(enabled)"])
-    }
-
-    // MARK: - Telemetry Management
-
-    public func isTelemetryEnabled() -> Bool {
-        return SettingsManager.shared.isTelemetryEnabled()
-    }
-
-    public func setTelemetryEnabled(_ enabled: Bool) throws {
-        Logger.info("Setting telemetry enabled", metadata: ["enabled": "\(enabled)"])
-
-        try SettingsManager.shared.setTelemetryEnabled(enabled)
-
-        Logger.info("Telemetry setting updated", metadata: ["enabled": "\(enabled)"])
     }
 
     // MARK: - Private Helper Methods

@@ -4984,8 +4984,7 @@ impl Space {
         timeout_ms: Option<u64>,
     ) -> Result<Arc<SpacePresence>> {
         let s = self.inner.clone();
-        let started = std::time::Instant::now();
-        let r = run(async move {
+        run(async move {
             let session = s
                 .join_presence(
                     cua_spaces::presence::Identity {
@@ -4997,25 +4996,14 @@ impl Space {
                     Duration::from_millis(timeout_ms.unwrap_or(10_000)),
                 )
                 .await?;
-            let peak = session.roster().len() as u64;
             Ok(Arc::new(SpacePresence {
                 sender: session.sender(),
                 datagrams: session.uses_datagrams(),
                 view_seed: session.view(),
                 inner: Arc::new(tokio::sync::Mutex::new(Some(session))),
-                stats: PresenceStats::new(peak),
             }))
         })
-        .await;
-        if r.is_err() {
-            // A join that failed: counted as a session with nobody in it.
-            cua_telemetry::capture(cua_telemetry::events::presence_session(
-                cua_telemetry::Outcome::Error,
-                0,
-                started.elapsed(),
-            ));
-        }
-        r
+        .await
     }
 
     /// Sets this Space's presence settings. `cursor_probe`: whether
@@ -5065,11 +5053,7 @@ impl Space {
         approver: Arc<dyn TeleportApprover>,
         request_id: Option<String>,
     ) -> Result<TeleportReceipt> {
-        let started = std::time::Instant::now();
-        let app_id = app.clone();
-        let r = self.teleport_inner(app, scope, approver, request_id).await;
-        super::telemetry::teleport(&app_id, "full", "app_with_state", started, &r, 0);
-        r
+        self.teleport_inner(app, scope, approver, request_id).await
     }
 }
 
@@ -5604,51 +5588,6 @@ pub struct SpacePresence {
     sender: cua_spaces::presence::CursorSender,
     datagrams: bool,
     view_seed: cua_spaces::presence::PresenceView,
-    stats: PresenceStats,
-}
-
-/// What `cua_presence_session` reports when the session ends: how long it
-/// lasted and the most people seen at once (both bucketed when sent).
-struct PresenceStats {
-    joined: std::time::Instant,
-    peak: std::sync::atomic::AtomicU64,
-    recorded: std::sync::atomic::AtomicBool,
-}
-
-impl PresenceStats {
-    fn new(peak: u64) -> Self {
-        Self {
-            joined: std::time::Instant::now(),
-            peak: std::sync::atomic::AtomicU64::new(peak),
-            recorded: std::sync::atomic::AtomicBool::new(false),
-        }
-    }
-
-    fn saw(&self, present: usize) {
-        self.peak
-            .fetch_max(present as u64, std::sync::atomic::Ordering::Relaxed);
-    }
-
-    /// Records the session once (at leave, or when it is dropped).
-    fn finish(&self) {
-        if self
-            .recorded
-            .swap(true, std::sync::atomic::Ordering::SeqCst)
-        {
-            return;
-        }
-        cua_telemetry::capture(cua_telemetry::events::presence_session(
-            cua_telemetry::Outcome::Ok,
-            self.peak.load(std::sync::atomic::Ordering::Relaxed),
-            self.joined.elapsed(),
-        ));
-    }
-}
-
-impl Drop for SpacePresence {
-    fn drop(&mut self) {
-        self.stats.finish();
-    }
 }
 
 impl SpacePresence {
@@ -5674,7 +5613,6 @@ impl SpacePresence {
     /// Everyone present, with cursors when known.
     pub async fn roster(&self) -> Result<Vec<PresenceMember>> {
         self.with(|s| {
-            self.stats.saw(s.roster().len());
             s.roster()
                 .iter()
                 .map(|(p, c)| PresenceMember {
@@ -5719,18 +5657,13 @@ impl SpacePresence {
             let e = s
                 .next_event(Duration::from_millis(timeout_ms.unwrap_or(5_000)))
                 .await?;
-            Ok((e, s.roster().len()))
+            Ok(e.map(Into::into))
         })
         .await
-        .map(|(e, present)| {
-            self.stats.saw(present);
-            e.map(Into::into)
-        })
     }
 
     /// Leaves.
     pub async fn leave(&self) -> Result<()> {
-        self.stats.finish();
         let s = self.inner.lock().await.take();
         run(async move {
             match s {

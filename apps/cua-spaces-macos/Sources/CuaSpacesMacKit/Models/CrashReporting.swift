@@ -9,10 +9,7 @@ import Sentry
 ///
 /// Off unless the bundle carries a DSN (Info.plist `CuaCrashDSN`, written by
 /// `scripts/build-app.sh` from `config/spaces-crash-reporting.json`; empty =
-/// off) and the person allows it: the "Share usage data" switch is on and the
-/// first-run notice was shown, the same rule usage events follow. It is
-/// checked at start and again for every event. Turning the switch off while
-/// the app runs closes the SDK; turning it on takes effect at the next launch.
+/// off). With no usage-data switch to ask, a build that names a DSN reports.
 ///
 /// What leaves the machine: the crash or error's type, module and stack
 /// frames, the release, the environment, the OS and device model, and the
@@ -27,10 +24,6 @@ public enum CrashReporting {
     }
 
     // MARK: Pure logic (unit-tested)
-
-    /// Reports are allowed only when usage data is shared and the notice was
-    /// shown (`Status.enabled && Status.notice_shown`).
-    static func isAllowed(enabled: Bool, noticeShown: Bool) -> Bool { enabled && noticeShown }
 
     /// `local` for a Local build, `beta` for a version with a `-` suffix,
     /// otherwise `stable`.
@@ -73,14 +66,15 @@ public enum CrashReporting {
     }
 
     /// The page's `crashReporting.config` answer (`CrashReportingConfig`).
-    /// `allowed` is the consent rule; the DSN, release and environment are the
-    /// build's. `crashTest` is set only in a Local build.
-    static func bridgeConfig(info: [String: Any], allowed: Bool, env: [String: String]) -> [String: Any] {
+    /// `allowed` is whether the build names a DSN; the DSN, release and
+    /// environment are the build's. `crashTest` is set only in a Local build.
+    static func bridgeConfig(info: [String: Any], env: [String: String]) -> [String: Any] {
         let version = version(info: info)
         let environment = environment(channel: info["CuaChannel"] as? String, version: version)
+        let dsn = ((info["CuaCrashDSN"] as? String) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         var out: [String: Any] = [
-            "allowed": allowed,
-            "dsn": ((info["CuaCrashDSN"] as? String) ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
+            "allowed": !dsn.isEmpty,
+            "dsn": dsn,
             "release": release(version: version), "environment": environment, "shell": "swift",
         ]
         if environment == "local", env["CUA_CRASH_TEST"] == "ui" { out["crashTest"] = "ui" }
@@ -169,23 +163,16 @@ public enum CrashReporting {
 
     // MARK: Start and stop
 
-    /// The switch as the app core stores it (`telemetryStatus()`).
-    private static func currentlyAllowed() -> Bool {
-        let s = telemetryStatus()
-        return isAllowed(enabled: s.enabled, noticeShown: s.noticeShown)
-    }
-
     private nonisolated(unsafe) static var started = false
 
     /// Call early in `main`, after `TargetEnvironment.pinChannel()` (the
-    /// switch lives in the channel's home) and before anything starts the
-    /// Rust core or the daemon. A no-op without a DSN or without consent.
+    /// home the core reports from) and before anything starts the Rust core
+    /// or the daemon. A no-op without a DSN.
     public static func start(bundle: Bundle = .main,
                              environment: [String: String] = ProcessInfo.processInfo.environment,
                              arguments: [String] = CommandLine.arguments) {
         guard environment["CUA_SPACES_FIXTURES"] != "1",
-              let settings = settings(info: bundle.infoDictionary ?? [:]),
-              currentlyAllowed() else { return }
+              let settings = settings(info: bundle.infoDictionary ?? [:]) else { return }
         for (key, value) in childEnvironment(settings) { setenv(key, value, 1) }
         SentrySDK.start { options in
             options.dsn = settings.dsn
@@ -205,7 +192,7 @@ public enum CrashReporting {
             options.enableMetricKit = false
             options.maxBreadcrumbs = 0
             options.tracesSampleRate = 0
-            options.beforeSend = { event in sanitize(event, allowed: currentlyAllowed()) }
+            options.beforeSend = { event in sanitize(event, allowed: true) }
         }
         SentrySDK.configureScope { scope in
             scope.setTag(value: "swift", key: "shell")
@@ -223,27 +210,18 @@ public enum CrashReporting {
     /// started there: starting it checks the windowless helper in with
     /// LaunchServices as "Cua Spaces" itself, and opening the app then fails
     /// (error -600) while the helper runs. Returns whether the variables were
-    /// set (a DSN and consent).
+    /// set (a DSN).
     @discardableResult
     public static func prepareService(bundle: Bundle = .main,
                                       environment: [String: String] = ProcessInfo.processInfo.environment) -> Bool {
         guard environment["CUA_SPACES_FIXTURES"] != "1",
-              let settings = settings(info: bundle.infoDictionary ?? [:]),
-              currentlyAllowed() else { return false }
+              let settings = settings(info: bundle.infoDictionary ?? [:]) else { return false }
         for (key, value) in childEnvironment(settings) { setenv(key, value, 1) }
         return true
     }
 
     /// Whether the Swift SDK was started in this process.
     public static var isStarted: Bool { started }
-
-    /// The Settings switch changed: closes the SDK when reports are no
-    /// longer allowed (it is not restarted until the next launch).
-    public static func switchChanged(enabled: Bool, noticeShown: Bool) {
-        guard started, !isAllowed(enabled: enabled, noticeShown: noticeShown) else { return }
-        SentrySDK.close()
-        started = false
-    }
 
     @inline(never)
     private static func forcedCrash() {

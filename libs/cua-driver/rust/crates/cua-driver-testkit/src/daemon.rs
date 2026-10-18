@@ -95,8 +95,7 @@ impl TestDaemon {
             .args(["serve", "--socket", &socket, "--no-permissions-gate"])
             .stdin(Stdio::null())
             .stdout(Stdio::null())
-            .stderr(stderr)
-            .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false");
+            .stderr(stderr);
         if !overlay_enabled {
             command.arg("--no-overlay");
         }
@@ -220,8 +219,7 @@ impl ProbeOutcome {
 /// One request/response exchange of the daemon protocol over an open stream.
 ///
 /// Every transport runs the same exchange instead of treating "connectable" as
-/// ready. A finite CLI command is wrapped by the telemetry completion observer,
-/// which makes it an unnecessarily heavy and timing-sensitive readiness probe
+/// ready, which makes it an unnecessarily heavy and timing-sensitive readiness probe
 /// on hosted runners. Completing `list` also proves that the server has
 /// progressed past socket creation and can service the connection.
 #[cfg(any(unix, target_os = "windows"))]

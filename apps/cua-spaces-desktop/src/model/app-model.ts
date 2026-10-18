@@ -51,7 +51,7 @@ import { NotchActivity } from "./activity";
 import { createErrorVariant, daemonAnswered, isCancelled, sdkErrorKind, words } from "./errors";
 import type { HostModel } from "./host";
 import { brokerWords, KeyvaultModel } from "./keyvault";
-import type { AccountRunning, SignInOptions, TelemetryRunning } from "./services";
+import type { AccountRunning, SignInOptions } from "./services";
 import type { StartupModel } from "./startup";
 import { SignInRuns, type SignInEnd } from "./sign-in";
 import { SpaceThumbnails } from "./thumbnails";
@@ -72,7 +72,6 @@ export interface AppModelDeps {
   devices: DevicesModel;
   cloud: CloudModel;
   account: AccountRunning | null;
-  telemetry: TelemetryRunning | null;
   /** The coding agents on this machine (null: none can be set up in this build). */
   agentSetup?: AgentSetupRunning | null;
   /** The daemon's tools for the agents and their keys (default: the backend's; null: no daemon). */
@@ -119,7 +118,6 @@ export class AppModel {
   readonly teams: TeamsModel;
   readonly cloud: CloudModel;
   readonly account: AccountRunning | null;
-  readonly telemetry: TelemetryRunning | null;
   /** Agents: the persistent agents, a Space's runs, the provider keys and the coding agents. */
   readonly agents: AgentsModel;
   readonly keyvault: KeyvaultModel;
@@ -224,7 +222,6 @@ export class AppModel {
     this.teams.onChange = () => this.changed("settings");
     this.cloud = d.cloud;
     this.account = d.account;
-    this.telemetry = d.telemetry;
     this.agents = new AgentsModel(
       d.native,
       d.agentTools === undefined ? (tool, args) => d.backend.tool(tool, args) : d.agentTools,
@@ -240,7 +237,6 @@ export class AppModel {
     this.hostOs = d.hostOs ?? d.native.AppSpaceOs.Macos;
     this.about = d.about;
     this.checklist = new ChecklistModel(d.native, d.checklistPath ?? null, d.checklistSeedPath ?? null);
-    this.checklist.telemetry = d.telemetry;
     this.checklist.onChange = () => this.changed("checklist");
     this.settingsPath = d.settingsPath;
     this.windowsRuntime = d.windowsRuntime ?? null;
@@ -287,8 +283,6 @@ export class AppModel {
       await this.beginSignIn();
       return this.signInPhase() !== "Failed" && this.identity !== null;
     };
-    // Which experiments are on: the day's `cua_app_active` carries them.
-    this.telemetry?.record(d.native.appTelemetryExperimentsOn(this.settings.experiments));
   }
 
   /** Called with what changed; returns the unsubscribe. */
@@ -463,8 +457,6 @@ export class AppModel {
 
   /** Advances the Spaces being created and redraws the list. */
   sendCreate(action: AppCreateAction): void {
-    // A create started, reached ready or failed (how long it took).
-    this.telemetry?.record(this.native.appTelemetryCreates(this.creates, action, AppModel.nowMs()));
     this.creates = this.native.appCreatesReduce(this.creates, action);
     this.recompose();
     this.tickWhileCreating();
@@ -482,7 +474,6 @@ export class AppModel {
     this.createTicker = setInterval(() => {
       const now = AppModel.nowMs();
       const tick = new this.native.AppCreateAction.Tick({ now });
-      this.telemetry?.record(this.native.appTelemetryCreates(this.creates, tick, now));
       this.creates = this.native.appCreatesReduce(this.creates, tick);
       this.recompose();
       if (!this.creates.pending.some((p) => p.error === undefined && p.spaceId === undefined)) this.tickWhileCreating();
@@ -887,7 +878,6 @@ export class AppModel {
       return;
     }
     if (this.isDeleting(space.id)) return;
-    this.recordFeature("space_delete");
     const detail = this.native.appSpaceDetail(space);
     this.sendCreate(new this.native.AppCreateAction.DeleteStart({ id: space.id, now: AppModel.nowMs() }));
     this.usage.delete(space.id);
@@ -919,7 +909,6 @@ export class AppModel {
       else if (this.isDeleting(id)) results.set(id, { id, ok: false, error: `${space.name} is already going.` });
       else todo.push(space);
     }
-    if (todo.length > 0 && !leave) this.recordFeature("space_delete");
     for (const space of todo) {
       this.sendCreate(new this.native.AppCreateAction.DeleteStart({ id: space.id, now: AppModel.nowMs() }));
       this.usage.delete(space.id);
@@ -1006,11 +995,6 @@ export class AppModel {
     console[isError ? "warn" : "log"](`[cua-spaces] ${text}`);
   }
 
-  /** Records a Spaces app feature (a fixed name). */
-  recordFeature(name: string): void {
-    this.telemetry?.record(this.native.appTelemetryFeature(name));
-  }
-
   /** The count the menu bar item and the notch show. */
   get statusLine(): string {
     return this.native.appOnStatusLine(this.native.appOnCount(this.spaces));
@@ -1061,8 +1045,7 @@ export class AppModel {
     this.changed("session");
   }
 
-  /** Shown with its reason in the sidebar's foot (and a toast there);
-   * counted by its kind only (the core keeps the words). */
+  /** Shown with its reason in the sidebar's foot (and a toast there). */
   private signInFailed(end: SignInEnd): void {
     const n = this.native;
     const phase =
@@ -1071,15 +1054,12 @@ export class AppModel {
         : n.appSignInFailedFromError(sdkErrorKind(end.error) ?? "", words(end.error));
     this.signInUrl = null;
     this.setSignIn(phase);
-    const reason = phase.tag === "Failed" ? phase.inner.reason : n.AppSignInFailure.Unknown;
-    this.telemetry?.record(n.appTelemetrySignInFailure(reason));
   }
 
   /** Stops waiting for the browser (the page can start again). */
   cancelSignIn(): void {
     if (this.signInPhase() === "Starting" || this.signInPhase() === "Waiting") {
       this.signIns.cancel();
-      this.telemetry?.record(this.native.appTelemetrySignInFailure(undefined));
     }
     this.signInUrl = null;
     this.setSignIn(new this.native.AppSignInPhase.Idle());

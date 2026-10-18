@@ -47,18 +47,12 @@ public enum AppEnvironment {
         // Fixtures skip it (`CUA_SPACES_REFRESH=1` runs it anyway, for
         // end-to-end runs with a throwaway HOME).
         let info = AboutBundleInfo(bundle: .main)
-        // Before the first `Cua`: this process's usage events are the app's
-        // (`spaces_app`), wait for the notice the first run shows (never a
-        // terminal notice), and start with `app_launched` (saying whether
-        // the first run is still to finish).
         if !fixtures {
             // No keychain prompt from this process or the daemon it starts
             // (they inherit it): a read that would need one fails fast as
             // "needs access", and the window asks (`StartupModel`). The one
             // interactive read is the clicked `cua auth keychain --prompt`.
             setenv(keychainNonInteractiveEnv, "1", 1)
-            let due = !(OnboardingModel.readCompleted(onboardingPath) ?? false)
-            _ = appTelemetryStart(version: info.version, onboardingEligible: due)
         }
         var refresh: UpdateRefresh?
         if !fixtures || env["CUA_SPACES_REFRESH"] == "1",
@@ -88,19 +82,15 @@ public enum AppEnvironment {
         }
         let keyvault = KeyvaultModel(client: fixtures ? nil : KeyvaultClient(cuaHome: nil))
         if !fixtures {
-            // Icons: caches survive restarts; fixtures never resolve apps or
-            // touch the network.
+            // Icons: caches survive restarts; fixtures never resolve apps.
             let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
                 .appendingPathComponent(isLocalChannel ? "com.trycua.cua-spaces.local/icons" : "com.trycua.cua-spaces/icons")
             keyvault.appIcons = AppIconCache(dir: caches?.appendingPathComponent("apps"))
-            keyvault.siteIconStore = SiteIconStore(dir: caches?.appendingPathComponent("sites"))
-            keyvault.iconScale = Int(NSScreen.main?.backingScaleFactor ?? 2)
         }
-        // Fixtures never touch the host service, the account, the telemetry
-        // config or the coding agents' configs.
+        // Fixtures never touch the host service, the account or the coding
+        // agents' configs.
         let host: HostRunning = fixtures ? FixtureHost() : PendingHost(gate: gate)
         let account: AccountRunning = fixtures ? FixtureAccount(identity: env["CUA_SPACES_FIXTURE_PEER_CUA"] != nil ? "ellie@example.com" : nil) : PendingAccount(gate: gate)
-        let telemetry: TelemetryRunning = fixtures ? FixtureTelemetry() : LiveTelemetry()
         let agents: AgentSetupRunning = fixtures ? FixtureAgentSetup() : PendingAgentSetup(gate: gate)
         // The first run's pages are the web UI's; this is its state file.
         let onboarding = OnboardingModel(statePath: onboardingPath)
@@ -110,7 +100,7 @@ public enum AppEnvironment {
         let startup = fixtures ? fixtureStartup(env["CUA_SPACES_STARTUP"]) : StartupModel(phase: .starting)
         let model = AppModel(backend: backend, keyvault: keyvault, onboarding: onboarding,
                              settingsPath: settingsPath,
-                             host: host, account: account, telemetry: telemetry, agentSetup: agents,
+                             host: host, account: account, agentSetup: agents,
                              devices: devices,
                              presence: fixtures ? FixturePresence() : LivePresence(),
                              loginItem: fixtures ? fixtureLoginItem(env["CUA_SPACES_LOGIN_ITEM"]) : MainAppLoginItem(),
@@ -164,13 +154,12 @@ public enum AppEnvironment {
         let updater: UpdaterDriving? = fixtures && env["CUA_SPACES_UPDATER"] != "live"
             ? FixtureUpdater(lastCheck: Date().addingTimeInterval(-2 * 3600))
             : SparkleUpdater.start(channels: appAboutAllowedChannels(channel: channel))
-        // `CUA_SPACES_FIXTURE_UPDATE=<version>` (fixtures): that update is found and downloaded.
+        // `CUA_SPACES_FIXTURE_UPDATE=<version>` (fixtures): that update is found and reported.
         if let fixture = updater as? FixtureUpdater, let version = env["CUA_SPACES_FIXTURE_UPDATE"] {
             fixture.simulateFound(version: version)
-            fixture.simulateDownloaded()
         }
         model.updates = UpdatesModel(updater: updater, channel: channel)
-        model.updates.telemetry = telemetry
+        model.updates.onAvailable = { [weak model] message in model?.show(info: message) }
         model.updates.saveChannel = { [weak model] channel in model?.setUpdateChannel(channel) }
         // End-to-end runs: check now, with no window unless one is found.
         if env["CUA_SPACES_UPDATE_CHECK"] == "background", let sparkle = updater as? SparkleUpdater {

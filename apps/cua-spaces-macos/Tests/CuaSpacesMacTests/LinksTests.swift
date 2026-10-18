@@ -13,7 +13,7 @@ struct LinksTests {
         let m = AppModel(backend: backend, keyvault: KeyvaultModel(client: nil),
                          onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
                          settingsPath: dir.appendingPathComponent("settings.json").path,
-                         telemetry: FixtureTelemetry(), devices: FixtureDevices())
+                         devices: FixtureDevices())
         return WebUIBridge(model: m, allowedOrigins: [])
     }
 

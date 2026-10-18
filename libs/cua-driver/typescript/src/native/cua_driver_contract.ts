@@ -1163,7 +1163,7 @@ const FfiConverterTypeClickInput = (() => {
 export type ClipboardReadInput = {
     /**
      * Return plain-text clipboard content in addition to the available types.
-     * Clipboard content is privacy-sensitive and is never retained in telemetry.
+     * Clipboard content is privacy-sensitive and is never retained beyond the response.
      */
     includeText: boolean,
     /**

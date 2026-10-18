@@ -12,8 +12,6 @@ export {
   useAgentTimeline,
   useAgents,
   useBridge,
-  useFeatureRecorded,
-  useFeatureRecorder,
   useKeyvault,
   useMachines,
   useOnboarding,
@@ -124,10 +122,7 @@ export { agentRunLines, useDesktopCover, useSpaceDetail, type AgentRunLine, type
 export type * from "./ops/space-detail";
 export { useThisMachine, type HostFailure, type HostFormView as HostSetupFormView, type ThisMachineHook } from "./this-machine";
 export type { HostFormAction, HostSetupRequest } from "./ops/host-setup";
-export type { TelemetrySignal } from "./ops/telemetry";
 export { useStartup, type StartupHook } from "./startup";
-export { useLinkNotice, TURN_OFF_FAILED, type LinkNoticeHook } from "./link-notice";
-export type { TelemetryLinkNotice } from "./ops/telemetry";
 export { defaultTeam, eligibleTeams, teamName, useTeamChoices, type TeamChoices } from "./teams";
 export { joinFailureText, useJoinWithCode, type JoinHook, type JoinPhase } from "./join";
 export { displayPairingCode, normalizePairingCode, pairingLinkRelay } from "./pairing-code";
@@ -204,16 +199,12 @@ export {
 export {
   resetUpsellMemory,
   upgradeLink,
-  usePlanLimitTelemetry,
   useQuiet,
-  useTrackPlanClick,
   useUpsellCard,
   useUpsellCardAvailable,
   useUpsellGate,
   useUpsellPrompt,
-  type PlanFacts,
   type PlanLimitSurface,
-  type PlanLimitTelemetry,
   type UpsellCard,
   type UpsellCardReason,
   type UpsellCardState,
@@ -245,7 +236,6 @@ export {
   writeFirstRun,
   type FirstRunHook,
   type ScreenPermissions,
-  type FirstRunUsage,
   type FirstRunSaved,
 } from "./first-run";
 export type * from "./contracts/first-run";

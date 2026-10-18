@@ -1,7 +1,6 @@
 import { Loader2, Play, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import TrajectoryViewer from '../TrajectoryViewer';
-import { usePlaygroundTelemetry } from '../../telemetry';
 import { inferRuns } from '../../utils/trajectory';
 import type { AgentMessage } from '../../types';
 
@@ -54,7 +53,6 @@ export default function ReplayTrajectoryModal({
   const [generatingTrajectory, setGeneratingTrajectory] = useState(false);
   const [trajectoryKey, setTrajectoryKey] = useState(0);
   const [title, setTitle] = useState(chatTitle || 'Chat Replay');
-  const { trackTrajectoryReplayed } = usePlaygroundTelemetry();
 
   // Track if we've already initialized to prevent re-runs
   const hasInitializedRef = useRef(false);
@@ -198,14 +196,13 @@ export default function ReplayTrajectoryModal({
         loadedRunIndexRef.current = runIndex;
         setTrajectoryFiles(files);
         setTrajectoryKey((prev) => prev + 1);
-        trackTrajectoryReplayed({ runIndex });
       } catch (error) {
         console.error('Failed to generate trajectory:', error);
       } finally {
         setGeneratingTrajectory(false);
       }
     },
-    [sessionId, trackTrajectoryReplayed]
+    [sessionId]
   );
 
   // Load trajectory when run is selected

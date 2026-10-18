@@ -14,7 +14,7 @@ aws_access_key_id = AKIDUPGRADEFAKE
 aws_secret_access_key = fake
 C
 exec env -i PATH=/usr/bin:/bin HOME="$OUT" CUA_HOME="$OUT/.cua" \
-  CUA_CREDENTIAL_STORE=file DO_NOT_TRACK=1 CUA_TELEMETRY=0 \
+  CUA_CREDENTIAL_STORE=file DO_NOT_TRACK=1 \
   AWS_ENDPOINT_URL="$AWS" AWS_CONFIG_FILE="$OUT/aws-config" \
   AWS_SHARED_CREDENTIALS_FILE="$OUT/aws-credentials" \
   "$CUA" "$@"

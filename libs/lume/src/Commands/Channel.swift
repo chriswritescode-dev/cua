@@ -58,6 +58,6 @@ private func printChannelState(
     print("Selected channel: \(selected.rawValue)")
     print("Current channel:  \(current?.rawValue ?? "development")")
     if changed && current != selected {
-        print("Run `lume update --apply` to install the latest \(selected.rawValue) release.")
+        print("The \(selected.rawValue) channel applies to the next update. Lume never installs release builds; update from a source checkout: \(LumeVersionCheck.rebuildInstruction)")
     }
 }

@@ -96,8 +96,7 @@ impl FetchError {
                     None => "The reset time was not reported.".to_owned(),
                 };
                 let advice = if *authenticated {
-                    "Wait for the reset, or run the installer directly: \
-                     curl -fsSL https://cua.ai/driver/install.sh | bash"
+                    "Wait for the reset."
                 } else {
                     "Set GITHUB_TOKEN or GH_TOKEN to use your own quota."
                 };

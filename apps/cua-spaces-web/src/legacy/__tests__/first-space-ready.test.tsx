@@ -68,18 +68,15 @@ describe("SpaceReadyCard", () => {
   });
 });
 
-describe("the guided first run's events", () => {
-  const track = vi.fn();
+describe("the guided first run's steps", () => {
   const wrapper = ({ children }: { children?: ReactNode }) => {
-    const store = { telemetry: { track } };
-    const value = { mode: "electron", core: {}, adapter: null, store, ready: Promise.resolve(store) } as unknown as BridgeContextValue;
+    const value = { mode: "electron", core: {}, adapter: null, store: null, ready: Promise.resolve(null) } as unknown as BridgeContextValue;
     return <BridgeContext.Provider value={value}>{children}</BridgeContext.Provider>;
   };
-  const events = () => track.mock.calls.map((c) => (c[0] as { feature: string }[])[0]!.feature);
+  const marks = (step: string) => localStorage.getItem(`cua.firstRun.${step}`);
   const s = (status: string) => ({ id: "s1", name: "Research", os: "linux", status }) as unknown as Space;
-  beforeEach(() => track.mockClear());
 
-  it("counts shown, created, ready and task started once each", async () => {
+  it("marks shown, created, ready and task started once each", async () => {
     const step = renderHook(() => useFirstRunStep(), { wrapper }).result.current;
     act(() => step("guide_shown"));
     const m = renderHook(({ list }) => useFirstSpaceMilestones(list), { wrapper, initialProps: { list: [s("provisioning")] } });
@@ -87,13 +84,14 @@ describe("the guided first run's events", () => {
     m.rerender({ list: [s("running")] });
     act(() => step("task_started"));
     act(() => step("task_started"));
-    await waitFor(() => expect(events()).toEqual(["first_run_guide_shown", "first_space_created", "first_space_ready", "suggested_task_started"]));
+    await waitFor(() => expect(["guide_shown", "space_created", "space_ready", "task_started"].map(marks)).toEqual(["1", "1", "1", "1"]));
   });
 
-  it("does not count created or ready on an install that never showed the guide", async () => {
+  it("does not mark created or ready on an install that never showed the guide", async () => {
     renderHook(() => useFirstSpaceMilestones([s("running")]), { wrapper });
     await Promise.resolve();
-    expect(track).not.toHaveBeenCalled();
+    expect(marks("space_created")).toBeNull();
+    expect(marks("space_ready")).toBeNull();
   });
 
   it("suggests real work on a clean computer, for the Space's system", () => {
@@ -110,40 +108,31 @@ describe("the guided first run's events", () => {
 });
 
 describe("useAgentOffer", () => {
-  const track = vi.fn();
   const wrapper = ({ children }: { children?: ReactNode }) => {
-    const store = { telemetry: { track } };
-    const value = { mode: "electron", core: {}, adapter: null, store, ready: Promise.resolve(store) } as unknown as BridgeContextValue;
+    const value = { mode: "electron", core: {}, adapter: null, store: null, ready: Promise.resolve(null) } as unknown as BridgeContextValue;
     return <BridgeContext.Provider value={value}>{children}</BridgeContext.Provider>;
   };
-  const events = () => track.mock.calls.map((c) => (c[0] as { feature: string }[])[0]!.feature);
-  beforeEach(() => track.mockClear());
 
-  it("records shown once, then clicked and completed, and never shows again", async () => {
-    const { result, rerender } = renderHook(() => useAgentOffer(true), { wrapper });
-    await waitFor(() => expect(events()).toEqual(["agent_offer_shown"]));
+  it("is shown once, then not after completed", async () => {
+    const { result } = renderHook(() => useAgentOffer(true), { wrapper });
+    await waitFor(() => expect(localStorage.getItem("cua.agentOffer.shown")).toBe("1"));
     act(() => result.current.clicked());
     act(() => result.current.completed());
-    await waitFor(() => expect(events()).toEqual(["agent_offer_shown", "agent_offer_clicked", "agent_offer_completed"]));
     expect(result.current.visible).toBe(false);
-    rerender();
-    const again = renderHook(() => useAgentOffer(true), { wrapper });
-    expect(again.result.current.visible).toBe(false);
-    expect(events()).toHaveLength(3);
+    expect(renderHook(() => useAgentOffer(true), { wrapper }).result.current.visible).toBe(false);
   });
 
-  it("stays closed after Not now, and counts shown once per install", async () => {
+  it("stays closed after Not now", async () => {
     const first = renderHook(() => useAgentOffer(true), { wrapper });
-    await waitFor(() => expect(events()).toEqual(["agent_offer_shown"]));
+    await waitFor(() => expect(localStorage.getItem("cua.agentOffer.shown")).toBe("1"));
     act(() => first.result.current.dismiss());
     expect(first.result.current.visible).toBe(false);
     expect(renderHook(() => useAgentOffer(true), { wrapper }).result.current.visible).toBe(false);
-    expect(events()).toEqual(["agent_offer_shown"]);
   });
 
   it("is hidden until a Space is ready", () => {
     expect(renderHook(() => useAgentOffer(false), { wrapper }).result.current.visible).toBe(false);
-    expect(track).not.toHaveBeenCalled();
+    expect(localStorage.getItem("cua.agentOffer.shown")).toBeNull();
   });
 });
 

@@ -44,7 +44,7 @@ async def main() -> int:
             extra = {"runtime": "runc"} if _v == "container" else {}
             async with Sandbox.ephemeral(img, local=True, name=f"cua-e2e-bench-osw-{uuid.uuid4().hex[:6]}",
                                          server_port=5000, cpu=4, memory_mb=4096, time_to_start=1800,
-                                         telemetry_enabled=False, **extra) as sb:
+                                         **extra) as sb:
                 yield sb
 
         target = Target(on="local", concurrency=1)

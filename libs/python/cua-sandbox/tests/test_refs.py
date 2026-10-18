@@ -59,7 +59,7 @@ async def test_lifecycle_calls_take_refs(monkeypatch):
 
 
 def test_sandbox_ids_are_qualified():
-    sb = Sandbox(EnvTransport(url="http://10.0.0.5:3211"), name="dev", _telemetry_enabled=False)
+    sb = Sandbox(EnvTransport(url="http://10.0.0.5:3211"), name="dev")
     assert (sb.id, sb.location) == ("local:dev", "local")
     sb._direct_url = "http://10.0.0.5:3211"
     assert (sb.id, sb.location) == ("direct:10.0.0.5:3211", "direct")

@@ -25,7 +25,6 @@ on:
       - "libs/cua/crates/cua-machine-seal/**"
       - "libs/cua/crates/cua-mesh/**"
       - "libs/cua/crates/cua-spacesd-html5/**"
-      - "libs/cua/crates/cua-telemetry/**"
       - "libs/images/windows-2022/enable-volume.ps1"
       - "libs/images/windows-2022/volume-diagnostics.ps1"
       - ".github/workflows/ci-cua-spacesd.yml"
@@ -53,7 +52,6 @@ on:
       - "libs/cua/crates/cua-machine-seal/**"
       - "libs/cua/crates/cua-mesh/**"
       - "libs/cua/crates/cua-spacesd-html5/**"
-      - "libs/cua/crates/cua-telemetry/**"
       - "libs/images/windows-2022/enable-volume.ps1"
       - "libs/images/windows-2022/volume-diagnostics.ps1"
       - ".github/workflows/ci-cua-spacesd.yml"
@@ -73,9 +71,6 @@ env:
   CARGO_NET_RETRY: "10"
   CARGO_HTTP_TIMEOUT: "120"
   CARGO_HTTP_MULTIPLEXING: "false"
-  # Cua programs and packages run here never send usage telemetry.
-  CUA_TELEMETRY: "0"
-  DO_NOT_TRACK: "1"
   CARGO_TERM_COLOR: always
   # Smaller target dir: no incremental cache in CI (disk on hosted runners).
   CARGO_INCREMENTAL: "0"
