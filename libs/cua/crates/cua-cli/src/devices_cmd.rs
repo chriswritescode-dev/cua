@@ -163,23 +163,6 @@ pub async fn after_login(home: &Path, out: &mut dyn Write) {
         auth.enroll_after_sign_in(),
     )
     .await;
-    // `cua_device_enroll`: enrolled by this sign-in (`rekey` when it
-    // replaced the machine's other key), or failed; nothing otherwise.
-    let enrolled = match &result {
-        Ok(Ok(r)) if r.device.state == DeviceState::Enrolled => Some((
-            if r.superseded.is_empty() {
-                "sign_in"
-            } else {
-                "rekey"
-            },
-            cua_telemetry::Outcome::Ok,
-        )),
-        Ok(Ok(_)) => None,
-        _ => Some(("sign_in", cua_telemetry::Outcome::Error)),
-    };
-    if let Some(e) = enrolled.and_then(|(m, o)| cua_telemetry::events::device_enroll(m, o)) {
-        cua_telemetry::capture(e);
-    }
     match result {
         Ok(Ok(r)) if r.device.state == DeviceState::Enrolled => line(
             out,

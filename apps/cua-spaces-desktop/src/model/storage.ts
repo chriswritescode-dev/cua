@@ -39,8 +39,6 @@ export class StorageModel {
   mount: unknown = null;
   cache: unknown = null;
   state: AppStorageState;
-  /** Where usage events go. */
-  telemetry: { record(signals: import("../native/generated/index").AppTelemetrySignal[]): void } | null = null;
 
   constructor(
     private readonly native: Native,
@@ -69,7 +67,6 @@ export class StorageModel {
   }
 
   private reduce(action: AppStorageAction): void {
-    this.telemetry?.record(this.native.appTelemetryStorage(this.input, this.state, action));
     this.state = this.native.appStorageReduce(this.state, action);
   }
 

@@ -169,8 +169,6 @@ jobs:
 
       - name: Run the hermetic suite
         working-directory: libs/python/cua-sandbox
-        env:
-          CUA_TELEMETRY_ENABLED: "false"
         run: >
           uv run --frozen pytest tests -p no:cacheprovider --timeout=120 -ra
           --durations=25 --durations-min=1.0 --junitxml="$RUNNER_TEMP/pytest-cua-sandbox.xml"

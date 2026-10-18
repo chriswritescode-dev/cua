@@ -125,7 +125,6 @@ struct Shutdown: AsyncParsableCommand {
 
   @MainActor
   func run() async throws {
-    TelemetryClient.shared.record(event: "lume_shutdown")
     try await requestGuestPowerAction(
       .shutdown,
       name: name,
@@ -160,7 +159,6 @@ struct Restart: AsyncParsableCommand {
 
   @MainActor
   func run() async throws {
-    TelemetryClient.shared.record(event: "lume_restart")
     try await requestGuestPowerAction(
       .restart,
       name: name,

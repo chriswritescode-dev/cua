@@ -62,7 +62,6 @@ class MCPComputerAgent(MCPAgent):
         screenshot_delay: float | int = 0.5,
         use_prompt_caching: bool | None = False,
         max_trajectory_budget: float | dict | None = None,
-        telemetry_enabled: bool | None = True,
         environment: str = "linux",
         **kwargs: Any,
     ) -> None:
@@ -145,7 +144,6 @@ class MCPComputerAgent(MCPAgent):
             "screenshot_delay": screenshot_delay,
             "use_prompt_caching": use_prompt_caching,
             "max_trajectory_budget": max_trajectory_budget,
-            "telemetry_enabled": telemetry_enabled,
         }
 
         self.computer_agent = BaseComputerAgent(**agent_kwargs)

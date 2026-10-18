@@ -21,8 +21,6 @@ import {
 } from "../../model/persistent";
 import type { AgentsBridge } from "../../native/persistent";
 import { readSetting, writeSetting } from "../../state/settings";
-import { featureSignals } from "../../model/telemetry";
-import { telemetryBridge } from "../../native/telemetry";
 import { useT } from "../../i18n";
 
 function message(error: unknown): string {
@@ -106,8 +104,6 @@ export function AgentsPage({
 }) {
   const t = useT("agents");
   const [input, setInput] = useState<AgentsInput>({ agents: [], thisMachine });
-  // Persistent agents adoption: the page was opened.
-  useEffect(() => telemetryBridge().recordSignals(featureSignals("agents_page_open")), []);
   const [state, setState] = useState(agentsInitial);
   const stateRef = useRef(state);
   stateRef.current = state;

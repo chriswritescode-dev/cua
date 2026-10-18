@@ -19,8 +19,7 @@ struct MainUIRouteTests {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("cua-route-\(UUID().uuidString)")
         let m = AppModel(backend: FixtureSpacesBackend(), keyvault: KeyvaultModel(client: nil),
                          onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
-                         settingsPath: dir.appendingPathComponent("settings.json").path,
-                         telemetry: FixtureTelemetry())
+                         settingsPath: dir.appendingPathComponent("settings.json").path)
         m.settings.experiments = AppExperiments(cuaVolume: true, ciRunners: false, tcpShares: false, mobile: false)
         return m
     }

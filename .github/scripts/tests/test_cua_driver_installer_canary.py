@@ -51,7 +51,6 @@ def test_canary_uses_default_resolution_on_every_platform(workflow: dict) -> Non
     canary = workflow["jobs"]["canary"]
     assert canary["strategy"]["matrix"]["os"] == ["ubuntu-latest", "macos-26", "windows-latest"]
     assert canary["env"]["INSTALLER_SOURCE"] == "${{ github.event_name == 'push' && 'checkout' || 'cua.ai' }}"
-    assert canary["env"]["CUA_DRIVER_RS_TELEMETRY_ENABLED"] == "false"
     # The only pin is the manual diagnostics input; scheduled runs never pin.
     assert canary["env"]["CANARY_PIN"] == "${{ inputs.version }}"
 

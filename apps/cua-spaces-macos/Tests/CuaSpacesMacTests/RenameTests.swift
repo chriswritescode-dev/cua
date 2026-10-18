@@ -21,8 +21,7 @@ struct RenameTests {
         let backend = FixtureSpacesBackend()
         let model = AppModel(backend: backend, keyvault: KeyvaultModel(client: nil),
                              onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
-                             settingsPath: dir.appendingPathComponent("settings.json").path,
-                             telemetry: FixtureTelemetry())
+                             settingsPath: dir.appendingPathComponent("settings.json").path)
         await model.refresh()
         let bridge = WebUIBridge(model: model, allowedOrigins: [])
         bridge.actions = WebUIActions(openSpace: { _ in })

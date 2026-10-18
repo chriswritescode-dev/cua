@@ -51,8 +51,6 @@ pub mod protector;
 pub mod record;
 pub mod rollback;
 pub mod store;
-/// Broker-side usage telemetry (counts and fixed vocabularies only).
-pub mod telemetry;
 #[cfg(windows)]
 pub mod winpeer;
 #[cfg(windows)]

@@ -64,7 +64,6 @@ fn history_cli(subcommand: &str, extra: &[&str]) -> Value {
     command.args(["history", subcommand]);
     command.args(extra);
     command.args(["--json", "--socket", &daemon_socket()]);
-    command.env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false");
     let output = command
         .output()
         .unwrap_or_else(|error| panic!("could not run history {subcommand}: {error}"));
@@ -86,7 +85,6 @@ fn history_cli(subcommand: &str, extra: &[&str]) -> Value {
 fn assert_daemon_remains_unrestricted() {
     let output = Command::new(installed_driver())
         .args(["status", "--socket", &daemon_socket()])
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .output()
         .expect("inspect packaged daemon authorization mode");
     assert!(
@@ -391,7 +389,6 @@ fn assert_forged_cli_control_is_rejected() {
 fn stop_daemon() {
     let output = Command::new(installed_driver())
         .args(["stop", "--socket", &daemon_socket()])
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .output()
         .expect("stop packaged daemon");
     assert!(
@@ -422,7 +419,6 @@ fn start_daemon() -> DaemonChild {
             "--dangerously-bypass-approvals",
             "--experimental-history",
         ])
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()

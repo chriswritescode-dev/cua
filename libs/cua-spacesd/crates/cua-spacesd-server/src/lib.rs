@@ -32,7 +32,6 @@ pub mod server;
 pub mod services;
 pub mod share_edges;
 pub mod tailnet;
-pub mod telemetry;
 pub mod token_file;
 pub mod util;
 

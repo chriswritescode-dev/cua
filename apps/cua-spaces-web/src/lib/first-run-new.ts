@@ -125,42 +125,6 @@ export function listNames(names: string[]): string {
 
 /* ---- 1 ---------------------------------------------------------------------------------- */
 
-/**
- * The usage-data line on screen 1 (CUA-3551, option B): what is collected and a one-tap off, shown before anything
- * is sent. The hosts hold every usage event until the run leaves this screen, and drop them when it's turned off.
- * Built from the core's Welcome view (`onboarding.view`), so the words match Settings, Privacy.
- */
-export interface WelcomeUsage {
-  notice: string;
-  label: string;
-  linkLabel: string;
-  linkUrl: string;
-  on: boolean;
-  /** False when the environment decides (Do Not Track, an environment variable, CI); `help` says which. */
-  enabled: boolean;
-  help: string | null;
-}
-
-export function welcomeUsage(
-  view: {
-    notice?: string | null;
-    noticeLinkLabel?: string | null;
-    noticeLinkUrl?: string | null;
-    usage?: { label: string; on: boolean; enabled: boolean; help?: string | null } | null;
-  } | null,
-): WelcomeUsage | null {
-  if (!view?.usage || !view.notice || !view.noticeLinkLabel || !view.noticeLinkUrl) return null;
-  return {
-    notice: view.notice,
-    label: view.usage.label,
-    linkLabel: view.noticeLinkLabel,
-    linkUrl: view.noticeLinkUrl,
-    on: view.usage.on,
-    enabled: view.usage.enabled,
-    help: view.usage.help ?? null,
-  };
-}
-
 export const WELCOME = {
   title: "Combine all your computers into one supercomputer.",
   // The headline picked on 7 Nov 2026 (CUA-3753), then the one-liner and what to do here (CUA-3150).

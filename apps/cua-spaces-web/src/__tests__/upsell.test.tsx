@@ -27,7 +27,7 @@ stubBrowserApis();
 
 const idle = (over: Partial<RelayUsage> = {}) => ({ ...demoRelayUsage(), liveSessions: 0, ...over });
 
-function host(usage: RelayUsage, opened: string[] = [], tracked: unknown[] = [], runs = false): TestHost {
+function host(usage: RelayUsage, opened: string[] = [], runs = false): TestHost {
   return {
     failsCreates: false,
     listsGhost: false,
@@ -45,22 +45,15 @@ function host(usage: RelayUsage, opened: string[] = [], tracked: unknown[] = [],
         opened.push((args as { url: string }).url);
         return null;
       }
-      if (op === "telemetry.track") {
-        tracked.push(...(args as { signals: unknown[] }).signals);
-        return null;
-      }
       return undefined;
     },
   };
 }
 
-const features = (tracked: unknown[]) => tracked.map((s) => (s as { feature?: string }).feature).filter(Boolean);
-
 describe.skipIf(!wasmBuilt)("in-app Pro and Teams prompts (real routes, wasm core)", () => {
   it("Account on Free says what Free gives and has an Upgrade button to Pro's checkout", async () => {
     const opened: string[] = [];
-    const tracked: unknown[] = [];
-    const { router } = await mountApp("/settings", host(idle({ liveSessions: 1 }), opened, tracked));
+    const { router } = await mountApp("/settings", host(idle({ liveSessions: 1 }), opened));
     await router.load();
     const card = await waitFor(() => {
       const el = document.querySelector("[data-plan-card]");
@@ -76,7 +69,6 @@ describe.skipIf(!wasmBuilt)("in-app Pro and Teams prompts (real routes, wasm cor
     expect(tab.textContent).not.toContain("Upgrade at the bottom");
     fireEvent.click(document.querySelector("[data-plan-primary]")!);
     await waitFor(() => expect(opened).toEqual(["https://app.cua.ai/buy/pro?from=app_plan_card"]));
-    await waitFor(() => expect(features(tracked)).toContain("upsell_plan_card_click"));
   });
 
   it("Settings shows the usage meter: Pro at 5 of 5 computers in use at once gets the sessions card, with Upgrade to Teams", async () => {
@@ -122,8 +114,7 @@ describe.skipIf(!wasmBuilt)("in-app Pro and Teams prompts (real routes, wasm cor
 
   it("the account menu's Plan names the plan; on Free it opens Pro's checkout", async () => {
     const opened: string[] = [];
-    const tracked: unknown[] = [];
-    const { router } = await mountApp("/spaces", host(idle(), opened, tracked));
+    const { router } = await mountApp("/spaces", host(idle(), opened));
     await router.load();
     const line = await waitFor(() => {
       const el = document.querySelector("[data-account-line]");
@@ -139,13 +130,11 @@ describe.skipIf(!wasmBuilt)("in-app Pro and Teams prompts (real routes, wasm cor
     expect(plan.textContent).toBe("PlanFree");
     fireEvent.click(plan);
     await waitFor(() => expect(opened).toEqual(["https://app.cua.ai/buy/pro?from=app_account_menu"]));
-    await waitFor(() => expect(features(tracked)).toContain("upsell_account_menu_click"));
   });
 
   it("a second computer over the relay: one line with Get Pro under your computers, shown once, closable", async () => {
     const opened: string[] = [];
-    const tracked: unknown[] = [];
-    const { router } = await mountApp("/spaces", host(idle(), opened, tracked));
+    const { router } = await mountApp("/spaces", host(idle(), opened));
     await router.load();
     const prompt = await waitFor(() => {
       const el = document.querySelector("[data-upsell=machine]");
@@ -155,12 +144,10 @@ describe.skipIf(!wasmBuilt)("in-app Pro and Teams prompts (real routes, wasm cor
     expect(prompt.textContent).toContain(
       "Two computers now. Free includes 2 computers in use at once and 20 remote hours a month. Pro makes it 5 and 200, for $18 a month.",
     );
-    await waitFor(() => expect(features(tracked)).toContain("upsell_machine_shown"));
     fireEvent.click(document.querySelector("[data-upsell=machine] [data-upsell-cta]")!);
     await waitFor(() => expect(opened).toEqual(["https://app.cua.ai/buy/pro?from=app_machine"]));
     fireEvent.click(document.querySelector("[data-upsell=machine] [data-upsell-dismiss]")!);
     expect(document.querySelector("[data-upsell=machine]")).toBeNull();
-    await waitFor(() => expect(features(tracked)).toEqual(expect.arrayContaining(["upsell_machine_click", "upsell_machine_dismiss"])));
     cleanup();
     // Closed: it does not come back on the next visit.
     const again = await mountApp("/spaces", host(idle()));
@@ -178,7 +165,7 @@ describe.skipIf(!wasmBuilt)("in-app Pro and Teams prompts (real routes, wasm cor
   });
 
   it("never during an agent run", async () => {
-    const { router } = await mountApp("/spaces", host(idle(), [], [], true));
+    const { router } = await mountApp("/spaces", host(idle(), [], true));
     await router.load();
     await waitFor(() => expect(document.querySelector("[data-spaces-tree]")).toBeTruthy());
     await act(() => new Promise((r) => setTimeout(r, 80)));

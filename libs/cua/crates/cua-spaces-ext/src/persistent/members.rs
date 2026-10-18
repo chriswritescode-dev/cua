@@ -885,7 +885,7 @@ impl Persistent {
                     i += 1;
                     continue;
                 }
-                match self.deliver(&free[i], store, &task, "thread").await? {
+                match self.deliver(&free[i], store, &task).await? {
                     Delivered::Yes(_) => {
                         free.remove(i);
                         out.push(task.seq);
@@ -911,13 +911,12 @@ impl Persistent {
         rec: &AgentRecord,
         store: &ThreadStore,
         task: &TaskInfo,
-        entry: &str,
     ) -> Result<Delivered> {
         let picked_ms = super::phases::now_ms();
-        let (base, cold, known) = match self.current_turn_info(rec).await {
-            Some((Some(turn), info)) => (turn, false, Some(info)),
+        let (base, known) = match self.current_turn_info(rec).await {
+            Some((Some(turn), info)) => (turn, Some(info)),
             Some((None, _)) => return Ok(Delivered::Busy),
-            None => (0, true, None),
+            None => (0, None),
         };
         let holder = Holder::new(&rec.name, rec.k(), rec.drive_epoch());
         let dispatch = || ClaimEntries {
@@ -963,16 +962,6 @@ impl Persistent {
         };
         // How long the join takes is measured from the message.
         let posted_ms = posted.as_ref().map(|e| e.ts_ms).unwrap_or(picked_ms);
-        if cold {
-            super::phases::set_woke(
-                &self.dir,
-                &format!("{}#{}", rec.name, rec.k()),
-                super::phases::Woke {
-                    posted_ms,
-                    picked_ms,
-                },
-            );
-        }
         // Show it at once: a run to start is `starting`, a warm one `thinking`.
         self.set_stage(
             rec,
@@ -982,7 +971,7 @@ impl Persistent {
                 "starting"
             }),
         );
-        let sent = Box::pin(self.send_session(rec, &framed, entry, known)).await;
+        let sent = Box::pin(self.send_session(rec, &framed, known)).await;
         if sent.is_err() {
             self.set_stage(rec, None);
         }
@@ -1000,10 +989,7 @@ impl Persistent {
                     let _ = self.update_in(rec, |r| r.briefed_run = Some(run));
                 }
                 let base = if d.started { 0 } else { base };
-                if !d.started {
-                    // A follow-up to a running agent: its steps are timed too.
-                    Box::pin(self.follow_warm(rec, &d.run_id, posted_ms, picked_ms)).await;
-                } else {
+                if d.started {
                     // A restart nobody asked for says so once the agent is up;
                     // a start the person asked for shows as the starting row.
                     let mut live = self.live.lock().await;
@@ -1032,16 +1018,6 @@ impl Persistent {
                 Ok(Delivered::Busy)
             }
             Err(e) => {
-                super::phases::take_woke(&self.dir, &format!("{}#{}", rec.name, rec.k()));
-                if cold {
-                    super::phases::start_failed(
-                        &format!("{}/{}", rec.name, task.seq),
-                        &rec.harness,
-                        &self.runtime_word(&rec.space),
-                        posted_ms,
-                        &e.to_string(),
-                    );
-                }
                 // The agent answers in the thread: plain words, with the
                 // complete error (and a Connect button when it needs a
                 // sign-in) in `failure`.
@@ -1066,27 +1042,6 @@ impl Persistent {
                 )?;
                 Err(e)
             }
-        }
-    }
-
-    /// Starts timing a follow-up to a running agent (`cua_agent_join_phase`).
-    async fn follow_warm(&self, rec: &AgentRecord, run_id: &str, posted_ms: u64, picked_ms: u64) {
-        if let Ok(agents) = self.cached_agents(&rec.space).await {
-            super::phases::follow(
-                agents,
-                super::phases::Join {
-                    run_id: run_id.to_string(),
-                    harness: rec.harness.clone(),
-                    runtime: self.runtime_word(&rec.space),
-                    cold: false,
-                    posted_ms,
-                },
-                vec![
-                    ("posted", 0),
-                    ("dispatch_picked", picked_ms.saturating_sub(posted_ms)),
-                ],
-                0,
-            );
         }
     }
 
@@ -1233,7 +1188,7 @@ impl Persistent {
             Some(Some(t)) => t,
             _ => 0,
         };
-        let d = self.send_from(name, text, "persistent").await?;
+        let d = self.send_from(name, text).await?;
         let rec = self.get(name)?;
         let store = self.thread_store(&rec.space);
         let mut draft = Draft::new(self.author_for(caller), EntryKind::Message, text);
@@ -1539,7 +1494,7 @@ impl Persistent {
             .get(&e.seq)
             .cloned()
             .ok_or_else(|| Error::invalid("the task vanished"))?;
-        match self.deliver(&target, &store, &task, "routine").await? {
+        match self.deliver(&target, &store, &task).await? {
             Delivered::Yes(d) => Ok(Ok(d)),
             Delivered::Busy | Delivered::Taken => {
                 store.release(

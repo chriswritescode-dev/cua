@@ -16,7 +16,6 @@ fn driver(home: &Path, args: &[&str]) -> Command {
     command
         .args(args)
         .stdin(Stdio::null())
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .env("HOME", home)
         .env("USERPROFILE", home)
         .env("LOCALAPPDATA", home)

@@ -34,16 +34,12 @@ export interface SettingsOperations {
   /** The app's name, version and updater (`about::AboutInput`). */
   "about.get": { args: Empty; result: AboutInput };
   /** Changes an update control; answers the new input. */
-  "about.set": { args: { autoCheck?: boolean; autoInstall?: boolean; channel?: UpdateChannelId }; result: AboutInput };
+  "about.set": { args: { autoCheck?: boolean; channel?: UpdateChannelId }; result: AboutInput };
   /** Check Now. */
   "about.checkNow": { args: Empty; result: AboutInput };
 
-  /** The in-app update indicator: where the host's updater is. */
+  /** The in-app update indicator: the newer release the host found. */
   "update.get": { args: Empty; result: UpdateState };
-  /** "Restart to update": installs the downloaded update and relaunches.
-   * Only a click calls it; the host never restarts on its own. With nothing
-   * downloaded it changes nothing and answers the state. */
-  "update.install": { args: Empty; result: UpdateState };
 
   /** Settings, Experiments: the switches as stored. */
   "experiments.get": { args: Empty; result: Experiments };
@@ -105,7 +101,6 @@ export const SETTINGS_OPERATIONS = [
   "about.set",
   "about.checkNow",
   "update.get",
-  "update.install",
   "experiments.get",
   "experiments.set",
   "loginItem.get",
@@ -160,7 +155,6 @@ export function tauriSettingsOps(invoke: Invoke, ui: { read(key: string): string
       os: "",
       updater: false,
       autoCheck: false,
-      autoInstall: false,
       channel: "stable",
       lastCheck: null,
       checking: false,
@@ -207,7 +201,6 @@ export function tauriSettingsOps(invoke: Invoke, ui: { read(key: string): string
     "about.set": () => Promise.reject(new UnsupportedOperationError("tauri", "about.set")),
     "about.checkNow": () => Promise.reject(new UnsupportedOperationError("tauri", "about.checkNow")),
     "update.get": () => Promise.reject(new UnsupportedOperationError("tauri", "update.get")),
-    "update.install": () => Promise.reject(new UnsupportedOperationError("tauri", "update.install")),
     "runtimes.check": () => Promise.reject(new UnsupportedOperationError("tauri", "runtimes.check")),
     "runtimes.browse": () => Promise.reject(new UnsupportedOperationError("tauri", "runtimes.browse")),
     "repoCache.get": () => Promise.reject(new UnsupportedOperationError("tauri", "repoCache.get")),
@@ -293,7 +286,6 @@ export const TAURI_SETTINGS_UNSUPPORTED = [
   "about.set",
   "about.checkNow",
   "update.get",
-  "update.install",
   "runtimes.check",
   "runtimes.browse",
   "repoCache.get",
@@ -307,7 +299,6 @@ export const SETTINGS_TAURI_COMMANDS = {
   "about.set": [],
   "about.checkNow": [],
   "update.get": [],
-  "update.install": [],
   "experiments.get": [],
   "experiments.set": ["ui_storage_set"],
   "loginItem.get": ["login_item_status", "host_status", "agents_tool"],

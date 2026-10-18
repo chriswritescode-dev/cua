@@ -118,7 +118,7 @@ struct MachinesViewTests {
         let m = AppModel(backend: backend, keyvault: KeyvaultModel(client: nil),
                          onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
                          settingsPath: dir.appendingPathComponent("settings.json").path,
-                         telemetry: FixtureTelemetry(), devices: devices)
+                         devices: devices)
         await m.refresh()
         m.devices.signedIn = true
         await m.devices.refresh()

@@ -1228,7 +1228,6 @@ dependencies = [
  "cua-driver-core",
  "cua-driver-sdk",
  "cua-driver-testkit",
- "cua-telemetry",
  "cursor-overlay",
  "embed-resource",
  "flate2",
@@ -1430,18 +1429,6 @@ dependencies = [
  "serde_yaml",
  "sha2",
  "thiserror 1.0.69",
-]
-
-[[package]]
-name = "cua-telemetry"
-version = "0.27.7"
-dependencies = [
- "hex",
- "rand 0.9.5",
- "serde",
- "serde_json",
- "sha2",
- "toml_edit 0.25.12+spec-1.1.0",
 ]
 
 [[package]]

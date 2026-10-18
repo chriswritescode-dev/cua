@@ -77,10 +77,6 @@ interface PlaygroundContentProps {
   /** Custom hint message for empty state */
   selectionHint?: string;
 
-  /** Optional telemetry callback for page view */
-  onPlaygroundViewed?: () => void;
-  /** Optional telemetry callback when example prompt is selected */
-  onExamplePromptSelected?: (promptId: string, promptTitle: string) => void;
   /** Optional toast callback */
   onToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
   /** Optional class name for the root layout container (can override default h-screen w-screen) */
@@ -109,8 +105,6 @@ export function PlaygroundContent({
   logo,
   welcomeMessage,
   selectionHint,
-  onPlaygroundViewed,
-  onExamplePromptSelected,
   onToast,
   className,
 }: PlaygroundContentProps) {
@@ -124,11 +118,6 @@ export function PlaygroundContent({
   const pendingFirstMessageRef = useRef<Set<string>>(new Set());
 
   const { initialized, computers } = state;
-
-  // Track playground page view for analytics (optional)
-  useEffect(() => {
-    onPlaygroundViewed?.();
-  }, [onPlaygroundViewed]);
 
   // Check if mobile on mount
   useEffect(() => {
@@ -287,7 +276,6 @@ export function PlaygroundContent({
             logo={logo}
             welcomeMessage={welcomeMessage}
             selectionHint={selectionHint}
-            onExamplePromptSelected={onExamplePromptSelected}
             onToast={onToast}
             onAddComputer={handleOpenAddSandbox}
           />

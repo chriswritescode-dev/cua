@@ -84,10 +84,7 @@ cua auth status             # starts with "Environment: staging (...)"
 
 Each environment has its own session, host enrollment, Spaces registry and
 daemon. Signing in to staging never replaces or sends your production session,
-and the other way round. Usage telemetry follows the environment too: staging
-events go to the staging PostHog project, never to production's.
-`CUA_POSTHOG_KEY` overrides the project key, and `CUA_TELEMETRY_ENDPOINT`
-overrides the ingest URL.
+and the other way round.
 
 Released builds of `cua` and the Cua Spaces app, beta versions included, use
 production when `CUA_ENV` is unset. Set `CUA_ENV=staging` to use staging.

@@ -215,7 +215,6 @@ class FakeSDK:
                 memory_mb=None,
                 time_to_start=None,
                 server_port=None,
-                telemetry_enabled=True,
                 services=None,
             ):
                 kwargs = {
@@ -228,7 +227,6 @@ class FakeSDK:
                         memory_mb=memory_mb,
                         time_to_start=time_to_start,
                         server_port=server_port,
-                        telemetry_enabled=telemetry_enabled,
                         services=services,
                     ).items()
                     if v is not None

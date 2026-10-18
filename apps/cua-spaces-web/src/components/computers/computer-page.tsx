@@ -38,7 +38,7 @@ import { DriverAttentionLabel } from "@/components/driver/attention";
 import { driverLine } from "@/components/driver/copy";
 import { EnrollSheet, RecentAccess, TrustSection, useMachinesAccount } from "@/components/machines/account-parts";
 import { EmptyState, Page } from "@/components/page";
-import { RestartDialog, useUpdateIndicator } from "@/components/shell/update-indicator";
+import { useUpdateIndicator } from "@/components/shell/update-indicator";
 import { MachineRowMenu } from "@/components/spaces/space-menu";
 import { ThisMachineExtras } from "@/components/this-machine";
 import { ConfirmDialog } from "@/components/ui/alert-dialog";
@@ -426,8 +426,8 @@ function MachineIssues({
   if (!issues.length) return null;
   const act = (i: MachinesViewIssue) => {
     const a = i.action!;
-    // Restart into the downloaded Cua Spaces update: the sidebar's own flow, which asks first while an agent is running.
-    if (a.appUpdate) return update.restart();
+    // A newer Cua Spaces release: its notes, and how to pull the repository and rebuild.
+    if (a.appUpdate) return update.whatsNew?.();
     const done = a.url ? host.openSettings(a.url) : a.hostAction ? host.run(a.hostAction) : Promise.resolve();
     void Promise.resolve(done).catch(onFail(t("computers.page.action_failed", { action: a.label.charAt(0).toLowerCase() + a.label.slice(1) })));
   };
@@ -449,7 +449,7 @@ function MachineIssues({
                 size="sm"
                 variant="outline"
                 className="shrink-0"
-                disabled={host.busy || (i.action.appUpdate && update.installing)}
+                disabled={host.busy}
                 onClick={() => act(i)}
                 data-machine-issue-action={i.id}
               >
@@ -459,7 +459,6 @@ function MachineIssues({
           </div>
         ))}
       </GroupedSection>
-      <RestartDialog ui={update} />
     </>
   );
 }

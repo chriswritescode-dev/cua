@@ -18,8 +18,7 @@ struct SettingsCommandTests {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("cua-settings-\(UUID().uuidString)")
         return AppModel(backend: FixtureSpacesBackend(), keyvault: KeyvaultModel(client: nil),
                         onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
-                        settingsPath: dir.appendingPathComponent("settings.json").path,
-                        telemetry: FixtureTelemetry())
+                        settingsPath: dir.appendingPathComponent("settings.json").path)
     }
 
     /// Settings never falls back to a native window.
@@ -53,8 +52,7 @@ struct SettingsCommandTests {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("cua-webui-\(UUID().uuidString)")
         let model = AppModel(backend: FixtureSpacesBackend(), keyvault: KeyvaultModel(client: nil),
                              onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
-                             settingsPath: dir.appendingPathComponent("settings.json").path,
-                             telemetry: FixtureTelemetry())
+                             settingsPath: dir.appendingPathComponent("settings.json").path)
         let c = WebUIWindowController(model: model)
         return (c, c.bridge)
     }

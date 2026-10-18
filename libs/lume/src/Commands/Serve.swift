@@ -17,9 +17,6 @@ struct Serve: AsyncParsableCommand {
             // MCP mode - run as MCP server over stdio. Stdout carries the
             // protocol, so every log and progress line goes to stderr.
             Console.shared.reserveStdout()
-            TelemetryClient.shared.record(event: TelemetryEvent.serve, properties: [
-                "mode": "mcp"
-            ])
 
             let controller = LumeController()
             let mcpServer = await LumeMCPServer(controller: controller)
@@ -27,11 +24,6 @@ struct Serve: AsyncParsableCommand {
             try await mcpServer.start()
         } else {
             // HTTP mode - run as HTTP server
-            TelemetryClient.shared.record(event: TelemetryEvent.serve, properties: [
-                "port": port,
-                "mode": "http"
-            ])
-
             let server = await Server(port: port)
 
             Logger.info("Starting server", metadata: ["port": "\(port)"])

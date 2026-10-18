@@ -41,11 +41,10 @@ import type {
   AccountStatus,
   HostStatus,
   MachineRow,
+  CrashReportingConfig,
   OnboardingState,
   SignInStart,
   SpacePowerReport,
-  TelemetryView,
-  CrashReportingConfig,
   DetectedRuntime,
   RuntimeKindInput,
   RuntimePathCheck,
@@ -88,7 +87,6 @@ import type {
 import type { AgentSetupOutcome, DriveGrantInput, DriveMountInput, DriveRequestInput, Experiments, VolumeOverview } from "./volume";
 import type { AgentKeysReport } from "../ops/agent-keys";
 import type { GithubAccount, GithubHost, GithubReport, GithubSourceRow } from "../ops/github";
-import type { TelemetryLinkNotice } from "../ops/telemetry";
 import type { SentFileInfo, SpaceReach, SpaceThumbnail, SpaceUsage, SpaceWindows } from "../ops/space-detail";
 import type { RelayUsage } from "../ops/relay-usage";
 import type { AppPermissions, DriverActivity, DriverApp, DriverLiveTest, DriverMachine, DriverPermission, DriverStatus, DriverUpdate } from "../ops/driver";
@@ -538,7 +536,6 @@ const SettingsShape = ref(
       theme: oneOf("system", "light", "dark"),
       menuBar: bool,
       hotkey: str,
-      telemetry: bool,
       defaultLocation: str,
       launchAtLogin: nullable(bool),
       updateChannel: nullable(oneOf("stable", "nightly")),
@@ -548,7 +545,6 @@ const SettingsShape = ref(
       agentMenu: opt(AgentMenuPrefsShape),
     }),
     defaultLocation: nullable(obj<DefaultLocation>()({ value: str, source: oneOf("env", "config", "default"), env: opt(str), path: str })),
-    telemetry: nullable(obj<TelemetryView>()({ enabled: bool, source: str, sourceKind: str, noticeShown: bool, noticeText: str, docsUrl: str })),
     hostSettings: opt(
       obj<HostSettings>()({
         runtimes: optNull(RuntimesInputShape),
@@ -558,7 +554,6 @@ const SettingsShape = ref(
         closeNotice: optNull(bool),
         keyvaultAutoWipe: optNull(bool),
         keyvaultUnlockPrompt: optNull(bool),
-        keyvaultSiteIcons: optNull(bool),
         keyvaultProtection: optNull(list(obj<{ label: string; value: string }>()({ label: str, value: str }))),
       }),
     ),
@@ -596,7 +591,6 @@ const AboutShape = ref(
     os: str,
     updater: bool,
     autoCheck: bool,
-    autoInstall: bool,
     channel: oneOf("stable", "nightly"),
     lastCheck: nullable(str),
     checking: bool,
@@ -606,11 +600,11 @@ const AboutShape = ref(
 const UpdateShape = ref(
   "UpdateState",
   obj<UpdateState>()({
-    status: oneOf("idle", "checking", "available", "downloading", "downloaded", "error"),
+    status: oneOf("idle", "checking", "available", "error"),
     currentVersion: str,
     version: nullable(str),
-    percent: nullable(num),
     notesUrl: nullable(str),
+    instructions: optNull(str),
     message: nullable(str),
   }),
 );
@@ -771,30 +765,6 @@ const GithubShape = ref(
   }),
 );
 
-const StartupShape = ref(
-  "StartupState",
-  obj<StartupState>()({
-    phase: oneOf("starting", "needsKeychain", "waitingForKeychain", "keychainDenied", "startFailed", "ready"),
-    slow: bool,
-    title: str,
-    body: str,
-    actions: list(oneOf("allowAccess", "tryAgain", "signInAgain")),
-  }),
-);
-
-const LinkNoticeShape = ref(
-  "TelemetryLinkNotice",
-  obj<TelemetryLinkNotice>()({
-    due: bool,
-    title: str,
-    body: str,
-    okLabel: str,
-    turnOffLabel: str,
-    detailsLabel: str,
-    docsUrl: str,
-  }),
-);
-
 const CrashReportingConfigShape = ref(
   "CrashReportingConfig",
   obj<CrashReportingConfig>()({
@@ -804,6 +774,17 @@ const CrashReportingConfigShape = ref(
     environment: str,
     shell: str,
     crashTest: opt(oneOf("ui")),
+  }),
+);
+
+const StartupShape = ref(
+  "StartupState",
+  obj<StartupState>()({
+    phase: oneOf("starting", "needsKeychain", "waitingForKeychain", "keychainDenied", "startFailed", "ready"),
+    slow: bool,
+    title: str,
+    body: str,
+    actions: list(oneOf("allowAccess", "tryAgain", "signInAgain")),
   }),
 );
 
@@ -1877,7 +1858,6 @@ export const OP_SHAPES: Record<OpName, Schema> = {
   "about.set": AboutShape,
   "about.checkNow": AboutShape,
   "update.get": UpdateShape,
-  "update.install": UpdateShape,
   "experiments.get": ExperimentsShape,
   "experiments.set": ExperimentsShape,
   "loginItem.get": LoginItemShape,
@@ -1905,9 +1885,6 @@ export const OP_SHAPES: Record<OpName, Schema> = {
   "notifications.markAllRead": nul,
   "notifications.markRead": nul,
 
-  "telemetry.track": nul,
-  "telemetry.linkNotice": nullable(LinkNoticeShape),
-  "telemetry.acknowledgeLinkNotice": nul,
   "crashReporting.config": CrashReportingConfigShape,
   "spaces.usage": nullable(obj<SpaceUsage>()({ memoryUsed: num, memoryTotal: num, memoryLimited: bool, diskUsed: num, diskTotal: num, diskLimited: bool })),
   "spaces.reach": obj<SpaceReach>()({ reachable: bool, listedOffline: bool, reason: nullable(str) }),
@@ -2335,7 +2312,6 @@ export const WEBKIT_SHAPES: Partial<Record<WebkitMethod, Schema>> = {
   "about.set": AboutShape,
   "about.checkNow": AboutShape,
   "update.get": UpdateShape,
-  "update.install": UpdateShape,
   "loginItem.get": LoginItemShape,
   "loginItem.set": LoginItemShape,
   "loginItem.openSettings": nul,
@@ -2360,9 +2336,6 @@ export const WEBKIT_SHAPES: Partial<Record<WebkitMethod, Schema>> = {
   "notifications.list": list(NotificationShape),
   "notifications.markAllRead": nul,
   "notifications.markRead": nul,
-  "telemetry.track": nul,
-  "telemetry.linkNotice": nullable(LinkNoticeShape),
-  "telemetry.acknowledgeLinkNotice": nul,
   "crashReporting.config": CrashReportingConfigShape,
   "spaces.usage": OP_SHAPES["spaces.usage"],
   "spaces.reach": OP_SHAPES["spaces.reach"],

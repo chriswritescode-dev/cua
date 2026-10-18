@@ -22,8 +22,7 @@ struct ListPushTests {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("cua-push-\(UUID().uuidString)")
         return AppModel(backend: backend, keyvault: KeyvaultModel(client: nil),
                         onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
-                        settingsPath: dir.appendingPathComponent("settings.json").path,
-                        telemetry: FixtureTelemetry())
+                        settingsPath: dir.appendingPathComponent("settings.json").path)
     }
 
     func until(_ within: Duration, _ done: @MainActor () -> Bool) async -> Bool {

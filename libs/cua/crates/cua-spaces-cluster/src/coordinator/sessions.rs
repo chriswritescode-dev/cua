@@ -84,8 +84,6 @@ use std::time::Duration;
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
-mod telemetry;
-
 use super::store::{self, NewJob, state as jstate};
 use super::{CoordError, Coordinator, sanitize_name};
 use cua_cluster::model::{JobSpec, now_ms};
@@ -265,10 +263,6 @@ pub(crate) struct Row {
     history: Vec<Hist>,
     created_ms: i64,
     updated_ms: i64,
-    /// What [`Row::note`] recorded since this row was loaded: telemetry
-    /// reads it once the row is saved. Never stored.
-    #[serde(skip)]
-    fresh: Vec<Hist>,
 }
 
 /// What `spec` shows back: no environment values, no bundle.
@@ -392,7 +386,6 @@ impl Row {
             detail: detail.into(),
             cause: cause.into(),
         };
-        self.fresh.push(h.clone());
         self.history.push(h);
         if self.history.len() > HISTORY_MAX {
             let cut = self.history.len() - HISTORY_MAX;
@@ -534,10 +527,6 @@ impl Coordinator {
             .await
             .map_err(CoordError::Store)?;
         let applied = outs.first().is_some_and(|o| o.applied());
-        if applied && !r.fresh.is_empty() {
-            let machines = self.nodes().len() as u32;
-            telemetry::session_changed(&r, machines);
-        }
         Ok(applied.then_some(r))
     }
 

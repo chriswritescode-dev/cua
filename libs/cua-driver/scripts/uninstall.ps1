@@ -26,9 +26,8 @@
 #     the binary directory open during the delete pass)
 #   - <visibleBinDir>     = %LOCALAPPDATA%\Programs\Cua\cua-driver\bin  (directory junction)
 #   - <currentDir>        = %USERPROFILE%\.cua-driver\packages\current  (directory junction)
-#   - <packageHome>\packages and runtime artifacts. The pseudonymous telemetry
-#     id, preference, and registration markers are preserved unless purge is
-#     explicitly requested.
+#   - <packageHome>\packages and runtime artifacts. User configuration is
+#     preserved unless purge is explicitly requested.
 #   - Skill junctions under:
 #       %USERPROFILE%\.claude\skills\cua-driver-rs
 #       %USERPROFILE%\.agents\skills\cua-driver-rs
@@ -386,13 +385,12 @@ if (Test-Path -LiteralPath $CurrentDir) {
 }
 
 # 5. Package home. A normal uninstall removes runtime-owned payloads while
-#    preserving the pseudonymous installation id, persisted preference, and
-#    install/release markers. Purge is the explicit identity reset.
+#    preserving the rest of the user-data home. Purge removes all of it.
 if (Test-Path -LiteralPath $HomeDir) {
     $removalLabel = if ($Purge) {
-        "package home tree $HomeDir (including telemetry identity and preference)"
+        "package home tree $HomeDir (including user configuration)"
     } else {
-        "runtime packages under $HomeDir (preserve telemetry identity and preference)"
+        "runtime packages under $HomeDir (preserve user configuration)"
     }
     if (Confirm-Remove $removalLabel) {
         if ($Purge) {
@@ -401,7 +399,7 @@ if (Test-Path -LiteralPath $HomeDir) {
                 Write-WarningStep "$HomeDir was not fully removed - some files may still be locked."
                 Write-WarningStep "  Close any open cua-driver processes / shells with cwd inside the tree and re-run."
             } else {
-                Write-Step "purged $HomeDir (including telemetry identity and preference)"
+                Write-Step "purged $HomeDir (including user configuration)"
             }
         } else {
             foreach ($runtimePath in @(
@@ -416,7 +414,7 @@ if (Test-Path -LiteralPath $HomeDir) {
                 }
             }
             Write-Step "removed runtime payloads from $HomeDir"
-            Write-Step "preserved telemetry identity, preference, and registration markers"
+            Write-Step "preserved user configuration in $HomeDir"
         }
     } else {
         Write-Step "skipped package-home cleanup (user declined)"
@@ -450,8 +448,7 @@ if ((Test-Path -LiteralPath $LegacyVendorDir) -and -not (Get-ChildItem -LiteralP
     Remove-Item -LiteralPath $LegacyVendorDir -Force -ErrorAction SilentlyContinue
     Write-Step "removed empty legacy vendor dir $LegacyVendorDir"
 }
-# Legacy package home. Preserve telemetry state on a normal uninstall so a
-# future runtime can migrate the same pseudonymous identity to ~/.cua-driver.
+# Legacy package home. Preserve remaining user data on a normal uninstall.
 if (Test-Path -LiteralPath $LegacyHomeDir) {
     if ($Purge) {
         Remove-Item -LiteralPath $LegacyHomeDir -Force -Recurse -ErrorAction SilentlyContinue
@@ -472,7 +469,7 @@ if (Test-Path -LiteralPath $LegacyHomeDir) {
                 Remove-Item -LiteralPath $legacyRuntimePath -Force -Recurse -ErrorAction SilentlyContinue
             }
         }
-        Write-Step "removed legacy runtime payloads and preserved legacy telemetry state"
+        Write-Step "removed legacy runtime payloads"
     }
 }
 
@@ -523,7 +520,7 @@ Write-Host ""
 Write-Host "cua-driver-rs uninstalled." -ForegroundColor Green
 Write-Host ""
 if (-not $Purge) {
-    Write-Host "Telemetry identity, preference, and encrypted Computer History were preserved for a future reinstall." -ForegroundColor Cyan
+    Write-Host "User configuration and encrypted Computer History were preserved for a future reinstall." -ForegroundColor Cyan
     Write-Host "To delete them too, re-run with:"
     Write-Host ""
     Write-Host "  `$env:CUA_DRIVER_RS_UNINSTALL_PURGE = '1'"

@@ -206,7 +206,7 @@ async fn an_unreachable_relay_is_retried_then_fails_with_no_status() {
 }
 
 #[tokio::test]
-async fn a_missing_driver_fails_at_the_download_stage() {
+async fn a_missing_driver_fails_at_the_install_stage() {
     let relay = FakeRelay::start().await;
     relay.add_account("good", "user-1", None);
     let f = fixture();
@@ -221,13 +221,9 @@ async fn a_missing_driver_fails_at_the_download_stage() {
 }
 
 #[test]
-fn http_status_reads_relay_and_download_errors() {
+fn http_status_reads_relay_errors() {
     for (e, want) in [
         (Error::Relay("HTTP 503: busy".into()), Some(503)),
-        (
-            Error::Download("https://x/a.tar.gz: HTTP 404 Not Found".into()),
-            Some(404),
-        ),
         (
             Error::Relay("http://127.0.0.1:9: error sending request".into()),
             None,
@@ -241,7 +237,6 @@ fn http_status_reads_relay_and_download_errors() {
             None,
         ),
         (Error::PermissionDenied("relay: no".into()), Some(403)),
-        (Error::Download("archive: HTTP 9".into()), None),
         (Error::Service("launchctl bootstrap failed".into()), None),
     ] {
         assert_eq!(e.http_status(), want, "{e}");
@@ -250,7 +245,7 @@ fn http_status_reads_relay_and_download_errors() {
 }
 
 #[tokio::test]
-async fn a_pairing_code_sets_up_the_machine_once_and_a_failed_download_does_not_spend_it() {
+async fn a_pairing_code_sets_up_the_machine_once_and_a_failed_install_does_not_spend_it() {
     let relay = FakeRelay::start().await;
     relay.add_account("acct-token", "ada", Some("ada@example.com"));
     let code = RelayClient::new(&relay.url)
@@ -262,11 +257,11 @@ async fn a_pairing_code_sets_up_the_machine_once_and_a_failed_download_does_not_
         .unwrap();
     let token = PairingCodeToken::parse(&code).unwrap();
 
-    // The driver is missing: setup stops at the download, before the relay
+    // The driver is missing: setup stops at the install, before the relay
     // is asked, so the code is still good.
     let f = fixture();
     let mut opts = f.opts(&relay.url);
-    opts.download_first = true;
+    opts.install_driver_first = true;
     opts.driver_bin = Some(f.home.join("missing-spacesd"));
     let (stage, _) = f.host().setup_staged(opts, &token).await.unwrap_err();
     assert_eq!(stage, SetupStage::Download);
@@ -274,7 +269,7 @@ async fn a_pairing_code_sets_up_the_machine_once_and_a_failed_download_does_not_
 
     // With the driver: registered as the account that made the code.
     let mut opts = f.opts(&relay.url);
-    opts.download_first = true;
+    opts.install_driver_first = true;
     let status = f.host().setup(opts, &token).await.unwrap();
     assert!(status.configured);
     let id = f.host().config().unwrap().unwrap().machine_id.unwrap();
@@ -283,7 +278,7 @@ async fn a_pairing_code_sets_up_the_machine_once_and_a_failed_download_does_not_
     // Spent: another machine cannot use it.
     let g = fixture();
     let mut opts = g.opts(&relay.url);
-    opts.download_first = true;
+    opts.install_driver_first = true;
     let (stage, e) = g.host().setup_staged(opts, &token).await.unwrap_err();
     assert_eq!(stage, SetupStage::Register);
     assert_eq!(e.http_status(), Some(401), "{e}");

@@ -37,23 +37,12 @@ pip3 install vncdotool
 
 Other Lume commands do not require this package.
 
-## Telemetry
+## Updating
 
-Lume telemetry is enabled by default and records pseudonymous installation,
-release, command, and API-event metadata. It does not collect prompts,
-VM/image names, file paths, command arguments, or VM contents.
+`lume check-update` (and `lume update`, which performs the same check) reports
+whether a newer release exists. Lume never installs release builds itself; from
+a source checkout, pull and rebuild from the repository root:
 
 ```bash
-lume config telemetry status
-lume config telemetry disable
-lume config telemetry enable
-lume config telemetry reset-id
+git pull && libs/lume/scripts/build/build-release.sh
 ```
-
-`LUME_TELEMETRY_ENABLED` overrides the persisted preference for the current
-process. A normal uninstall preserves the preference and pseudonymous installation
-ID so a reinstall is recognized as returning. `uninstall.sh --purge` deletes
-the ID, markers, configuration, cache, and VMs.
-
-See [Telemetry and privacy](../../docs/content/docs/reference/lume/telemetry.mdx)
-for the exact schema-v3 events, integrity controls, and excluded data.

@@ -46,7 +46,6 @@ def test_sdk_handles_alive_at_exit_print_nothing(tmp_path):
         "HOME": str(home),
         "CUA_HOME": str(home / ".cua"),
         "CUA_CREDENTIAL_STORE": "file",
-        "CUA_TELEMETRY_ENABLED": "false",
     }
     result = subprocess.run(
         [sys.executable, "-c", SCRIPT, str(tmp_path / "state")],

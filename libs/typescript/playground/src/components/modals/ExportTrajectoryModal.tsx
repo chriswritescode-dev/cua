@@ -2,7 +2,6 @@ import { Download, ImageIcon, Loader2, MousePointerClick } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/button';
-import { usePlaygroundTelemetry } from '../../telemetry';
 
 interface RunSummary {
   index: number;
@@ -31,7 +30,6 @@ export default function ExportTrajectoryModal({
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { trackTrajectoryExported } = usePlaygroundTelemetry();
 
   // Fetch run information when modal opens
   useEffect(() => {
@@ -116,7 +114,6 @@ export default function ExportTrajectoryModal({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      trackTrajectoryExported({ runCount: selectedIndices.size });
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Export failed');

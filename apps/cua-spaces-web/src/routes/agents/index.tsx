@@ -4,7 +4,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { chatKey, useAgentChats, useFeatureRecorded, type AgentChat, useKeysRecheck, useSession } from "@/bridge";
+import { chatKey, useAgentChats, useKeysRecheck, useSession, type AgentChat } from "@/bridge";
 import { AgentDmView, AgentList, AgentPage, AgentsUnset } from "@/components/agents/agent-chat";
 import { useAgentAttempts, useAttemptAction, useAttemptRemoval } from "@/hooks/use-agent-attempts";
 
@@ -41,7 +41,6 @@ function useNow(ms = 30_000): number {
  * routines and runs are one click away ("Show all").
  */
 function AgentsChatPage() {
-  useFeatureRecorded("agents_page_open");
   // Opening the Agents page asks the providers whether the saved sign-ins and keys still work.
   useKeysRecheck();
   const search = Route.useSearch();

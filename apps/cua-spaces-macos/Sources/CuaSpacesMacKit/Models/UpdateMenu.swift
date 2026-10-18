@@ -10,9 +10,8 @@ public struct UpdateMenuItem: Equatable, Sendable {
     public enum Action: Equatable, Sendable {
         /// Check for updates now.
         case check
-        /// Install the found update: restart into it, or as soon as it is downloaded.
-        case install
-        /// Nothing to do (a check or a download is running).
+        /// Nothing to do: a check is running, or a found release waits for a
+        /// pull and rebuild.
         case none
     }
 
@@ -43,16 +42,8 @@ public struct UpdateMenuItem: Equatable, Sendable {
         case .checking:
             return UpdateMenuItem(title: Self.text("menu.update.checking", "Checking for Updates\u{2026}"), action: .none, badge: false)
         case .available:
-            return UpdateMenuItem(title: found, detail: Self.text("menu.update.click_to_install", "Click to install"),
-                                  action: .install, badge: true)
-        case .downloading:
-            return UpdateMenuItem(
-                title: found,
-                detail: Self.text("menu.update.downloading", "Downloading {percent}%", vars: ["percent": String(state.percent ?? 0)]),
-                action: .none, badge: true)
-        case .downloaded:
-            return UpdateMenuItem(title: found, detail: Self.text("menu.update.restart", "Restart to update"),
-                                  action: .install, badge: true)
+            return UpdateMenuItem(title: found, detail: Self.text("menu.update.rebuild", "Pull and rebuild to update"),
+                                  action: .none, badge: true)
         case .error:
             // A failed check is a plain line; the item still checks again.
             return UpdateMenuItem(title: check, detail: Self.text("menu.update.failed", "Could not check for updates"),

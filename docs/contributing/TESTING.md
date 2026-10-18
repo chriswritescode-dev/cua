@@ -30,7 +30,7 @@ For a member of the root uv workspace (`libs/python/{agent,core,som,bench-ui}`):
 
 ```bash
 uv sync --group test
-CUA_TELEMETRY_ENABLED=false uv run pytest libs/python/<package>/tests -v
+uv run pytest libs/python/<package>/tests -v
 ```
 
 Packages outside the root uv workspace (`cua-sandbox`, `libs/cua-bench`,
@@ -45,7 +45,7 @@ scripts/build-test-fixtures.sh
 node scripts/stage-uniffi-library.mjs --only=python
 cd ../python/cua-sandbox
 uv sync --frozen --python 3.12
-CUA_TELEMETRY_ENABLED=false uv run --frozen pytest tests --timeout=120 \
+uv run --frozen pytest tests --timeout=120 \
   --ignore=tests/live --ignore=tests/test_runtime.py --ignore=tests/test_snapshots.py \
   --ignore=tests/test_windows_timing.py \
   --deselect tests/test_oci.py::TestLiveRegistry

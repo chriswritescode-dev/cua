@@ -1,21 +1,21 @@
 /**
- * The "Install Cua" affordance for a teleport the Keyvault refused.
+ * The "Build Cua" affordance for a teleport the Keyvault refused.
  *
  * Moving a signed-in session goes through the Cua Keyvault, which only the
  * installed, signed Cua app hosts. An app that embeds the SDK is refused by
  * design with the `requires_cua_app` code; this turns that refusal into a
- * prompt a UI can show (title, one line, an install button) instead of the
- * raw error. The refusal itself is unchanged: nothing here retries or
- * bypasses it.
+ * prompt a UI can show (title, one line, a build button) instead of the raw
+ * error. The refusal itself is unchanged: nothing here retries or bypasses
+ * it.
  */
 
-/** Where people install Cua (the CLI and the Cua app). */
-export const CUA_INSTALL_URL = "https://cua.ai/install"
+/** The repository Cua is built from (the CLI and the Cua app). */
+export const CUA_REPOSITORY_URL = "https://github.com/trycua/cua"
 /** Opens the Keyvault page of an installed Cua app. */
 export const CUA_OPEN_URL = "cua://keyvault"
 
 export interface InstallCuaPrompt {
-  /** Cua is installed but not running (open it instead of installing). */
+  /** Cua is installed but not running (open it instead of building it). */
   installed: boolean
   title: string
   message: string
@@ -67,9 +67,12 @@ export function requiresCuaApp(error: unknown): InstallCuaPrompt | null {
       }
     : {
         installed: false,
-        title: "Install Cua to teleport your session",
-        message: "The Cua app keeps your logins in its Keyvault and asks you before sharing them.",
-        actionLabel: "Install Cua",
-        url: CUA_INSTALL_URL,
+        title: "Build Cua to teleport your session",
+        message:
+          "The Cua app keeps your logins in its Keyvault and asks you before sharing them. Build it from the repository: " +
+          "git pull && apps/cua-spaces-macos/scripts/build-release.sh (macOS), or " +
+          "pnpm --dir apps/cua-spaces-desktop dist:mac (macOS), dist:win (Windows), dist:linux (Linux).",
+        actionLabel: "Open the repository",
+        url: CUA_REPOSITORY_URL,
       }
 }

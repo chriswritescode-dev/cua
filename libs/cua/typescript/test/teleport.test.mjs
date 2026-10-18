@@ -9,7 +9,7 @@ import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 
 import {
-  CUA_INSTALL_URL,
+  CUA_REPOSITORY_URL,
   TeleportPickerController,
   canConfirm,
   requiresCuaApp,
@@ -238,20 +238,21 @@ test("the controller drives a host end to end", async () => {
   assert.equal(bad.state.error, "no apps")
 })
 
-test("a Keyvault requires_cua_app refusal becomes the Install Cua prompt", async () => {
+test("a Keyvault requires_cua_app refusal becomes the Build Cua prompt", async () => {
   // Every shape the refusal reaches a client in: the SDK error text, the
   // teleport_app tool result, and the Keyvault's own RequiresCuaApp record.
   const shapes = [
     new Error("teleport refused: requires_cua_app: teleport goes through the Cua Keyvault, which needs the Cua app"),
     { moved: false, error: { code: "requires_cua_app", message: "no Keyvault" } },
-    { installed: false, install_url: "https://cua.ai/download", open_url: "cua://keyvault", message: "Teleport requires the Cua app" },
+    { installed: false, install_url: "https://github.com/trycua/cua", open_url: "cua://keyvault", message: "Teleport requires the Cua app" },
   ]
   for (const shape of shapes) {
     const p = requiresCuaApp(shape)
     assert.ok(p, JSON.stringify(shape))
-    assert.equal(p.title, "Install Cua to teleport your session")
+    assert.equal(p.title, "Build Cua to teleport your session")
     assert.match(p.message, /keeps your logins in its Keyvault and asks you before sharing them/)
-    assert.equal(p.url, CUA_INSTALL_URL)
+    assert.match(p.message, /build-release\.sh/)
+    assert.equal(p.url, CUA_REPOSITORY_URL)
   }
   // Installed but not running: open it instead.
   const open = requiresCuaApp("requires_cua_app: Cua is installed but not running")
@@ -260,7 +261,7 @@ test("a Keyvault requires_cua_app refusal becomes the Install Cua prompt", async
   // Other failures stay raw; the link never comes from the error.
   assert.equal(requiresCuaApp(new Error("denied")), null)
   assert.equal(requiresCuaApp({ error: { code: "disabled" } }), null)
-  assert.equal(requiresCuaApp({ code: "requires_cua_app", install_url: "https://evil.example" }).url, CUA_INSTALL_URL)
+  assert.equal(requiresCuaApp({ code: "requires_cua_app", install_url: "https://evil.example" }).url, CUA_REPOSITORY_URL)
 
   // The controller shows the prompt instead of the raw error, and back clears it.
   const host = {
@@ -276,10 +277,10 @@ test("a Keyvault requires_cua_app refusal becomes the Install Cua prompt", async
   await c.plan()
   await c.confirm()
   assert.equal(c.state.step, "error")
-  assert.equal(c.state.installPrompt?.title, "Install Cua to teleport your session")
+  assert.equal(c.state.installPrompt?.title, "Build Cua to teleport your session")
   const html = renderPicker(c, new Map())
-  assert.match(html, /Install Cua to teleport your session/)
-  assert.match(html, /href="https:\/\/cua\.ai\/install"/)
+  assert.match(html, /Build Cua to teleport your session/)
+  assert.match(html, /href="https:\/\/github\.com\/trycua\/cua"/)
   assert.doesNotMatch(html, /requires_cua_app/)
   c.dispatch({ type: "back" })
   assert.equal(c.state.step, "consent")

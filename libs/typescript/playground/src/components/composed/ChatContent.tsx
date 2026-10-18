@@ -59,7 +59,6 @@ interface ChatContentProps {
 
   // Example prompts customization
   examplePrompts?: ExamplePrompt[];
-  onExamplePromptSelected?: (promptId: string, promptTitle: string) => void;
 
   // Toast callback for user notifications
   onToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -87,7 +86,6 @@ export function ChatContent({
   lightLogoUrl = '/cua_logo_black_new.svg',
   darkLogoUrl = '/cua_logo_white_new.svg',
   examplePrompts,
-  onExamplePromptSelected,
   onToast,
   className,
 }: ChatContentProps) {
@@ -240,11 +238,7 @@ export function ChatContent({
           </motion.div>
 
           {/* Example prompts */}
-          <ExamplePrompts
-            onSelectPrompt={handleSelectPrompt}
-            onExamplePromptSelected={onExamplePromptSelected}
-            prompts={examplePrompts}
-          />
+          <ExamplePrompts onSelectPrompt={handleSelectPrompt} prompts={examplePrompts} />
         </div>
       </motion.div>
     );

@@ -3,7 +3,7 @@
 
 import { useNavigate, useRouter } from "@tanstack/react-router";
 
-import { firstMessage, newPendingId, useAgents, useBridge, useFeatureRecorder, useFirstSpaceOffers, useMachines, useSpaces, type HostStatus } from "@/bridge";
+import { firstMessage, newPendingId, useAgents, useBridge, useFirstSpaceOffers, useMachines, useSpaces, type HostStatus } from "@/bridge";
 import type { SpaceCreateConfig } from "@/bridge/contracts/host";
 import { useChildren } from "@/components/children/use-children";
 import { useSummonIn } from "@/components/ask-first/use-summon-in";
@@ -89,7 +89,6 @@ export function useStartTask(): {
   const { data: host } = useBridge();
   const { startRun } = useAgents();
   const { offers } = useFirstSpaceOffers();
-  const record = useFeatureRecorder();
   const { core } = useBridge();
   // The job goes straight to its Space: the page is the Space's, and
   // the job is its first message, @mentioning the agent (the same summon as the composer's).
@@ -307,7 +306,6 @@ export function useStartTask(): {
           ...(model ? { model } : {}),
           ...(repo ? { repo } : {}),
         });
-        record("ask_first_task_started");
         preparing.send({ id: task.id, text: withRepo(prompt, repo), agent, model: model ?? null, repo: repo?.url ?? null });
         void navigate({ to: "/spaces/$spaceId", params: { spaceId: spaceId ?? prep.pendingId! } });
         return;
@@ -325,7 +323,6 @@ export function useStartTask(): {
         ...(options.computer ? { computer: options.computer } : {}),
         ...(options.movedFrom ? { movedFrom: options.movedFrom } : {}),
       });
-      record("ask_first_task_started");
       if (options.move) movers.set(task.id, { move: options.move, tried: options.movedFrom ? [options.movedFrom.id] : [] });
       // Home's grid: the job starts where it is and shows on its computer's card; its page is one click away.
       if (options.open === false) {
@@ -374,7 +371,6 @@ export function useStartTask(): {
       const os = where ? whereOs(where) : task.os;
       const spaceId = target.kind === "space" ? target.spaceId : target.kind === "create" && !where ? task.spaceId : null;
       updateAskTask(task.id, { error: null, runId: null, pendingId: null, os, spaceId, onHost: target.kind === "host" });
-      record("ask_first_task_retried");
       run(task.id, target);
     },
   };

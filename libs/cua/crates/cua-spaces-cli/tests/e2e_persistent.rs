@@ -94,7 +94,6 @@ fn start_daemon(root: &Path, key: &str, log: &Path) -> Daemon {
         .env("HOME", root.join("home"))
         .env("CUA_HOME", &cua_home)
         .env("CUA_CREDENTIAL_STORE", "file")
-        .env("CUA_TELEMETRY_ENABLED", "false")
         .env("CUA_ENV_TEST_SANDBOX", "1")
         .env("DOCKER_HOST", docker_host())
         .env("ANTHROPIC_API_KEY", key)

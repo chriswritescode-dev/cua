@@ -53,7 +53,7 @@ const BUY_URL = /\s*https:\/\/app\.cua\.ai\/buy\/(?:teams|pro)\b\S*/;
  * (`HTTP 402 (feature_required: team_machines)`) is reworded here, without a
  * button because the role is not known.
  */
-/** Which cap a team step hit, for usage data (`cua_plan_limit_shown`'s `kind`). */
+/** Which cap a team step hit. */
 export type PlanFailureKind = "machines" | "seats" | "other";
 
 /** The cap in a plan error's text: team computers, seats, or another. */

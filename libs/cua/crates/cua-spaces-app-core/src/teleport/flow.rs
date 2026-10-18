@@ -345,8 +345,8 @@ pub struct InstallCuaPrompt {
     pub url: String,
 }
 
-/// Where people install Cua.
-pub const CUA_INSTALL_URL: &str = "https://cua.ai/install";
+/// The repository Cua is built from.
+pub const CUA_REPOSITORY_URL: &str = "https://github.com/trycua/cua";
 // The "Open Cua" button opens the Keyvault page of this process's channel's
 // app, `cua://keyvault` or `cua-local://keyvault` (`CuaChannel::keyvault_url`).
 
@@ -387,12 +387,15 @@ fn requires_cua_app_for(
     } else {
         InstallCuaPrompt {
             installed: false,
-            title: "Install Cua to teleport your session".into(),
-            message:
-                "The Cua app keeps your logins in its Keyvault and asks you before sharing them."
-                    .into(),
-            action_label: "Install Cua".into(),
-            url: CUA_INSTALL_URL.into(),
+            title: "Build Cua to teleport your session".into(),
+            message: "The Cua app keeps your logins in its Keyvault and asks you before sharing \
+                      them. Build it from the repository: git pull && \
+                      apps/cua-spaces-macos/scripts/build-release.sh (macOS), or \
+                      pnpm --dir apps/cua-spaces-desktop dist:mac (macOS), dist:win (Windows), \
+                      dist:linux (Linux)."
+                .into(),
+            action_label: "Open the repository".into(),
+            url: CUA_REPOSITORY_URL.into(),
         }
     })
 }
@@ -1797,12 +1800,13 @@ mod tests {
         assert_eq!(url(CuaChannel::Stable), "cua://keyvault");
         // Local opens Cua Spaces Local, never the released app.
         assert_eq!(url(CuaChannel::Local), "cua-local://keyvault");
-        // Not installed: the install link, whichever channel.
+        // Not installed: the repository link, whichever channel.
         let texts = ["requires_cua_app".to_string()];
         for c in CuaChannel::ALL {
             let p = requires_cua_app_for(c, &texts, false).unwrap();
             assert!(!p.installed);
-            assert_eq!(p.url, CUA_INSTALL_URL);
+            assert_eq!(p.url, CUA_REPOSITORY_URL);
+            assert!(p.message.contains("build-release.sh"));
         }
     }
 

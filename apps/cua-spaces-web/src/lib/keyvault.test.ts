@@ -4,8 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { VaultApp, VaultRow, VaultView } from "@/bridge/contracts/keyvault";
-import type { SettingsRow } from "@/bridge";
-import { keyvaultRows, vaultLines } from "./keyvault";
+import { vaultLines } from "./keyvault";
 
 const row = (id: string): VaultRow => ({
   id,
@@ -49,24 +48,5 @@ describe("vaultLines", () => {
       "site:slack/github.com",
     ]);
     expect(vaultLines({ apps: [] } as unknown as VaultView)).toEqual([]);
-  });
-});
-
-describe("keyvaultRows", () => {
-  const ids = ["keyvault-auto-wipe", "keyvault-auto-wipe-note", "keyvault-unlock-prompt", "keyvault-site-icons", "keyvault-site-icons-note", "keyvault-protection:Unlock"];
-  const rows = ids.map((id) => ({ id }) as SettingsRow);
-
-  it("keeps every row when the host reports the site icons setting", () => {
-    expect(keyvaultRows(rows, { keyvaultSiteIcons: false }).map((r) => r.id)).toEqual(ids);
-  });
-
-  it("drops the site icons switch the core laid out from its default", () => {
-    expect(keyvaultRows(rows, { keyvaultAutoWipe: true }).map((r) => r.id)).toEqual([
-      "keyvault-auto-wipe",
-      "keyvault-auto-wipe-note",
-      "keyvault-unlock-prompt",
-      "keyvault-protection:Unlock",
-    ]);
-    expect(keyvaultRows(rows, undefined)).toHaveLength(4);
   });
 });

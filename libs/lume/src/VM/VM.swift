@@ -45,7 +45,6 @@ class VM {
     // MARK: - Properties
 
     var vmDirContext: VMDirContext
-    var telemetryTransport: TelemetryTransport?
 
     @MainActor
     private var virtualizationService: VMVirtualizationService?
@@ -450,12 +449,6 @@ class VM {
             Logger.info("VM started successfully", metadata: ["name": vmDirContext.name])
             if activeSocketDevice {
                 startVsockForwards(forwards, service: service)
-            }
-            if let telemetryTransport {
-                TelemetryClient.shared.recordVMStarted(
-                    transport: telemetryTransport,
-                    guestOS: vmDirContext.config.os
-                )
             }
 
             // macOS does not include a SPICE guest agent, so its native viewer uses

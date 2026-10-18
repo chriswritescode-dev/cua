@@ -130,7 +130,6 @@ impl Process {
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
-            .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
             .env(
                 "CUA_DRIVER_RS_SESSION_IDLE_TTL_SECS",
                 session_ttl_seconds.to_string(),

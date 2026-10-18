@@ -42,7 +42,6 @@ async def run_single_task(
     screenshot_delay: float | int = 0.5,
     use_prompt_caching: bool | None = False,
     max_trajectory_budget: float | dict | None = None,
-    telemetry_enabled: bool | None = True,
 ) -> None:
     """Load one task from the dataset and execute it with MCPComputerAgent."""
 
@@ -80,7 +79,6 @@ async def run_single_task(
             screenshot_delay=screenshot_delay,
             use_prompt_caching=use_prompt_caching,
             max_trajectory_budget=max_trajectory_budget,
-            telemetry_enabled=telemetry_enabled,
         )
         print(f"Running: {task_prompt}")
         result = await agent.run(task, max_steps=10)
@@ -113,7 +111,6 @@ async def run_full_dataset(
     screenshot_delay: float | int = 0.5,
     use_prompt_caching: bool | None = False,
     max_trajectory_budget: float | dict | None = None,
-    telemetry_enabled: bool | None = True,
 ) -> list[Any]:
     """Run evaluation across the entire dataset using hud.datasets.run_dataset."""
 
@@ -151,7 +148,6 @@ async def run_full_dataset(
             "screenshot_delay": screenshot_delay,
             "use_prompt_caching": use_prompt_caching,
             "max_trajectory_budget": max_trajectory_budget,
-            "telemetry_enabled": telemetry_enabled,
         },
         max_concurrent=max_concurrent,
         metadata={"dataset": dataset_name},

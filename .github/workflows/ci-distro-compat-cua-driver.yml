@@ -155,12 +155,6 @@ jobs:
     continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      # The released binary's smoke commands must never create client telemetry
-      # or installation markers from a CI runner. Set both names during the
-      # compatibility window; Rust reads the RS-prefixed variable.
-      CUA_DRIVER_RS_TELEMETRY_ENABLED: "false"
-      CUA_TELEMETRY_ENABLED: "false"
     container:
       image: ${{ matrix.image }}
     strategy:

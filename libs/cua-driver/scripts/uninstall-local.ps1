@@ -246,9 +246,6 @@ if (Test-Path -LiteralPath $LocalHomeMarker) {
         if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force -Recurse }
     }
     foreach ($file in @(
-        ".installation_recorded", ".telemetry_enabled", ".telemetry_id",
-        ".telemetry_identity.lock", ".telemetry_install_channel",
-        ".telemetry_lifecycle.lock", ".telemetry_retry_after",
         ".tcc-signing-identity", "config.json",
         "serve.err.log", "serve.out.log", "version_check.json"
     )) {

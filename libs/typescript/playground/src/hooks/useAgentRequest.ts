@@ -3,9 +3,8 @@
 
 import { useRef, useCallback } from 'react';
 import { usePlayground, useChat, useChatDispatch } from './usePlayground';
-import { classifyTrajectoryError, usePlaygroundTelemetry } from '../telemetry';
 import type { AgentMessage, UserMessage } from '../types';
-import { isVM, isCustomComputer } from '../types';
+import { isCustomComputer } from '../types';
 
 const CUA_VERSION_HEADERS: Record<string, string> = {
   'X-Cua-Client-Version': `playground:${__CUA_VERSION__}`,
@@ -116,12 +115,6 @@ export function useAgentRequest() {
   const { adapters, state, dispatch: playgroundDispatch } = usePlayground();
   const chatState = useChat();
   const chatDispatch = useChatDispatch();
-  const {
-    trackMessageSent,
-    trackTrajectoryCompleted,
-    trackTrajectoryFailed,
-    trackTrajectoryStopped,
-  } = usePlaygroundTelemetry();
 
   const shouldStopResponseRef = useRef(false);
   const abortReasonRef = useRef<'manual' | 'timeout' | null>(null);
@@ -129,8 +122,6 @@ export function useAgentRequest() {
     chatId: string;
     messages: (UserMessage | AgentMessage)[];
     abortController?: AbortController;
-    startTime?: number;
-    iterationCount?: number;
   } | null>(null);
 
   // Keep a ref to the latest chat state to avoid stale closure issues
@@ -293,15 +284,8 @@ export function useAgentRequest() {
           return;
         }
 
-        // Increment iteration count
-        if (currentRequestRef.current) {
-          currentRequestRef.current.iterationCount =
-            (currentRequestRef.current.iterationCount || 0) + 1;
-        }
-
         // Check if response failed
         if (res?.status === 'failed' && res?.error) {
-          trackTrajectoryFailed({ model, errorType: 'agent_error' });
           const chatId = currentRequestRef.current?.chatId;
           if (chatId) setGlobalGenerating(chatId, false);
           chatDispatch({ type: 'SET_WAITING', payload: false });
@@ -339,16 +323,6 @@ export function useAgentRequest() {
           } else {
             // Completed
             const chatId = currentRequestRef.current?.chatId;
-            const iterationCount = currentRequestRef.current?.iterationCount || 0;
-            const startTime = currentRequestRef.current?.startTime || Date.now();
-            const durationMs = Date.now() - startTime;
-
-            // Track trajectory completion
-            trackTrajectoryCompleted({
-              model,
-              iterationCount,
-              durationMs,
-            });
 
             if (chatId) setGlobalGenerating(chatId, false);
             chatDispatch({ type: 'SET_WAITING', payload: false });
@@ -374,7 +348,6 @@ export function useAgentRequest() {
           (error.message.includes('aborted') || error.name === 'AbortError');
 
         if (wasAborted && abortReasonRef.current === 'manual') {
-          trackTrajectoryStopped({ model });
           abortReasonRef.current = null;
           currentRequestRef.current = null;
           return;
@@ -394,8 +367,6 @@ export function useAgentRequest() {
           }
         }
 
-        // Telemetry gets a fixed classification only, never the message.
-        trackTrajectoryFailed({ model, errorType: classifyTrajectoryError(error, timedOut) });
         abortReasonRef.current = null;
         currentRequestRef.current = null;
         chatDispatch({
@@ -414,9 +385,6 @@ export function useAgentRequest() {
       setGlobalGenerating,
       setMessages,
       persistMessages,
-      trackTrajectoryCompleted,
-      trackTrajectoryFailed,
-      trackTrajectoryStopped,
     ]
   );
 
@@ -482,20 +450,10 @@ export function useAgentRequest() {
       chatId,
       messages: updatedMessages,
       abortController,
-      startTime: Date.now(),
-      iterationCount: 0,
     };
 
     setGlobalGenerating(chatId, true);
     chatDispatch({ type: 'SET_WAITING', payload: true });
-
-    // Track message sent for telemetry
-    const isFirstMessage = (messages?.length || 0) === 0;
-    trackMessageSent({
-      model,
-      isFirstMessage,
-      sandboxType: isVM(computer) ? 'vm' : 'custom',
-    });
 
     await sendAgentRequest(updatedMessages, abortController);
   }, [
@@ -505,7 +463,6 @@ export function useAgentRequest() {
     persistMessages,
     persistTitle,
     sendAgentRequest,
-    trackMessageSent,
   ]);
 
   const handleStopResponse = useCallback(() => {

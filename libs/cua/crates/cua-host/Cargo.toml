@@ -25,6 +25,7 @@ base64.workspace = true
 # The device key lives in the session's credential vault.
 cua-auth.workspace = true
 cua-home.workspace = true
+# `uv` for job members (uv.rs): the pinned release archive.
 flate2 = "1"
 hex.workspace = true
 httpdate = "1"
@@ -36,6 +37,7 @@ ring = "0.17"
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
+# `uv` for job members (uv.rs): the pinned release archive.
 tar = "0.4"
 thiserror.workspace = true
 tokio = { workspace = true }

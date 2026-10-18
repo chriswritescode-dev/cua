@@ -50,6 +50,11 @@ Homepage = "https://github.com/trycua/cua"
 Repository = "https://github.com/trycua/cua"
 Issues = "https://github.com/trycua/cua/issues"
 
+[tool.uv.sources]
+cua-core = { path = "../../python/core" }
+cua-agent = { path = "../../python/agent" }
+cua-sandbox = { path = "../../python/cua-sandbox" }
+
 [project.scripts]
 # Runs the Rust `cua` CLI at cua_cli/bin/cua[.exe], which the `cua-cli`
 # wheel installs; without it (`--no-deps`), prints how to install it.

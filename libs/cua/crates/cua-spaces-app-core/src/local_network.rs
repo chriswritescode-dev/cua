@@ -18,7 +18,7 @@
 //!   Cancel, then make macOS ask (the same connect), wait for the answer,
 //!   and call [`step`] again with `asked` set.
 //! - **Fail**: stop at once with the message (the create's error, its
-//!   `error_variant` for telemetry) and, for missing access, a button that
+//!   `error_variant`) and, for missing access, a button that
 //!   opens the Local Network settings.
 //!
 //! The decision and the words are `cua_create_failure`'s (the daemon says
@@ -111,7 +111,7 @@ pub struct LocalNetworkStep {
     /// What the main button opens (Fail for missing access).
     pub settings_url: Option<String>,
     /// For Fail: the create's error variant (`local_network_denied`,
-    /// `local_network_vpn`; telemetry's `error_subclass`).
+    /// `local_network_vpn`; [`crate::retry::SUBCLASSES`]).
     pub error_variant: String,
 }
 

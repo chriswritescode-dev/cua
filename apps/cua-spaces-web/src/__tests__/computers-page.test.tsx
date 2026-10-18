@@ -23,6 +23,8 @@ afterEach(cleanup);
 afterEach(resetNewSpaceSession);
 stubBrowserApis();
 
+const NOTES = "https://github.com/trycua/cua/releases/tag/cua-spaces-v0.12.2";
+
 const LINE = "Studio stopped sharing: ask its owner to Resume sharing (or run `cua host start` there)";
 
 /** The demo host with one more machine whose owner stopped sharing it. */
@@ -352,17 +354,17 @@ describe.skipIf(!wasmBuilt)("your computers and each one's page (real routes, wa
     expect(note.querySelector("[data-machine-issue-action]")).toBeNull();
   });
 
-  it("with the Cua Spaces update downloaded, the newer-Cua row offers Restart to update", async () => {
+  it("with a newer Cua Spaces release, the newer-Cua row opens its notes and installs nothing", async () => {
     const view = await issuesView("the Mac Studio runs a newer Cua and this app has the update");
     const calls: [string, unknown][] = [];
     const h = hostDrawn(view, calls);
     const base = h.intercept;
     h.intercept = (op, args) => {
-      if (op === "update.install") {
+      if (op === "update.get") return { status: "available", currentVersion: "0.4.1", version: "0.12.2", notesUrl: NOTES, instructions: NOTES, message: null };
+      if (op === "session.openExternal") {
         calls.push([op, args]);
         return null;
       }
-      // No agent is working: a restart cuts nothing short.
       if (op === "agents.runs") return [];
       return base?.(op, args);
     };
@@ -374,8 +376,9 @@ describe.skipIf(!wasmBuilt)("your computers and each one's page (real routes, wa
     const row = detail.querySelector<HTMLElement>('[data-machine-issue="version"]')!;
     expect(row.dataset.level).toBe("warn");
     expect(row.textContent).toContain("Cua Spaces 0.12.2 is ready to install");
-    fireEvent.click(within(row).getByRole("button", { name: "Restart to update" }));
-    await waitFor(() => expect(calls.some(([op]) => op === "update.install")).toBe(true));
+    fireEvent.click(row.querySelector("[data-machine-issue-action]") as HTMLElement);
+    await waitFor(() => expect(calls.some(([op, a]) => op === "session.openExternal" && (a as { url: string }).url === NOTES)).toBe(true));
+    expect(calls.some(([op]) => op === "update.install")).toBe(false);
   });
 
   it("lists a shared desktop first among a machine's Spaces, drawn as any Space row", async () => {

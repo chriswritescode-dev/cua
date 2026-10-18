@@ -169,7 +169,7 @@ run_local_cli() {
         for var in $(compgen -e); do
             case "$var" in CUA_*) unset "$var" ;; esac
         done
-        export CUA_CHANNEL=local CUA_ENV="$env" CUA_TELEMETRY=0
+        export CUA_CHANNEL=local CUA_ENV="$env"
         exec /usr/bin/perl -e '
             my $secs = shift @ARGV;
             setpgrp(0, 0);

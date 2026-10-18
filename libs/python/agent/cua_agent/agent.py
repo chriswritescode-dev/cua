@@ -23,8 +23,6 @@ from typing import (
 
 import litellm
 import litellm.utils
-from cua_core.telemetry import is_telemetry_enabled, record_event
-from cua_core.telemetry._config import sanitize_model_name
 from litellm.responses.utils import Usage
 
 from .adapters import (
@@ -39,9 +37,7 @@ from .callbacks import (
     ImageRetentionCallback,
     LoggingCallback,
     OperatorNormalizerCallback,
-    OtelCallback,
     PromptInstructionsCallback,
-    TelemetryCallback,
     TrajectorySaverCallback,
 )
 from .computers import AsyncComputerHandler, is_agent_computer, make_computer_handler
@@ -267,7 +263,6 @@ class ComputerAgent:
         screenshot_delay: Optional[float | int] = 0.5,
         use_prompt_caching: Optional[bool] = False,
         max_trajectory_budget: Optional[float | dict] = None,
-        telemetry_enabled: Optional[bool] = True,
         trust_remote_code: Optional[bool] = False,
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
@@ -289,7 +284,6 @@ class ComputerAgent:
             screenshot_delay: Delay before screenshots in seconds
             use_prompt_caching: If set, use prompt caching to avoid reprocessing the same prompt. Intended for use with anthropic providers.
             max_trajectory_budget: If set, adds BudgetManagerCallback to track usage costs and stop when budget is exceeded
-            telemetry_enabled: If set, adds TelemetryCallback to track anonymized usage data. Enabled by default.
             trust_remote_code: If set, trust remote code when loading local models. Disabled by default.
             api_key: Optional API key override for the model provider
             api_base: Optional API base URL override for the model provider
@@ -310,7 +304,6 @@ class ComputerAgent:
         self.max_retries = max_retries
         self.screenshot_delay = screenshot_delay
         self.use_prompt_caching = use_prompt_caching
-        self.telemetry_enabled = telemetry_enabled
         self.kwargs = additional_generation_kwargs
         self.trust_remote_code = trust_remote_code
         self.api_key = api_key
@@ -383,65 +376,8 @@ class ComputerAgent:
         # Note: Tool resolution is deferred to _initialize_computers() because
         # Computer.interface may not be available until the computer is started
 
-        # Add telemetry callbacks AFTER agent_loop is set so they can capture the correct agent_type
-        if self.telemetry_enabled:
-            # PostHog telemetry (product analytics)
-            if isinstance(self.telemetry_enabled, bool):
-                self.callbacks.append(TelemetryCallback(self))
-            else:
-                self.callbacks.append(TelemetryCallback(self, **self.telemetry_enabled))
-
-            # OpenTelemetry callback (operational metrics - Four Golden Signals)
-            # Users can disable via CUA_TELEMETRY_ENABLED=false env var
-            self.callbacks.append(OtelCallback(self))
-
         self.tool_schemas = []
         self.computer_handler = None
-
-        # Track agent initialization with args provided
-        if self.telemetry_enabled and is_telemetry_enabled():
-            # Collect which args were explicitly provided (non-default values)
-            args_provided = []
-            if tools:
-                args_provided.append("tools")
-            if custom_loop:
-                args_provided.append("custom_loop")
-            if only_n_most_recent_images:
-                args_provided.append("only_n_most_recent_images")
-            if callbacks:
-                args_provided.append("callbacks")
-            if instructions:
-                args_provided.append("instructions")
-            if verbosity is not None:
-                args_provided.append("verbosity")
-            if trajectory_dir:
-                args_provided.append("trajectory_dir")
-            if max_retries != 3:  # non-default
-                args_provided.append("max_retries")
-            if screenshot_delay != 0.5:  # non-default
-                args_provided.append("screenshot_delay")
-            if use_prompt_caching:
-                args_provided.append("use_prompt_caching")
-            if max_trajectory_budget:
-                args_provided.append("max_trajectory_budget")
-            if not telemetry_enabled:  # explicitly disabled
-                args_provided.append("telemetry_enabled")
-            if trust_remote_code:
-                args_provided.append("trust_remote_code")
-            if api_key:
-                args_provided.append("api_key")
-            if api_base:
-                args_provided.append("api_base")
-            if additional_generation_kwargs:
-                # Only the fact that extra kwargs were passed, never their names.
-                args_provided.append("additional_generation_kwargs")
-
-            event_data = {
-                "model": sanitize_model_name(model) if isinstance(model, str) else "custom",
-                "args_provided": args_provided,
-            }
-
-            record_event("agent_init", event_data)
 
     async def _resolve_tools(self, tools: List[Any], required_type: Optional[str]) -> List[Any]:
         """
@@ -763,22 +699,6 @@ class ComputerAgent:
                 else:
                     raise ToolError(f"Unknown computer action: {action_type}")
 
-                # Track computer action execution
-                if self.telemetry_enabled and is_telemetry_enabled():
-                    record_event(
-                        "computer_action_executed",
-                        {
-                            "action_type": action_type,
-                        },
-                    )
-                    record_event(
-                        "agent_tool_executed",
-                        {
-                            "tool_type": "computer",
-                            "tool_name": action_type,
-                        },
-                    )
-
                 # Check if this was a terminate action
                 is_terminate = action_type == "terminate" or (
                     isinstance(action_result, dict) and action_result.get("terminated")
@@ -856,11 +776,6 @@ class ComputerAgent:
                         result = await function(**args)
                     else:
                         result = await asyncio.to_thread(function, **args)
-
-                # Track function tool execution
-                if self.telemetry_enabled and is_telemetry_enabled():
-                    # The function name is user-defined: send the tool type only.
-                    record_event("agent_tool_executed", {"tool_type": "function"})
 
                 # Create function call output
                 call_output = {

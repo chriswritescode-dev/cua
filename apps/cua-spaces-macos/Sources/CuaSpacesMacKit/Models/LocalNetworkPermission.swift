@@ -35,7 +35,7 @@ public protocol LocalNetworkProbing: Sendable {
 }
 
 /// A create stopped by the check: the core's sentence, and its error
-/// variant for telemetry (`local_network_denied`, `local_network_vpn`).
+/// variant (`local_network_denied`, `local_network_vpn`).
 public struct LocalNetworkRefusal: LocalizedError, Equatable {
     public let message: String
     public let variant: String

@@ -1,8 +1,5 @@
 /**
- * This module provides the core telemetry functionality for Cua libraries.
- *
- * It provides a low-overhead way to collect anonymous usage data.
+ * This module provides shared utilities for Cua TypeScript libraries.
  */
 
-export * from './telemetry';
 export * from './http';

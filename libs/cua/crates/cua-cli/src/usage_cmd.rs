@@ -139,12 +139,6 @@ fn print(u: &RelayUsage, out: &mut dyn Write) {
             out,
             format!("{}{}", p.sentence(), upgrade(p.upgrade_url(&account_app))),
         );
-        // Usage data (CUA-1881): a plan limit shown, which cap, which plan.
-        cua_telemetry::capture(cua_telemetry::events::plan_limit_shown(
-            "cli_usage",
-            kind.word(),
-            &p.plan,
-        ));
         said = true;
     }
     if u.soft_limit_reached || said {

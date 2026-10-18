@@ -59,7 +59,7 @@ function useRun(): <R>(f: (s: SettingsFeature) => Promise<R> | R) => Promise<R> 
 }
 
 export interface AboutHook extends Hook<AboutData> {
-  setAbout(patch: { autoCheck?: boolean; autoInstall?: boolean; channel?: AboutInput["channel"] }): Promise<void>;
+  setAbout(patch: { autoCheck?: boolean; channel?: AboutInput["channel"] }): Promise<void>;
   checkNow(): Promise<void>;
 }
 
@@ -70,16 +70,11 @@ export function useAbout(): AboutHook {
   return { ...r, setAbout: (p) => run((f) => f.setAbout(p)), checkNow: () => run((f) => f.checkNow()) };
 }
 
-export interface UpdateHook extends Hook<UpdateData> {
-  /** "Restart to update": the host installs the downloaded update and relaunches. */
-  install(): Promise<void>;
-}
+export type UpdateHook = Hook<UpdateData>;
 
-/** The in-app update indicator: the host's updater state (found, downloading, ready). */
+/** The in-app update indicator: the newer release the host found. */
 export function useUpdate(): UpdateHook {
-  const r = useFeature<UpdateData>("update");
-  const run = useRun();
-  return { ...r, install: () => run((f) => f.installUpdate()) };
+  return useFeature<UpdateData>("update");
 }
 
 export interface ExperimentsHook extends Hook<ExperimentsData> {

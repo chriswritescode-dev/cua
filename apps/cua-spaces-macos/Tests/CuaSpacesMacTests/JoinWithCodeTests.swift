@@ -99,8 +99,7 @@ struct JoinWithCodeTests {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("cua-join-\(UUID().uuidString)")
         let model = AppModel(backend: FixtureSpacesBackend(), keyvault: KeyvaultModel(client: nil),
                              onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
-                             settingsPath: dir.appendingPathComponent("settings.json").path,
-                             telemetry: FixtureTelemetry())
+                             settingsPath: dir.appendingPathComponent("settings.json").path)
         let bridge = WebUIBridge(model: model, allowedOrigins: [])
         for args: [String: Any] in [[:], ["code": ""], ["code": "  "], ["code": 5]] {
             do {

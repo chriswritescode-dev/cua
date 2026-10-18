@@ -25,8 +25,7 @@
 //!   and a tenth of the free disk), evicts the least recently used mirror
 //!   first, can be turned off and cleared.
 //!
-//! Counters only ([`Status`], and `cua_repo_cache` telemetry with fixed
-//! words): never a URL, a repository name or a path.
+//! Counters only ([`Status`]): never a URL, a repository name or a path.
 
 mod fill;
 mod git;
@@ -361,7 +360,6 @@ impl RepoCache {
     /// A clone that went the normal way.
     pub fn note_miss(&self) {
         stats::miss(&self.root);
-        cua_telemetry::global().repo_cache("miss", "network", 0, 0, "none");
     }
 
     /// Takes what a Space's helper logged (see
@@ -377,22 +375,9 @@ impl RepoCache {
                     store::touch(&self.root, &l.key);
                     let saved = (e.fill_secs - f64::from(l.secs)).max(0.0);
                     stats::hit(&self.root, saved, e.bytes);
-                    cua_telemetry::global().repo_cache(
-                        "hit",
-                        "local",
-                        e.bytes,
-                        saved.round() as u64,
-                        "none",
-                    );
                 }
                 shim::LogKind::Skipped | shim::LogKind::Failed | shim::LogKind::Kept => {
                     stats::fallback(&self.root);
-                    let reason = match l.kind {
-                        shim::LogKind::Skipped => "verify_failed",
-                        shim::LogKind::Kept => "disk_full",
-                        _ => "other",
-                    };
-                    cua_telemetry::global().repo_cache("fallback", "network", 0, 0, reason);
                     // A mirror whose packs changed under us is not served
                     // again.
                     if l.kind == shim::LogKind::Skipped {

@@ -71,15 +71,6 @@ cua host cache clear                               # delete every copy
 The same settings are `cache.repos` and `cache.repos_size_gb` in
 [`cua config`](/cua-cli/reference).
 
-## Privacy
-
-The cache reports counts and fixed words only: whether a clone was served from
-the cache, a miss or a fallback, the bytes and seconds a hit saved, and why a
-clone was not served from the cache, from a fixed list such as `private` or
-`cache_full`. It never sends a URL, a repository name or a path. See
-[Telemetry events](/cua-sdk/concepts/telemetry-events) for the exact event,
-`cua_repo_cache`, and how to turn telemetry off.
-
 <Callout type="info">
   Turning the cache off stops new copies and stops Spaces from using the
   existing ones. The copies stay on disk until you press **Clear cache**.

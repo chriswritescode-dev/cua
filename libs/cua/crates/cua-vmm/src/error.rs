@@ -144,8 +144,8 @@ pub fn is_vm_limit(lower: &str) -> bool {
             && (lower.contains("exceed") || lower.contains("maximum") || lower.contains("reached")))
 }
 
-/// Why a local create failed, as a bounded word for telemetry (never the
-/// message): `image_pull`, `runtime_permission`, `runtime_not_running`,
+/// Why a local create failed, as a stable category (never the message):
+/// `image_pull`, `runtime_permission`, `runtime_not_running`,
 /// `local_network`, `vm_limit`, `vm_runtime_missing` (QEMU, Lume or UEFI
 /// firmware), `runtime_missing` (container engine, gVisor), `container_exited`,
 /// `vm_error` (QEMU or Lume refused or failed), `engine_error`, else `None`.

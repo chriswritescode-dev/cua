@@ -35,10 +35,6 @@ concurrency:
   group: i18n-translate-spaces
   cancel-in-progress: false
 
-env:
-  CUA_TELEMETRY: "0"
-  DO_NOT_TRACK: "1"
-
 jobs:
   translate:
     name: translate and open PR

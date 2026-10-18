@@ -391,8 +391,10 @@ public struct SessionTeleport: Sendable {
 
     /// The Keyvault's `RequiresCuaApp` refusal (cua-keyvault `embedded`).
     static let requiresCuaApp = "requires_cua_app: Teleport requires the Cua app, which keeps your "
-        + "sessions in its Keyvault and asks you before anything moves. Install it from "
-        + "https://cua.ai/download."
+        + "sessions in its Keyvault and asks you before anything moves. Build it from the "
+        + "repository (https://github.com/trycua/cua): git pull && "
+        + "apps/cua-spaces-macos/scripts/build-release.sh (macOS), or "
+        + "pnpm --dir apps/cua-spaces-desktop dist:mac|win|linux."
 
     /// Read the manifest and send exactly the logged-in session — the smallest
     /// teleport that still leaves an in-Space agent authenticated, and the one

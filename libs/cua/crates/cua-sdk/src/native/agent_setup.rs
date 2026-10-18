@@ -444,10 +444,6 @@ impl cua_agent_setup::SignInVault for KeyvaultSignIns {
                 c.origin.as_deref(),
             )
             .map_err(|e| e.to_string())?;
-        cua_telemetry::global().capture(cua_telemetry::events::agent_signin_imported(
-            &c.source,
-            c.origin.as_deref(),
-        ));
         Ok(cua_agent_setup::ImportedSignIn {
             source: c.source.clone(),
             env: k.env,
@@ -460,20 +456,6 @@ impl cua_agent_setup::SignInVault for KeyvaultSignIns {
     fn remove(&self, source: &str) -> std::result::Result<Vec<String>, String> {
         self.0.remove_imported(source).map_err(|e| e.to_string())
     }
-}
-
-/// Counts the sign-ins Connect could not copy (fixed words only: the agent and
-/// the kind, never the line or the account).
-fn note_refusals(results: &[cua_agent_setup::connection::ConnectResult]) {
-    #[cfg(feature = "spaces")]
-    for r in results {
-        if let Some(kind) = r.sign_in.as_ref().and_then(|s| s.refused.as_deref()) {
-            cua_telemetry::global()
-                .capture(cua_telemetry::events::agent_signin_refused(&r.agent, kind));
-        }
-    }
-    #[cfg(not(feature = "spaces"))]
-    let _ = results;
 }
 
 /// The vault this build uses, when it has one.
@@ -570,7 +552,6 @@ impl AgentSetup {
                 cua_agent_setup::signin::CLAUDE_IMPORT_WAIT,
                 None,
             )?;
-            note_refusals(&r);
             to_json(&r)
         })
         .await

@@ -7,7 +7,6 @@ fn run(home: &std::path::Path, args: &[&str]) -> std::process::Output {
     Command::new(env!("CARGO_BIN_EXE_cua-driver"))
         .args(args)
         .env("CUA_DRIVER_RS_HOME", home)
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "0")
         .output()
         .expect("run cua-driver")
 }
@@ -103,7 +102,6 @@ mod pacman {
             .env("PATH", root)
             .env("CUA_DRIVER_RS_HOME", root)
             .env("HOME", root)
-            .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "0")
             .output()
             .unwrap()
     }

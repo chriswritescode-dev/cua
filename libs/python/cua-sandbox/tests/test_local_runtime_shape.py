@@ -37,7 +37,6 @@ async def test_ephemeral_local_forwards_cpu_and_memory_to_docker(monkeypatch):
             local=True,
             cpu=3,
             memory_mb=2048,
-            telemetry_enabled=False,
         ):
             pass
 
@@ -51,7 +50,7 @@ async def test_create_local_forwards_cpu_and_memory_to_lume(monkeypatch):
 
     with pytest.raises(_Stop):
         await Sandbox.create(
-            Image.macos(), local=True, cpu=6, memory_mb=8192, telemetry_enabled=False
+            Image.macos(), local=True, cpu=6, memory_mb=8192
         )
 
     assert calls == [{"cpus": 6, "memory_mb": 8192}]

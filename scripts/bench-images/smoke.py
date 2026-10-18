@@ -365,7 +365,7 @@ async def main() -> int:
     try:
         async with Sandbox.ephemeral(image, local=True, name=name, **extra,
                                      server_port=server.get("port"), cpu=args.cpu, memory_mb=mem,
-                                     time_to_start=1500, telemetry_enabled=False) as sb:
+                                     time_to_start=1500) as sb:
             report.add("ready", True, f"after {time.monotonic() - started:.0f}s")
             info = getattr(sb, "image_info", None)
             pinned = getattr(info, "pinned_ref", None)

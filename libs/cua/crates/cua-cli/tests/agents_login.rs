@@ -819,12 +819,12 @@ async fn agents_setup_cua_driver_without_cua_driver_writes_nothing() {
         .await;
     assert_eq!(o.code, 1, "{o:?}");
     assert!(o.stdout.contains("isn't installed"), "{o:?}");
-    // The install one-liner is PowerShell's `-Only` on Windows, sh's `--only`
-    // elsewhere.
+    // The hint points at the repository's local installer, not a remote
+    // one-liner.
     let hint = if cfg!(windows) {
-        "-Only cua-driver"
+        "install-local.ps1"
     } else {
-        "--only cua-driver"
+        "install-local.sh"
     };
     assert!(o.stdout.contains(hint), "{o:?}");
     assert!(!h.dir.path().join(".claude.json").exists());

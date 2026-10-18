@@ -17,15 +17,6 @@ import { Browser, BrowserContext, chromium, Page } from 'playwright';
 import sharp from 'sharp';
 import { promisify } from 'util';
 import { WebSocket, WebSocketServer } from 'ws';
-import { getDefaultAgent, getTelemetryEnabled } from './settings.js';
-import {
-  CuabotTelemetry,
-  initTelemetry,
-  sanitizeRelayedEvent,
-  startHistoryPolling,
-  stopHistoryPolling,
-  TelemetryEvent,
-} from './telemetry.js';
 import { getXpraAttachArgs, getXpraBinPath, nameToColor } from './utils.js';
 
 const execAsync = promisify(exec);
@@ -101,9 +92,6 @@ function getPortFile(): string {
 const SCREENSHOT_PATH = 'F:\\Projects\\cuabot\\screenshot.jpg';
 const SCREENSHOT_CLICKED_PATH = 'F:\\Projects\\cuabot\\screenshot-clicked.jpg';
 const DEBUG = false;
-
-// Telemetry client (initialized at startup)
-let telemetryClient: CuabotTelemetry | null = null;
 
 // State
 let browser: Browser | null = null;
@@ -234,7 +222,6 @@ async function ensureContainer(): Promise<number> {
   const claudeConfigPath = toDockerPath(CLAUDE_CONFIG_DIR);
   const androidSdkImagesPath = toDockerPath(ANDROID_SDK_IMAGES_DIR);
 
-  const telemetryEnabled = getTelemetryEnabled();
   const cuabotName = sessionName || 'cuabot';
   const cuabotColor = nameToColor(cuabotName).slice(1); // Remove # prefix
   const createCmd = [
@@ -250,8 +237,6 @@ async function ensureContainer(): Promise<number> {
     'CLAUDE_CONFIG_DIR=/home/user/.claude',
     '-e',
     `CUABOT_HOST=http://host.docker.internal:${serverPort}`,
-    '-e',
-    `CUABOT_TELEMETRY=${telemetryEnabled ? 'true' : 'false'}`,
     '-e',
     `CUABOT_NAME=${cuabotName}`,
     '-e',
@@ -880,32 +865,14 @@ const handlers: Record<string, Handler> = {
     await p.mouse.up();
     return { ok: true, scaledCoords: { from, to } };
   },
-
-  async telemetry(body: TelemetryEvent) {
-    // Relay only allowlisted event types with allowlisted properties.
-    const event = sanitizeRelayedEvent(body);
-    if (telemetryClient && event) {
-      telemetryClient.recordEvent(event);
-    }
-    return { ok: true };
-  },
 };
 
 // Cleanup
 async function cleanup() {
   console.log('[server] Cleaning up...');
 
-  // Shutdown telemetry (records shutdown event and flushes)
-  if (telemetryClient) {
-    await telemetryClient.shutdown();
-    telemetryClient = null;
-  }
-
   // Stop mask polling
   stopMaskPolling();
-
-  // Stop history polling
-  stopHistoryPolling();
 
   // Kill xpra client first (before container stops, so it exits cleanly)
   if (xpraClientPid) {
@@ -931,9 +898,6 @@ async function cleanup() {
 // Server start
 export async function startServer(preferredPort?: number): Promise<void> {
   ensureConfigDir();
-
-  // Initialize telemetry
-  telemetryClient = initTelemetry();
 
   // Check if already running
   if (existsSync(getPidFile())) {
@@ -1172,15 +1136,6 @@ export async function startServer(preferredPort?: number): Promise<void> {
 
       serverReady = true;
       console.log(`[server] Ready!`);
-
-      // Record startup telemetry
-      if (telemetryClient) {
-        telemetryClient.recordStartup(port, sessionName, getDefaultAgent() ?? null);
-      }
-
-      // Start history polling for telemetry (scrapes /home/user/.claude/history.jsonl)
-      const historyPath = join(CLAUDE_CONFIG_DIR, 'history.jsonl');
-      startHistoryPolling(historyPath, 2000);
     } catch (err) {
       console.error(`[server] Initialization failed:`, err);
       process.exit(1);

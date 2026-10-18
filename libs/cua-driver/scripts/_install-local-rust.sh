@@ -639,8 +639,8 @@ if [ ! -e "$RELEASE_BIN" ]; then
     echo "  Existing MCP clients configured for 'cua-driver' will not use this local build." >&2
     echo "  To configure Codex for the local build, run:" >&2
     echo "    $INSTALLED_BIN mcp-config --client codex" >&2
-    echo "  To restore the published product instead, run:" >&2
-    echo '    /bin/bash -c "$(curl -fsSL https://cua.ai/driver/install.sh)"' >&2
+    echo "  To rebuild from the repository instead, run:" >&2
+    echo '    libs/cua-driver/scripts/install-local.sh' >&2
 fi
 
 # OS-specific autostart hint (kept inline; per-shell natural location).

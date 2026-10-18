@@ -49,12 +49,9 @@ struct AccountAreaTests {
         #expect(m.proBanner() == nil)
     }
 
-    @Test func planAndUpgradeOpenThePlanLinkAndCountTheClick() {
-        let telemetry = FixtureTelemetry()
+    @Test func planAndUpgradeOpenThePlanLink() {
         let devices = DevicesModel(devices: FixtureDevices(), presence: FixturePresence())
-        devices.telemetry = telemetry
         let url = devices.openAccountPlanLink()
         #expect(url?.query?.contains("from=app_account_menu") == true)
-        #expect(telemetry.recorded.contains { "\($0)".contains("account_menu") })
     }
 }

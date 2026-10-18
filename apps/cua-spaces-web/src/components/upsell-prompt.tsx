@@ -3,7 +3,7 @@
 
 import { XIcon } from "lucide-react";
 
-import { usePlanLimitTelemetry, useRelayUsage, useSession, useUpsellGate, useUpsellPrompt } from "@/bridge";
+import { upgradeLink, useBridge, useRelayUsage, useSession, useUpsellGate, useUpsellPrompt } from "@/bridge";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -17,8 +17,8 @@ import { Button } from "@/components/ui/button";
 export function UpsellPrompt({ surface, active, className }: { surface: "share" | "machine"; active: boolean; className?: string }) {
   const usage = useRelayUsage();
   const prompt = useUpsellPrompt(surface, usage);
-  const gate = useUpsellGate(surface, active && prompt !== null, true, { plan: usage?.plan });
-  const plans = usePlanLimitTelemetry();
+  const gate = useUpsellGate(surface, active && prompt !== null);
+  const { core } = useBridge();
   const { openExternal } = useSession();
   if (!prompt || !gate.show) return null;
   return (
@@ -29,8 +29,7 @@ export function UpsellPrompt({ surface, active, className }: { surface: "share" 
         variant="secondary"
         data-upsell-cta=""
         onClick={() => {
-          gate.click();
-          void openExternal(plans.link(prompt.cta.url, surface === "share" ? "app_share" : "app_machine")).catch(() => {});
+          void openExternal(upgradeLink(core, prompt.cta.url, surface === "share" ? "app_share" : "app_machine")).catch(() => {});
         }}
       >
         {prompt.cta.label}

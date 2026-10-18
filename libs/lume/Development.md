@@ -66,7 +66,7 @@ lume-local serve                              # listens on 127.0.0.1:7787, VMs i
 libs/lume/scripts/uninstall-local.sh          # remove it; asks before deleting VMs (--yes, --keep-vms)
 ```
 
-A binary named `lume-local` implies these defaults, like `cua-driver-local`. Explicit flags and environment still win: `lume-local serve --port 9000`, and for `lume-local`, `LUME_HOME=/path` moves its home, VM directory, settings file, image cache, release-channel file and telemetry identity. `lume-local` has its own home, so it ignores `XDG_CONFIG_HOME`, which every Lume on the Mac shares. The released `lume` is unchanged: `LUME_HOME` still only moves its release-channel file. `lume-local` never updates itself: `update` would run the installer of the released Lume.
+A binary named `lume-local` implies these defaults, like `cua-driver-local`. Explicit flags and environment still win: `lume-local serve --port 9000`, and for `lume-local`, `LUME_HOME=/path` moves its home, VM directory, settings file, image cache, release-channel file. `lume-local` has its own home, so it ignores `XDG_CONFIG_HOME`, which every Lume on the Mac shares. The released `lume` is unchanged: `LUME_HOME` still only moves its release-channel file. `lume-local` never updates itself: `update` only reports a newer release.
 
 `lume-local` uses `LUME_HOME` exactly as given, whitespace included (it is never trimmed into another path), and the scripts refuse a value with leading or trailing whitespace.
 

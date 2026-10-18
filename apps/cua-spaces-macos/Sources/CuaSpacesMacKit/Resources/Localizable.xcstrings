@@ -397,35 +397,13 @@
         }
       }
     },
-    "menu.update.click_to_install": {
+    "menu.update.rebuild": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Click to install"
-          }
-        }
-      }
-    },
-    "menu.update.downloading": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Downloading {percent}%"
-          }
-        }
-      }
-    },
-    "menu.update.restart": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Restart to update"
+            "value": "Pull and rebuild to update"
           }
         }
       }

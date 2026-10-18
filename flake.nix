@@ -27,17 +27,16 @@
           craneLib = crane.mkLib pkgs;
 
           # cua-driver builds inside libs/: its crates reach the shared
-          # cua-telemetry crate in the libs/cua workspace (which inherits that
-          # workspace's package fields and reads the image catalog and the
-          # teleport target list at compile time), and platform-linux embeds
-          # the GNOME Shell helper from wayland-helper.
+          # libs/cua workspace (which inherits that workspace's package
+          # fields and reads the image catalog and the teleport target list
+          # at compile time), and platform-linux embeds the GNOME Shell
+          # helper from wayland-helper.
           # `connect --replace` reaches cua-agent-setup there too, with
           # cua-home and the skills it bundles.
           driverSharedFiles = [
             ./libs/cua-driver/rust
             ./libs/cua-driver/wayland-helper
             ./libs/cua/Cargo.toml
-            ./libs/cua/crates/cua-telemetry
             ./libs/cua/crates/cua-agent-setup
             ./libs/cua/crates/cua-home
             ./libs/cua/skills

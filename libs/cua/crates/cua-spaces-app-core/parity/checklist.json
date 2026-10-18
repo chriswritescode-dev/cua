@@ -1,6 +1,6 @@
 {
   "name": "checklist",
-  "about": "The getting-started checklist counts the same in every UI and app: the host keeps one copy of its progress, and every UI ticks steps off from the same reading of what the app shows (checklist.observeFrom over the Machines page's rows, the Spaces list and the agents). Another machine is any Machines row but this one, a device of your own included; a Space is one you made that is there now (running, waiting, or stopped), not a machine's own desktop or one being created, deleted or whose create failed; an agent is a persistent agent or a run in any Space. Progress kept before in the web UI's own storage is merged in once, without its usage events again.",
+  "about": "The getting-started checklist counts the same in every UI and app: the host keeps one copy of its progress, and every UI ticks steps off from the same reading of what the app shows (checklist.observeFrom over the Machines page's rows, the Spaces list and the agents). Another machine is any Machines row but this one, a device of your own included; a Space is one you made that is there now (running, waiting, or stopped), not a machine's own desktop or one being created, deleted or whose create failed; an agent is a persistent agent or a run in any Space. Progress kept before in the web UI's own storage is merged in once.",
   "cases": [
     {
       "name": "a spare Mac: its Space is stopped, its devices are only in the device list, no agents",

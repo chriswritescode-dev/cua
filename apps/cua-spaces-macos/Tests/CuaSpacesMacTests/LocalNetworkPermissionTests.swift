@@ -154,7 +154,7 @@ struct LocalNetworkPermissionTests {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("cua-ln-\(UUID().uuidString)")
         let model = AppModel(backend: backend, keyvault: KeyvaultModel(client: nil, clock: { fixtureNow }),
                              onboarding: OnboardingModel(statePath: dir.appendingPathComponent("o.json").path),
-                             settingsPath: dir.appendingPathComponent("s.json").path, telemetry: FixtureTelemetry())
+                             settingsPath: dir.appendingPathComponent("s.json").path)
         let shown = Shown()
         let g = gate(FakeProbe([.blocked]), shown: shown)
         g.asked = true

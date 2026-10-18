@@ -3,7 +3,7 @@
 
 import { useEffect } from "react";
 
-import { teamName, useFeatureRecorded, useShareSheet, useTeamChoices } from "@/bridge";
+import { teamName, useShareSheet, useTeamChoices } from "@/bridge";
 import { useAddAgentLauncher } from "@/components/add-agent/add-agent-launcher";
 import { Button } from "@/components/ui/button";
 import { GroupedRow, GroupedSection } from "@/components/ui/grouped";
@@ -25,7 +25,6 @@ import { cn } from "@/lib/utils";
  */
 export default function ShareSheet() {
   const { session, sharing } = useShareSheet();
-  useFeatureRecorded("share_open", Boolean(session));
   const choices = useTeamChoices(Boolean(session?.input.signedIn && session.input.shareable));
   const { hasTeam } = choices;
   // The Space page that shows this Space's thread can add an agent to it instead.

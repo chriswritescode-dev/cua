@@ -44,7 +44,7 @@ async def test_local_container_sandbox_through_spacesd(tmp_path):
     runtime = DockerRuntime(memory_mb=2048, cpus=2)
 
     async with Sandbox.ephemeral(
-        image, local=True, runtime=runtime, name=name, telemetry_enabled=False
+        image, local=True, runtime=runtime, name=name
     ) as sb:
         inspect = json.loads(_docker("inspect", name).stdout)[0]
         host_config = inspect["HostConfig"]
@@ -132,7 +132,6 @@ async def test_persistent_local_sandbox_lifecycle():
         local=True,
         runtime=DockerRuntime(ephemeral=False, memory_mb=2048),
         name=name,
-        telemetry_enabled=False,
     )
     try:
         assert (await sb.shell.run("echo first")).stdout == "first\n"
@@ -173,7 +172,6 @@ async def test_plain_image_without_spacesd_is_daemon_agnostic():
         local=True,
         runtime=runtime,
         name=name,
-        telemetry_enabled=False,
     ) as sb:
         assert name in {s.name for s in await Sandbox.list(local=True)}
         with pytest.raises(SpacesdNotAvailable):

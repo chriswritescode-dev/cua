@@ -21,7 +21,6 @@ const banner = () => sidebar().querySelector<HTMLElement>("[data-pro-banner]");
 
 function host(usage: NonNullable<TestHost["demo"]>["usage"], extra: Partial<TestHost> = {}) {
   const opened: string[] = [];
-  const tracked: unknown[] = [];
   const h: TestHost = {
     failsCreates: false,
     listsGhost: false,
@@ -29,11 +28,10 @@ function host(usage: NonNullable<TestHost["demo"]>["usage"], extra: Partial<Test
     demo: { usage, ...extra.demo },
     intercept: (op, args) => {
       if (op === "session.openExternal") return (opened.push((args as { url: string }).url), null);
-      if (op === "telemetry.track") tracked.push(...((args as { signals: unknown[] }).signals ?? []));
       return extra.intercept?.(op, args);
     },
   };
-  return { h, opened, tracked };
+  return { h, opened };
 }
 
 const openMenu = async () => {
@@ -65,15 +63,13 @@ describe.skipIf(!wasmBuilt)("the account area", () => {
   });
 
   it("opens Settings, Plan with its word, and Sign out", async () => {
-    const { h, opened, tracked } = host("idle");
+    const { h, opened } = host("idle");
     const app = await mountApp("/spaces", h);
     const menu = await openMenu();
     expect(items(menu)).toEqual(["Settings", "PlanFree", "Sign out"]);
     expect(menu.querySelectorAll("[role=separator]").length).toBe(1);
     fireEvent.click(within(menu).getByText("Plan"));
     await waitFor(() => expect(opened[0]).toMatch(/from=app_account_menu/));
-    // `upsell_account_menu_click`, as before.
-    await waitFor(() => expect(JSON.stringify(tracked)).toContain("account_menu"));
     fireEvent.click(within(await openMenu()).getByText("Settings"));
     await waitFor(() => expect(app.router.state.location.pathname).toBe("/settings"));
     fireEvent.click(within(await openMenu()).getByText("Sign out"));

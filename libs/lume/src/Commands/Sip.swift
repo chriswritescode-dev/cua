@@ -61,7 +61,6 @@ struct Sip: AsyncParsableCommand {
     @Option(help: "Overall timeout in seconds") var timeout: Int = 900
 
     @MainActor func run() async throws {
-        TelemetryClient.shared.record(event: "lume_sip")
         guard timeout > 0 else { throw SipError.invalidTimeout(timeout) }
 
         let controller = LumeController()

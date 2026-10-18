@@ -6,7 +6,7 @@
 //! Cua Spaces 0.13.1), builds this branch's `cua` (cua-spaces-cli) and runs
 //! these with `--ignored`. Each case copies the 0.7.0 fixture home into a
 //! throwaway `HOME`/`CUA_HOME`, starts one daemon on its own socket, and
-//! stops it when the case ends. No keychain, relay, telemetry or Space.
+//! stops it when the case ends. No keychain, relay or Space.
 //!
 //! - old CLI, new daemon: every recorded 0.7.0 command answers what 0.7.0
 //!   answered (superset), and its writes work;
@@ -81,9 +81,6 @@ impl Home {
             .env("CUA_NO_BROWSER", "1")
             .env("CUA_RELAY_URL", "http://127.0.0.1:9")
             .env("CUA_DAEMON_NO_RELAY", "1")
-            .env("CUA_TELEMETRY", "0")
-            .env("CUA_TELEMETRY_FORBID_NETWORK", "1")
-            .env("CUA_TELEMETRY_ENDPOINT", "http://127.0.0.1:9/batch/")
             .env("CUA_LOG", "error")
             .args(args)
             .current_dir(home)

@@ -15,7 +15,6 @@ import { RelayAllowanceNotice } from "@/components/shell/relay-allowance-notice"
 import { ShareRemovalNotice } from "@/components/shell/share-removal-notice";
 import { SpacesNotice } from "@/components/shell/spaces-notice";
 import { SpaceSheets } from "@/components/space-sheets";
-import { UsageLinkNotice } from "@/components/usage-link-notice";
 import { TopBar } from "@/components/shell/top-bar";
 import { ThisMacNudges } from "@/components/this-mac-nudges";
 import { useGlobalKeybindings } from "@/hooks/use-global-keybindings";
@@ -97,7 +96,6 @@ function RootBody() {
       <NewSpace />
       <SpaceSheets />
       <ThisMacNudges />
-      <UsageLinkNotice />
     </div>
   );
 }

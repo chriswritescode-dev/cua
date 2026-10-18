@@ -34,8 +34,7 @@ pub enum Outcome {
     Skipped(Reason),
 }
 
-/// Why a repository is not cached or a mirror was not used: a fixed list
-/// (these are the words telemetry sends).
+/// Why a repository is not cached or a mirror was not used: a fixed list.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Reason {
     Disabled,

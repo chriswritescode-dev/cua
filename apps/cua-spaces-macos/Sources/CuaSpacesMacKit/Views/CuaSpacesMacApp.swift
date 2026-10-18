@@ -191,9 +191,9 @@ struct MenuBarContent: View {
     }
 }
 
-/// "Check for Updates…", or the found update ("Version X available" over
-/// "Click to install" or "Restart to update"): the entry of the app menu and
-/// the menu bar menu. Nothing in a build with no updater.
+/// "Check for Updates…", or the found release ("Version X available" over
+/// "Pull and rebuild to update"): the entry of the app menu and the menu bar
+/// menu. Nothing in a build with no updater.
 struct UpdateMenuButton: View {
     let updates: UpdatesModel
 

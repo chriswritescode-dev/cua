@@ -52,16 +52,10 @@ public final class KeyvaultModel {
     public var appIcons: AppIconCache?
     public private(set) var icons: [String: NSImage] = [:]
     @ObservationIgnored private var iconsAsked: Set<String> = []
-    /// Site icons: the browser's own, read locally and kept in the vault,
-    /// then Google's service when the setting allows it, then the globe.
-    public var siteIconStore: SiteIconStore?
-    /// The "Load site icons from Google" setting.
-    public var siteIconsFromGoogle: @MainActor () -> Bool = { true }
+    /// Site icons: the browser's own, read locally and kept in the vault;
+    /// rows without one fall back to the globe.
     public private(set) var siteIcons: [String: NSImage] = [:]
     @ObservationIgnored private var localSiteIcons: [String: Int] = [:]
-    @ObservationIgnored private var siteIconsAsked: Set<String> = []
-    /// The backing scale the icons are fetched for.
-    public var iconScale = 2
 
     /// Bumped when the overview, the list state or the sidebar pick change:
     /// the memoized views below recompute only then. Reading it in a view's
@@ -249,9 +243,7 @@ public final class KeyvaultModel {
     // MARK: - App icons
 
     /// Icons for what the list shows, each asked for once: app icons from
-    /// the cache, the browser's own site icons from the vault, and site icons
-    /// already on disk. Nothing here touches the network (`siteIcon` does,
-    /// lazily, as a row appears).
+    /// the cache and the browser's own site icons from the vault.
     public func loadIcons() async {
         if let cache = appIcons {
             var seen: [String: String] = [:]
@@ -269,17 +261,6 @@ public final class KeyvaultModel {
             localSiteIcons[f.site] = f.png.count
             siteIcons[f.site] = image
         }
-    }
-
-    /// Called as a site row first appears: the downloaded icon on hand, else
-    /// (when the setting allows it and the browser had none) one lookup of
-    /// the domain. Never blocks drawing; the globe stands in meanwhile.
-    public func siteIcon(_ site: String) async {
-        guard siteIcons[site] == nil, let store = siteIconStore else { return }
-        if let hit = store.cached(site) { siteIcons[site] = hit; return }
-        guard siteIconsFromGoogle(), !siteIconsAsked.contains(site) else { return }
-        siteIconsAsked.insert(site)
-        if let image = await store.load(site, scale: iconScale) { siteIcons[site] = image }
     }
 
     public var approvalView: KvApprovalView? {

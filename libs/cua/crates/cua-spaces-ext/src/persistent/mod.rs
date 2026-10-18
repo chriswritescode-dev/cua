@@ -986,17 +986,6 @@ impl Persistent {
         self.agents_for(space).await
     }
 
-    /// What the Space runs on, as a telemetry word.
-    pub(crate) fn runtime_word(&self, space: &str) -> String {
-        self.spaces
-            .list()
-            .ok()
-            .and_then(|l| l.into_iter().find(|s| s.id == space))
-            .map(|s| phases::runtime_word(&s.os, &s.kind))
-            .unwrap_or("other")
-            .to_string()
-    }
-
     async fn forget_space(&self, space: &str) {
         self.live.lock().await.agents.remove(space);
         let _ = self.spaces.forget_connection(space).await;
@@ -1202,22 +1191,15 @@ impl Persistent {
     /// the home, and starts the harness with its memory in the home and
     /// the bridge attached.
     pub async fn start(&self, name: &str, prompt: &str) -> Result<Delivery> {
-        self.start_from(name, prompt, "persistent").await
+        self.start_with(name, prompt, None).await
     }
 
-    /// [`Self::start`], recording `entry` (`persistent` or `routine`) as
-    /// where the run was started from.
-    async fn start_from(&self, name: &str, prompt: &str, entry: &str) -> Result<Delivery> {
-        self.start_with(name, prompt, entry, None).await
-    }
-
-    /// [`Self::start_from`]; `restore`: a durable member's journal from the
-    /// Volume and the epoch to continue it at.
+    /// [`Self::start`], keeping `restore`: a durable member's journal from
+    /// the Volume and the epoch to continue it at.
     async fn start_with(
         &self,
         name: &str,
         prompt: &str,
-        entry: &str,
         restore: Option<(u64, std::collections::BTreeMap<String, Vec<u8>>)>,
     ) -> Result<Delivery> {
         let rec = self.get(name)?;
@@ -1225,7 +1207,7 @@ impl Persistent {
         if restore.is_some() && !rec.policy.durable {
             return Err(Error::invalid(format!("{name} is not durable")));
         }
-        Box::pin(self.start_session(&rec, prompt, entry, restore)).await
+        Box::pin(self.start_session(&rec, prompt, restore)).await
     }
 
     /// Starts a run of the session `view` shows. Session 1 is the home's
@@ -1239,7 +1221,6 @@ impl Persistent {
         &self,
         view: &AgentRecord,
         prompt: &str,
-        entry: &str,
         restore: Option<(u64, std::collections::BTreeMap<String, Vec<u8>>)>,
     ) -> Result<Delivery> {
         let k = view.k();
@@ -1277,12 +1258,6 @@ impl Persistent {
             }
         };
         let t0 = Instant::now();
-        let woke = phases::take_woke(&self.dir, &format!("{}#{k}", view.name));
-        let posted_ms = woke
-            .as_ref()
-            .map(|w| w.posted_ms)
-            .unwrap_or_else(phases::now_ms);
-        let picked_ms = woke.as_ref().map(|w| w.picked_ms).unwrap_or(posted_ms);
         // A prewarm of this agent's tools that is running now finishes first.
         phases::wait_for_prewarm(
             &self.dir,
@@ -1354,7 +1329,6 @@ impl Persistent {
                 copy.await.0
             }
         };
-        let prepared_ms = phases::now_ms();
         let restored = match restored {
             Ok(t) => t,
             Err(e) => {
@@ -1408,33 +1382,10 @@ impl Persistent {
             )
             .await;
         let started = match started {
-            Ok(s) => {
-                cua_spaces::agents::telemetry::started(&agents, &rec.space, entry, &s);
-                let spawned_ms = phases::now_ms();
-                let since = |t: u64| t.saturating_sub(posted_ms);
-                phases::follow(
-                    agents.clone(),
-                    phases::Join {
-                        run_id: s.run_id.clone(),
-                        harness: rec.harness.clone(),
-                        runtime: self.runtime_word(&rec.space),
-                        cold: true,
-                        posted_ms,
-                    },
-                    vec![
-                        ("posted", 0),
-                        ("dispatch_picked", since(picked_ms)),
-                        ("host_prepared", since(prepared_ms)),
-                        ("guest_spawned", since(spawned_ms)),
-                    ],
-                    since(spawned_ms),
-                );
-                s
-            }
+            Ok(s) => s,
             Err(e) => {
                 self.release_writer(&rec).await;
                 let e = Error::from(e);
-                cua_spaces::agents::telemetry::start_failed(&rec.harness, &rec.space, entry, &e);
                 let msg = e.to_string();
                 let _ = self.update_in(&rec, |r| r.last_error = Some(msg.clone()));
                 return Err(e);
@@ -1470,14 +1421,14 @@ impl Persistent {
     /// the home restored) when it has none. Refused while a turn runs or
     /// while paused.
     pub async fn send(&self, name: &str, text: &str) -> Result<Delivery> {
-        self.send_from(name, text, "persistent").await
+        self.send_from(name, text).await
     }
 
-    /// [`Self::send`], recording `entry` for a run it starts.
-    async fn send_from(&self, name: &str, text: &str, entry: &str) -> Result<Delivery> {
+    /// [`Self::send`] for one of this member's own (not external) sessions.
+    async fn send_from(&self, name: &str, text: &str) -> Result<Delivery> {
         let rec = self.get(name)?;
         self.not_external(&rec)?;
-        self.send_session(&rec, text, entry, None).await
+        self.send_session(&rec, text, None).await
     }
 
     /// [`Self::send_from`] to the session `view` shows. `known` is the run's
@@ -1488,7 +1439,6 @@ impl Persistent {
         &self,
         view: &AgentRecord,
         text: &str,
-        entry: &str,
         known: Option<ag::RunInfo>,
     ) -> Result<Delivery> {
         let rec = self.get(&view.name)?.session(view.k());
@@ -1573,7 +1523,7 @@ impl Persistent {
                 _ => {}
             }
         }
-        Box::pin(self.start_session(&rec, text, entry, None)).await
+        Box::pin(self.start_session(&rec, text, None)).await
     }
 
     /// Whether the idle run `st` of `rec` works on the mounted Volume in a
@@ -1651,9 +1601,7 @@ impl Persistent {
             return Ok(None);
         };
         let agents = self.agents_for(&rec.space).await?;
-        cua_spaces::agents::telemetry::before_stop(&agents, run).await;
         agents.stop(run).await?;
-        cua_spaces::agents::telemetry::stopped(run);
         Ok(Some(run.clone()))
     }
 
@@ -2376,7 +2324,7 @@ impl Persistent {
                 let _guard = guard;
                 let t0 = Instant::now();
                 tracing::info!(agent = %rec.name, "standby run starting");
-                match Box::pin(me.start_session(&rec, "", "standby", None)).await {
+                match Box::pin(me.start_session(&rec, "", None)).await {
                     Ok(d) => {
                         me.live.lock().await.standby_retry.remove(&rec.name);
                         tracing::info!(agent = %rec.name, run = %d.run_id, ms = t0.elapsed().as_millis() as u64, "standby run started");
@@ -3017,14 +2965,6 @@ impl Persistent {
                 report.notified += 1;
             }
             self.update_in(&rec, |r| r.saved_turn = turn)?;
-        }
-        let run_failed = failed.is_some();
-        // Agent-run telemetry: the end of a run this install started.
-        if (ended.is_some() || run_failed)
-            && cua_telemetry::global().agent_run_pending(&run)
-            && let Ok(info) = agents.status(&run).await
-        {
-            cua_spaces::agents::telemetry::observe(&info);
         }
         let next = if said_open && page.events.len() < 500 {
             rec.cursor

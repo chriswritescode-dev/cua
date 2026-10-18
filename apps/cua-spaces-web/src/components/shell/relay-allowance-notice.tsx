@@ -4,7 +4,7 @@
 import { XIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
 
-import { usePlanLimitTelemetry, useRelayUsage, useRelayUsageView, useSession, useUpsellCardAvailable, useUpsellGate } from "@/bridge";
+import { upgradeLink, useBridge, useRelayUsage, useRelayUsageView, useSession, useUpsellCardAvailable, useUpsellGate } from "@/bridge";
 import { Button } from "@/components/ui/button";
 import { UpgradeCard } from "@/components/upgrade-card";
 
@@ -47,8 +47,8 @@ export function RelayAllowanceNotice() {
   const cardAvailable = useUpsellCardAvailable(notice?.level === "limit" ? reason : null, usage);
   const asCard = cardAvailable;
   // Past a limit, its cap and plan make it `cua_plan_limit_shown` too.
-  const gate = useUpsellGate("meter", !hidden && !asCard, notice?.level === "warn", { kind: notice?.kind, plan: notice?.plan });
-  const plans = usePlanLimitTelemetry();
+  const gate = useUpsellGate("meter", !hidden && !asCard, notice?.level === "warn");
+  const { core } = useBridge();
   if (notice && !hidden && asCard) {
     const remember = () => {
       try {
@@ -84,8 +84,7 @@ export function RelayAllowanceNotice() {
           variant="secondary"
           data-relay-upgrade=""
           onClick={() => {
-            gate.click();
-            void openExternal(plans.link(upgradeUrl, "app_meter")).catch(() => {});
+            void openExternal(upgradeLink(core, upgradeUrl, "app_meter")).catch(() => {});
           }}
         >
           {notice.upgrade}

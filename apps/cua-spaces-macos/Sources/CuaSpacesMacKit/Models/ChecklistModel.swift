@@ -13,8 +13,6 @@ import Observation
 public final class ChecklistModel {
     public private(set) var state: AppChecklistState
     private let path: String?
-    /// Where usage events go (`checklist_<step>`, `checklist_completed`, ...).
-    var telemetry: TelemetryRunning?
 
     /// `path`: the file it is kept in; nil keeps it in memory (tests).
     public init(path: String?) {
@@ -32,7 +30,6 @@ public final class ChecklistModel {
             state = t.state
             save()
         }
-        if !t.signals.isEmpty { telemetry?.record(t.signals) }
     }
 
     public func done(_ step: AppChecklistStep) { send(.done(step: step)) }

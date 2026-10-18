@@ -5,7 +5,7 @@
 // the core's (`machines::page_rows`), devices of their own included, and
 // the page gets the same rows. Skipped when this machine's native
 // directory was not built.
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -17,7 +17,7 @@ import { HostModel } from "../src/model/host";
 import { StartupModel } from "../src/model/startup";
 import { devDirName, nativeFiles } from "../src/native/location";
 import { loadNative, type Native } from "../src/native/load";
-import { FixtureAccount, FixtureSpacesBackend, FixtureTelemetry, fixtureDevices, fixtureHost } from "./fixtures";
+import { FixtureAccount, FixtureSpacesBackend, fixtureDevices, fixtureHost } from "./fixtures";
 
 const dir = path.resolve(__dirname, "../native", devDirName(process.platform, process.arch));
 const built = existsSync(nativeFiles(dir, process.platform).library);
@@ -26,7 +26,6 @@ describe.skipIf(!built)("the Machines rows on the app core", () => {
   let home: string;
   let native: Native;
   const saved = { ...process.env };
-  let telemetry: FixtureTelemetry;
   let model: AppModel;
   let bridge: Bridge;
   let appDir: string;
@@ -51,7 +50,6 @@ describe.skipIf(!built)("the Machines rows on the app core", () => {
 
   const make = () => {
     const backend = new FixtureSpacesBackend(native);
-    telemetry = new FixtureTelemetry();
     model = new AppModel({
       native,
       backend,
@@ -61,7 +59,6 @@ describe.skipIf(!built)("the Machines rows on the app core", () => {
       devices: new DevicesModel(native, () => fixtureDevices()),
       cloud: new CloudModel(native, () => backend),
       account: new FixtureAccount("ada@example.com"),
-      telemetry,
       servicesIn: () => true,
       cpus: 8,
     });

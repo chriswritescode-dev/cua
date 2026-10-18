@@ -24,7 +24,6 @@ import {
   SignInScreen,
   StepDots,
   useMoreBelow,
-  WelcomeScreen,
 } from "@/components/first-run-new/first-run-new";
 import { BringTheRestCard, CliPanel } from "@/components/ask-first/bring-the-rest";
 import { KEY_GAP, placeKeys } from "@/components/first-run-new/float-keys";
@@ -52,7 +51,6 @@ import {
   toggleAgentOff,
   type NewRunScreen,
   type RunFacts,
-  welcomeUsage,
 } from "@/lib/first-run-new";
 import { addAskTask, resetAskTasks } from "@/lib/ask-first";
 import { getDriver, resetPrepare } from "@/lib/prepare/store";
@@ -541,45 +539,6 @@ describe("after the first job, on Home: the rest of setup", () => {
   });
 });
 
-describe("screen 1, usage data", () => {
-  const core = {
-    notice: "Features you use and errors, linked to your account. Never your files, typing or screen.",
-    noticeLinkLabel: "What is collected",
-    noticeLinkUrl: "https://cua.ai/docs/cua-sdk/concepts/telemetry",
-    usage: { label: "Share usage data to help improve Cua", on: true, enabled: true, help: null },
-  };
-
-  it("says what is collected, with a one-tap off and the link, on the first screen", () => {
-    const onUsage = vi.fn();
-    const onLink = vi.fn();
-    render(<WelcomeScreen onAdd={noop} usage={welcomeUsage(core)} onUsage={onUsage} onUsageLink={onLink} />);
-    const line = document.querySelector<HTMLElement>("[data-new-run-usage]")!;
-    expect(line.getAttribute("data-new-run-usage")).toBe("on");
-    expect(line.textContent).toContain("Share usage data to help improve Cua");
-    expect(line.textContent).toContain("Never your files, typing or screen.");
-    const sw = screen.getByRole("switch", { name: "Share usage data to help improve Cua" });
-    fireEvent.click(sw);
-    expect(onUsage).toHaveBeenCalledWith(false);
-    fireEvent.click(document.querySelector("[data-new-run-usage-link]")!);
-    expect(onLink).toHaveBeenCalledTimes(1);
-  });
-
-  it("can't be changed when the environment decides, and says who", () => {
-    render(<WelcomeScreen onAdd={noop} usage={welcomeUsage({ ...core, usage: { ...core.usage, on: false, enabled: false, help: "Set by DO_NOT_TRACK" } })} />);
-    const sw = screen.getByRole("switch", { name: "Share usage data to help improve Cua" });
-    expect(sw.getAttribute("aria-checked")).toBe("false");
-    expect(sw.hasAttribute("disabled") || sw.getAttribute("aria-disabled") === "true" || sw.hasAttribute("data-disabled")).toBe(true);
-    expect(document.body.textContent).toContain("Set by DO_NOT_TRACK");
-  });
-
-  it("is left out when the core has no notice to show", () => {
-    expect(welcomeUsage(null)).toBeNull();
-    expect(welcomeUsage({ ...core, notice: null })).toBeNull();
-    render(<WelcomeScreen onAdd={noop} usage={null} />);
-    expect(document.querySelector("[data-new-run-usage]")).toBeNull();
-  });
-});
-
 describe("the step dots", () => {
   const mac: RunFacts = { os: "macos", permissions: "ask" };
   const S = [
@@ -913,28 +872,6 @@ describe.skipIf(!wasmBuilt)("the new first run on its route", () => {
     const { router } = await mountApp("/onboarding", { failsCreates: false, listsGhost: false, demo: { signedIn: true, onboarded: false, noSpaces: true } });
     await waitFor(() => expect(router.state.location.pathname).toBe("/home"), { timeout: 15_000 });
     expect(readFirstRun().restOffer).toBe("waiting");
-  });
-
-  it("screen 1 shows the usage line from the core; turning it off is saved before the run moves on", { timeout: 60_000 }, async () => {
-    const calls: Calls = [];
-    await mountApp("/onboarding", {
-      failsCreates: false,
-      listsGhost: false,
-      demo: { signedIn: false, onboarded: false, noSpaces: true },
-      intercept: (op, args) => (calls.push({ op, args }), undefined),
-    });
-    await waitFor(() => expect(heading()).toBe("Combine all your computers into one supercomputer."));
-    const line = await waitFor(() => {
-      const el = document.querySelector<HTMLElement>("[data-new-run-usage]");
-      if (!el) throw new Error("no usage line");
-      return el;
-    });
-    expect(line.textContent).toContain("Share usage data to help improve Cua");
-    expect(line.textContent).toContain("What is collected");
-    fireEvent.click(screen.getByRole("switch", { name: "Share usage data to help improve Cua" }));
-    await waitFor(() => expect(calls.find((c) => c.op === "settings.set")?.args).toEqual({ key: "telemetry", value: false }));
-    // Still on screen 1: nothing moved on.
-    expect(heading()).toBe("Combine all your computers into one supercomputer.");
   });
 
   it("Home asks for the rest only once the first job is done, and Not now puts it away for good", { timeout: 60_000 }, async () => {

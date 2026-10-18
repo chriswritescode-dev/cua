@@ -45,9 +45,6 @@ struct SSH: AsyncParsableCommand {
 
     @MainActor
     func run() async throws {
-        // Record telemetry
-        TelemetryClient.shared.record(event: "lume_ssh")
-
         let controller = LumeController()
 
         // Get VM details

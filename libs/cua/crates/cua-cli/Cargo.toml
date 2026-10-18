@@ -67,8 +67,6 @@ cua-host.workspace = true
 # Your own clouds (`cua cloud trust`); `aws` adds `cua cloud add aws` (EC2 pool hosts).
 cua-byoc = { workspace = true, optional = true }
 # The `cluster_*` MCP tools: a client of the cluster coordinator's API.
-# Anonymous usage telemetry (`cua telemetry`, the first-run notice).
-cua-telemetry.workspace = true
 cua-crash.workspace = true
 async-trait.workspace = true
 cua-proto = { workspace = true, features = ["client", "serde"] }

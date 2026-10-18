@@ -7,8 +7,8 @@
 //! card's link), then Sign out, set apart, when signing out applies (a
 //! user's own session, not an API key or a fixed token).
 //!
-//! The Plan item's click is the existing `upsell_account_menu_click` usage
-//! event (`telemetry.upsell` with surface `account_menu`).
+//! The Plan item's click is `upsell_account_menu_click` (the
+//! `account_menu` surface).
 
 use serde::{Deserialize, Serialize};
 

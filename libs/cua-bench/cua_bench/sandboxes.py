@@ -147,7 +147,6 @@ def ephemeral_kwargs(spec: EnvSpec, target: Target) -> dict:
     kwargs: dict[str, Any] = {
         "on": target.on,
         "time_to_start": TIME_TO_START_S,
-        "telemetry_enabled": False,
     }
     if spec.runtime is not None:
         kwargs["runtime"] = spec.runtime

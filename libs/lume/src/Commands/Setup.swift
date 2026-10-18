@@ -69,11 +69,6 @@ struct Setup: AsyncParsableCommand {
             throw UnattendedError.configLoadFailed("Failed to load config from \(unattended): \(error.localizedDescription)")
         }
 
-        TelemetryClient.shared.record(event: TelemetryEvent.setup, properties: [
-            "mode": "offline",
-            "preset_name": isPreset ? unattended : "custom"
-        ])
-
         try await LumeController().setup(
             name: name,
             config: config,

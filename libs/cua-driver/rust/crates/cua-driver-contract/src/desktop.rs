@@ -97,7 +97,7 @@ fn get_window_state() -> ToolContract {
 fn clipboard_read() -> ToolContract {
     let mut contract = contract::<ClipboardReadInput, ClipboardReadOutput>(
         "clipboard_read",
-        "List available system clipboard types and optionally return privacy-sensitive plain text. Clipboard content is never retained in telemetry.",
+        "List available system clipboard types and optionally return privacy-sensitive plain text. Clipboard content is never retained beyond the response.",
         &["clipboard.read", "clipboard.types"],
         ToolAnnotations {
             read_only: true,

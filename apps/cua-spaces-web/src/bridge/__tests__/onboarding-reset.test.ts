@@ -33,7 +33,7 @@ const OTHER: Record<string, string> = {
 
 function fillWelcome() {
   writeSavedOnboarding({
-    state: { step: "agents", identity: "ada@example.com", installerMode: null, mode: "host", menuBar: true, telemetry: null } as never,
+    state: { step: "agents", identity: "ada@example.com", installerMode: null, mode: "host", menuBar: true } as never,
     skipped: true,
   });
   writeFirstRun({ step: "setup", picked: ["claude-code"], setupStartedMs: 5, usedAtMs: 9, extraNotNow: true, finishedLater: true, todosClosed: true });

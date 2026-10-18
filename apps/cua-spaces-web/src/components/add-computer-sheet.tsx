@@ -11,11 +11,11 @@ import {
   normalizePairingCode,
   pairingLinkRelay,
   teamName,
+  upgradeLink,
+  useBridge,
   useJoinWithCode,
   useMachines,
   usePairingCode,
-  usePlanLimitTelemetry,
-  useRelayUsage,
   useSession,
   useTeamChoices,
   type Machine,
@@ -500,8 +500,7 @@ function Footer({
   onClose: () => void;
 }) {
   const t = useT();
-  const plans = usePlanLimitTelemetry();
-  const plan = useRelayUsage()?.plan ?? null;
+  const { core } = useBridge();
   const { openExternal } = useSession();
   const team = pairing.team;
   const limit = team?.phase === "failed" && team.upgradeUrl ? (team.kind ?? "other") : null;
@@ -521,9 +520,8 @@ function Footer({
     if (!limit) shownLimit.current = null;
     else if (shownLimit.current !== limit) {
       shownLimit.current = limit;
-      plans.shown("app_team", { kind: limit, plan });
     }
-  }, [limit, plans, plan]);
+  }, [limit]);
 
   const done = (
     <Button data-add-done="" variant={added ? "default" : "secondary"} onClick={onClose}>
@@ -559,10 +557,7 @@ function Footer({
               variant="ghost"
               className="text-brand"
               data-pairing-upgrade=""
-              onClick={() => {
-                plans.opened("app_team", { kind: team.kind ?? "other", plan });
-                void openExternal(plans.link(team.upgradeUrl!, "app_team")).catch(() => {});
-              }}
+              onClick={() => void openExternal(upgradeLink(core, team.upgradeUrl!, "app_team")).catch(() => {})}
             >
               {t("computers.add.upgrade")}
             </Button>

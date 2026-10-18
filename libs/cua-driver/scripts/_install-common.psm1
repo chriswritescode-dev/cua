@@ -1,7 +1,7 @@
 # _install-common.psm1 - daemon cleanup helpers for install.ps1.
 #
-# install.ps1 is usually fetched via `irm | iex` (including by
-# `cua-driver update --apply`) and has no file on disk during execution.
+# install.ps1 is usually fetched via `irm | iex` and has no file on disk
+# during execution.
 # It prefers the on-disk copy of this module when one sits next to it
 # (dev / CI) and otherwise fetches it from https://cua.ai/driver/.
 # install-local.ps1 manages the separate cua-driver-local identity and
@@ -18,10 +18,10 @@ Set-StrictMode -Version Latest
 
 # PIDs of this process and its live ancestors, nearest first.
 #
-# `cua-driver update --apply` launches the installer as a descendant of
-# cua-driver.exe and waits for its exit code. Cleanup must never stop any
-# of these processes: stopping the updater fails the update, and a tree
-# kill of it takes the installer down too (#2803, #4388). A recorded
+# A launcher may run the installer as its descendant and wait for its exit
+# code. Cleanup must never stop any of these processes: stopping the
+# launcher fails the install, and a tree kill of it takes the installer
+# down too (#2803, #4388). A recorded
 # parent PID can outlive its process and be reused, so a "parent" that was
 # created after its child ends the walk.
 function Get-CuaDriverAncestorProcessIds {

@@ -147,7 +147,6 @@ describe("Ready screen chat pickup (A, CUA-3319)", () => {
         const sent = JSON.stringify(c.args ?? null);
         for (const t of TITLES) expect(sent, `${c.op} sent a chat title`).not.toContain(t);
       }
-      expect(calls.some((c) => c.op === "telemetry.track")).toBe(true);
       // Private: nothing is posted to a Space thread, and nothing runs until the person sends.
       expect(calls.some((c) => c.op === "thread.post")).toBe(false);
       expect(calls.some((c) => c.op === "agents.start")).toBe(false);

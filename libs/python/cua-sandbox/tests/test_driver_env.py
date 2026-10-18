@@ -85,7 +85,7 @@ async def test_default_carrier_is_spacesd_mcp_through_the_sdk(shared, records):
 
 async def test_a_transport_without_spacesd_does_not_load_native(monkeypatch):
     monkeypatch.setitem(sys.modules, "cua_driver", None)
-    sb = Sandbox(PlainTransport(), _telemetry_enabled=False)
+    sb = Sandbox(PlainTransport())
     with pytest.raises(DriverConnectionError, match="cua-spacesd"):
         async with sb.driver.connect():
             pass

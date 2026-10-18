@@ -181,7 +181,6 @@ class OpenCUAAgent(BaseAgent):
             tools=[custom_computer],
             only_n_most_recent_images=3,
             trajectory_dir=trajectory_dir,
-            telemetry_enabled=False,
             instructions=(
                 "Use the provided computer to complete the task as described. "
                 "When the task is complete, indicate so clearly by outputting 'DONE'."

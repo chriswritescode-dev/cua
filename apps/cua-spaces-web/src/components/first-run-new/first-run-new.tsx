@@ -13,21 +13,20 @@ import { useNavigate } from "@tanstack/react-router";
 import { CheckIcon, ChevronDownIcon, CircleAlertIcon, CopyIcon, LoaderCircleIcon } from "lucide-react";
 import { useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 
-import { folderLabel, isNeedsProof, useMachines, useSession, useSettings, type SignInPhase } from "@/bridge";
+import { folderLabel, isNeedsProof, useMachines, useSession, type SignInPhase } from "@/bridge";
 import { BridgeContext } from "@/bridge/BridgeProvider";
 import { useAppPermissions } from "@/bridge/app-permissions";
 import { useLocalNetwork, type LocalNetworkState } from "@/bridge/local-network";
 import { readFirstRun, useFirstRunSaved, writeFirstRun } from "@/bridge/first-run";
 import { hostOs } from "@/bridge/host-os";
 import { useFirstSpaceOffers } from "@/bridge/new-space-hooks";
-import { onboardingInitial, onboardingTelemetry, onboardingView, readSavedOnboarding, writeSavedOnboarding } from "@/bridge/onboarding";
+import { readSavedOnboarding, writeSavedOnboarding } from "@/bridge/onboarding";
 import { AddComputerSheet } from "@/components/add-computer-sheet";
 import { starsWord } from "./stars-word";
 import { AppPermissionList, LocalNetworkRow, type PermissionsView } from "@/components/app-permissions";
 import { AppMarkImage } from "@/components/agents/harness-mark";
 import { agoLabel, PICK_UP_LIMIT, recentThreads, useRecentThreads } from "@/components/ask-first/pick-up";
 import { CuaLogo } from "@/components/cua-logo";
-import { Switch } from "@/components/ui/switch";
 import { permissionsStepView, type PermissionsStepView } from "@/lib/app-permissions";
 import { addImportedTask, hostSpaceId, type AskTask } from "@/lib/ask-first";
 import {
@@ -59,14 +58,12 @@ import {
   stepDots,
   stepOf,
   WELCOME,
-  welcomeUsage,
   type AgentView,
   type NewRunSaved,
   type ReadyView,
   type RunFacts,
   type SignInView,
   type StepDot,
-  type WelcomeUsage,
 } from "@/lib/first-run-new";
 import { cn } from "@/lib/utils";
 
@@ -348,51 +345,13 @@ export function StepDots({ dots, onGo }: { dots: StepDot[]; onGo: (i: number, vi
 
 /* ---- The screens (drawn from their views, so tests draw every state) --------------------- */
 
-export function WelcomeScreen({
-  onAdd,
-  usage,
-  onUsage,
-  onUsageLink,
-}: {
-  onAdd: () => void;
-  usage?: WelcomeUsage | null;
-  onUsage?: (on: boolean) => void;
-  onUsageLink?: () => void;
-}) {
+export function WelcomeScreen({ onAdd }: { onAdd: () => void }) {
   return (
     <div data-new-run="welcome">
       <Title>
         <SuperTitle text={WELCOME.title} />
       </Title>
       <Line>{WELCOME.line}</Line>
-      {usage ? (
-        // Before anything is sent: the hosts hold every usage event until the run leaves this screen.
-        <div
-          className={cn("mt-6 flex max-w-[520px] items-start gap-3 text-[13px] leading-[19px] font-medium", GREY)}
-          data-new-run-usage={usage.on ? "on" : "off"}
-        >
-          {/* The switch sits in a box one text line tall, so it centres on the label line whatever the font metrics. */}
-          <span className="flex h-[19px] shrink-0 items-center">
-            <Switch
-              checked={usage.on}
-              disabled={!usage.enabled}
-              onCheckedChange={(on) => onUsage?.(on)}
-              aria-label={usage.label}
-              data-new-run-usage-switch=""
-            />
-          </span>
-          <span className="min-w-0">
-            <span className="block text-white">{usage.label}</span>
-            <span className="block" data-new-run-usage-notice="">
-              {usage.notice}{" "}
-              <button type="button" className="underline underline-offset-2 hover:text-white" onClick={onUsageLink} data-new-run-usage-link="">
-                {usage.linkLabel}
-              </button>
-            </span>
-            {usage.help ? <span className="block">{usage.help}</span> : null}
-          </span>
-        </div>
-      ) : null}
       <Actions>
         <button type="button" className={WHITE_BUTTON} onClick={onAdd} data-onboarding-primary="">
           {WELCOME.primary}
@@ -832,30 +791,6 @@ const COPY_MAX = 600;
  */
 export const COPY_RIGHT = PAGE_PAD + COPY_MAX;
 
-/**
- * The usage data's name for each screen (`schema::FIRST_RUN_STEPS`), so the onboarding funnel keeps its steps:
- * Ready ends the run and is counted by its finish, not as a step.
- */
-const FUNNEL_STEP: Partial<Record<NewRunScreenName, string>> = {
-  welcome: "welcome",
-  signin: "sign_in",
-  permissions: "permissions",
-  agent: "connect_agent",
-  ready: "ready",
-};
-
-/** The picked agent as a usage-event word (`claude-code` is sent as `claude_code`); the core drops any it doesn't know. */
-const agentWord = (agent: string | null) => (agent ?? "none").replaceAll("-", "_");
-
-/** Usage events never get in the way of the run. */
-function track(send: () => void): void {
-  try {
-    send();
-  } catch {
-    // An older core that reads the state differently: no event.
-  }
-}
-
 /** The new first run's whole page. */
 export function NewFirstRun() {
   const navigate = useNavigate();
@@ -865,7 +800,6 @@ export function NewFirstRun() {
   const os = hostOs();
   const session = useSession();
   const machines = useMachines();
-  const settings = useSettings();
   const offers = useFirstSpaceOffers();
   const savedAll = useFirstRunSaved();
   const s: NewRunSaved = { ...NEW_RUN_EMPTY, ...(savedAll.newRun ?? {}) };
@@ -924,36 +858,6 @@ export function NewFirstRun() {
   const mainRef = useRef<HTMLElement>(null);
   useFadeUnder(mainRef, s.screen);
   const moreBelow = useMoreBelow(mainRef, s.screen);
-
-  // The onboarding funnel (`cua_onboarding_*`): the run starts once, then each screen counts when it shows.
-  const core = ctx?.core ?? null;
-  const telemetry = settings.data?.telemetry ?? null;
-  const funnelState = (c: NonNullable<typeof core>) => ({
-    ...onboardingInitial(c, session.data?.identity ?? null),
-    step: s.screen === "welcome" || s.screen === "signin" ? ("welcome" as const) : ("agents" as const),
-    runCounted: true,
-    telemetry: telemetry ? onboardingTelemetry(telemetry) : null,
-  });
-  // Screen 1's usage line, in the core's words (the same as Settings, Privacy).
-  const usage =
-    s.screen === "welcome" && core && telemetry
-      ? welcomeUsage(onboardingView(core, { ...onboardingInitial(core, null), step: "welcome", telemetry: onboardingTelemetry(telemetry) }))
-      : null;
-  const runStarted = useRef(false);
-  useEffect(() => {
-    if (runStarted.current || !store || !core || !telemetry) return;
-    runStarted.current = true;
-    track(() => store.trackOnboarding({ ...onboardingInitial(core, null), telemetry: onboardingTelemetry(telemetry) }, { type: "start" }));
-  }, [store, core, telemetry]);
-  useEffect(() => {
-    const step = FUNNEL_STEP[s.screen];
-    // The Ready screen's events name the picked agent (a fixed word; the core drops anything else).
-    if (store && step) track(() => store.trackFirstRunStep(step, "step_viewed", s.screen === "ready" ? agentWord(s.agent) : "none"));
-  }, [store, s.screen]);
-  const funnel = (action: string, detail = "none") => {
-    const step = FUNNEL_STEP[s.screen];
-    if (store && step) track(() => store.trackFirstRunStep(step, action, detail));
-  };
 
   // A new screen: focus moves to its title, so a screen reader reads it. Moved with the arrow keys on the
   // step dots, focus stays on the dots instead.
@@ -1202,15 +1106,12 @@ export function NewFirstRun() {
 
   // Choose later: setup is done without connecting an agent; Settings, Connections does it any time.
   const agentsLater = () => {
-    funnel("step_skipped", "later");
     void finish();
   };
 
   const open = (url: string) => void session.openExternal(url).catch(() => {});
 
   const leave = () => {
-    funnel("step_skipped", "step");
-    if (store && core) track(() => store.trackOnboardingSkipped(funnelState(core)));
     session.cancelSignIn();
     writeSavedOnboarding({ ...readSavedOnboarding(), skipped: true });
     writeFirstRun({ finishedLater: true });
@@ -1219,13 +1120,11 @@ export function NewFirstRun() {
   };
   const skip = () => {
     if (s.screen === "welcome" || s.screen === "signin") {
-      funnel("step_skipped", "step");
       session.cancelSignIn();
       leaveFirstStep();
     } else leave();
   };
   const finished = async () => {
-    if (store && core) track(() => store.trackOnboardingFinished(funnelState(core)));
     await session.completeOnboarding(thisState === "added" && signedIn ? "host" : "client").catch(() => {});
     // Setup ends on Home, ready for the first job; the rest is asked for there once that job is done (CUA-3150, C).
     const offer = readFirstRun().restOffer === "dismissed" ? ("dismissed" as const) : ("waiting" as const);
@@ -1271,12 +1170,7 @@ export function NewFirstRun() {
   switch (s.screen) {
     case "welcome":
       body = (
-        <WelcomeScreen
-          onAdd={startSignIn}
-          usage={usage}
-          onUsage={(on) => void settings.updateSetting("telemetry", on).catch(() => {})}
-          onUsageLink={() => usage && open(usage.linkUrl)}
-        />
+        <WelcomeScreen onAdd={startSignIn} />
       );
       break;
     case "signin":
@@ -1348,15 +1242,8 @@ export function NewFirstRun() {
           agent={s.agent}
           agents={s.connected}
           place={placeName(os)}
-          onDone={() => {
-            funnel("step_completed", agentWord(s.agent));
-            void finish();
-          }}
-          onContinueChat={(task) => {
-            funnel("step_chat_picked_up", agentWord(s.agent));
-            void continueChat(task);
-          }}
-          onCopied={() => funnel("step_command_copied", agentWord(s.agent))}
+          onDone={() => void finish()}
+          onContinueChat={(task) => void continueChat(task)}
         />
       ) : null;
       break;

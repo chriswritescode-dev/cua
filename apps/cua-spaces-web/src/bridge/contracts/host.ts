@@ -2,10 +2,10 @@
 // Copyright (c) 2026 Cua AI, Inc.
 
 /**
- * Account, daemon, machine, onboarding, telemetry and Settings shapes.
+ * Account, daemon, machine, onboarding and Settings shapes.
  *
  * Hand-written mirror of the Tauri app's adapters (`apps/cua-spaces/src/
- * native/account.ts`, `native/host.ts`, `native/telemetry.ts`,
+ * native/account.ts`, `native/host.ts`,
  * `components/desktop/NewSpaceWizard.tsx`) and of the app core's
  * `settings` module (`libs/cua/crates/cua-spaces-app-core/src/settings.rs`).
  * Rust is the source of truth; these are its JSON (camelCase) shapes.
@@ -274,7 +274,7 @@ export interface MachinesViewIssueAction {
   url?: string | null;
   /** A host action to run (`host.action`). */
   hostAction?: HostActionId | null;
-  /** Restart into the Cua Spaces update already downloaded (the sidebar's "Restart to update"). */
+  /** A newer Cua Spaces release is available (the sidebar's update line opens its notes). */
   appUpdate?: boolean;
 }
 
@@ -698,7 +698,7 @@ export interface HostFormView {
 /** What the system reports for the app as a login item (`login_item::LoginItemStatus`). */
 export type LoginItemStatus = "enabled" | "notRegistered" | "requiresApproval" | "notFound";
 
-/* ---- Onboarding, telemetry ---------------------------------------------- */
+/* ---- Onboarding --------------------------------------------------------- */
 
 export type OnboardingMode = "client" | "host";
 
@@ -706,16 +706,6 @@ export interface OnboardingState {
   completed: boolean;
   mode?: OnboardingMode | null;
   installerMode?: OnboardingMode | null;
-}
-
-/** `telemetry_status`. */
-export interface TelemetryView {
-  enabled: boolean;
-  source: string;
-  sourceKind: string;
-  noticeShown: boolean;
-  noticeText: string;
-  docsUrl: string;
 }
 
 /**
@@ -775,13 +765,12 @@ export interface SettingsInput {
   signIn?: SignInPhase;
   canSignOut?: boolean;
   menuBar?: boolean;
-  telemetry?: { enabled: boolean; lockedBy?: string | null } | null;
+  defaultLocation?: "cloud" | "local" | "yours" | "host";
+  locationLockedBy?: string | null;
   /** The Keyvault's auto-wipe (none: no Keyvault section). */
   keyvaultAutoWipe?: boolean | null;
   /** The unlock prompt shows (none: no row). */
   keyvaultUnlockPrompt?: boolean | null;
-  /** Load site icons the browser had none for (the core's default: on). */
-  keyvaultSiteIcons?: boolean;
   /** The Keyvault's protection facts (Touch ID, the daemon's signature). */
   keyvaultProtection?: { label: string; value: string }[];
   /** "Connect to the desktop automatically" (none: no row). */

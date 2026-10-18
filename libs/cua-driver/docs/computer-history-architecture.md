@@ -35,7 +35,7 @@ Cua Driver already has strong internal representations of session lifecycle and 
 - When was history enabled, paused, resumed, or deleted?
 - Did history drop events, reach its quota, or detect an incomplete/corrupt write?
 
-A useful history feature must answer those questions without turning the driver into a screen recorder, keylogger, or background telemetry collector.
+A useful history feature must answer those questions without turning the driver into a screen recorder, keylogger, or background activity collector.
 
 ### Community feedback themes
 
@@ -52,7 +52,7 @@ value of giving agents bounded prior-run context without weakening user privacy.
 1. Ship an experimental desktop Preview 0 behind both a daemon admission flag and explicit persistent user opt-in.
 2. Reuse the canonical tool-dispatch and action-outcome seams. Do not build a second action runtime.
 3. Encrypt every Preview 0 history record at rest with a namespace key protected by macOS Keychain, Windows Credential Manager, or Linux Secret Service and per-chunk derived keys. Store records as the Cua History Profile: a CBOR Sequence of per-record COSE_Encrypt0 objects containing CloudEvents JSON. There is no plaintext fallback.
-4. Keep history event data local and separate from product telemetry. Existing fixed-enum CLI command counters may report that a history command ran, but never include history fields, identifiers, results, counts, paths, or content.
+4. Keep history event data local. The driver emits no product telemetry, and history fields, identifiers, results, counts, paths, and content never leave the device.
 5. Never block or fail a computer action because history is slow or unavailable.
 6. Keep the event, storage, and permission contracts platform-neutral and keep native adapters thin.
 7. Expose exactly two read-only agent operations in Preview 0: `history_status` (`history.status`) and `history_query` (`history.query`). Route both through the existing Cua risk, permission, policy, and capability-manifest evaluator, and audit successful reads inside encrypted history.
@@ -77,7 +77,7 @@ value of giving agents bounded prior-run context without weakening user privacy.
 - Exposing agent mutation, deletion, raw encrypted chunks, keys, unrestricted queries, or model-generated summaries in Preview 0.
 - Claiming physical secure erasure or complete rollback resistance.
 - Claiming parity where an operating system or desktop cannot supply the same native evidence.
-- Using history as product telemetry or uploading it to Cua services.
+- Using history as analytics or uploading it to Cua services.
 
 ## Terminology
 
@@ -99,8 +99,8 @@ The implementation must extend current source-of-truth contracts:
 
 - [`cua-driver-core/src/tool.rs`](../rust/crates/cua-driver-core/src/tool.rs) is the canonical dispatch chokepoint. It joins the resolved tool name, sanitized arguments, timing, dispatch, and resulting action record.
 - [`cua-driver-core/src/action_record.rs`](../rust/crates/cua-driver-core/src/action_record.rs) provides `ActionExecutionRecord::stable_projection()`, the validated source for fixed effect, route, delivery, evidence-kind, and escalation-kind fields.
-- [`cua-driver-core/src/session.rs`](../rust/crates/cua-driver-core/src/session.rs) owns session lifecycle. Its current `SessionObserver` is a single `OnceLock` registration already used by telemetry; history must not try to register a competing observer.
-- [`cua-driver-core/src/server.rs`](../rust/crates/cua-driver-core/src/server.rs) exposes a deliberately content-free `ToolCompletionObservation`. It is useful for fixed classifications but is not, by itself, a complete history event.
+- [`cua-driver-core/src/session.rs`](../rust/crates/cua-driver-core/src/session.rs) owns session lifecycle and cleanup hooks.
+- [`cua-driver-core/src/server.rs`](../rust/crates/cua-driver-core/src/server.rs) provides the shared MCP dispatch boundary.
 - [`cua-driver-core/src/recording.rs`](../rust/crates/cua-driver-core/src/recording.rs) demonstrates begin/finish hooks around dispatch and argument sanitization. History may reuse that hook shape but never its screenshot-bearing storage or consent model.
 - The `platform-macos`, `platform-windows`, and `platform-linux` history adapters
   provide native key custody and per-action application identity without adding
@@ -116,7 +116,7 @@ The implementation must extend current source-of-truth contracts:
 - [`cua-driver-core/src/authorization.rs`](../rust/crates/cua-driver-core/src/authorization.rs), [`cua-driver-core/src/policy.rs`](../rust/crates/cua-driver-core/src/policy.rs), and [`cua-driver-core/src/session_manifest.rs`](../rust/crates/cua-driver-core/src/session_manifest.rs) are authoritative for the Preview 0 read-only history operations and remain the stable seam for a later NVIDIA OpenShell adapter.
 - [`cua-driver/src/bundle.rs`](../rust/crates/cua-driver/src/bundle.rs) is authoritative for release/local namespace separation and default state paths.
 
-Preview 0 adds a dedicated history hook beside recording's dispatch hooks. It does not widen product telemetry and does not depend on a new `AXObserver` stream.
+Preview 0 adds a dedicated history hook beside recording's dispatch hooks. It does not depend on a new `AXObserver` stream.
 
 ## Staged architecture
 
@@ -169,7 +169,6 @@ flowchart LR
     D -->|serialized bounded read| W
     S -->|metadata-only result| D
 
-    T[Product telemetry] ---|no history data flow| S
 ```
 
 #### Advanced: later trust boundaries and platform adapters
@@ -249,7 +248,6 @@ flowchart LR
     S -->|bounded decrypted metadata| D
     D --> G
 
-    T[Product telemetry] ---|no history data flow| S
 ```
 
 ### Admission and consent
@@ -386,7 +384,7 @@ PID is diagnostic context, not a stable identity. Window IDs, titles, URLs, tab 
 | Fixed capability and caller-category enums | stored | stored |
 | Target coordinates, selectors, and element labels | prohibited | prohibited |
 | Authorization decision IDs, policy text, or caller labels | prohibited | possible opaque fixed metadata after review |
-| External account, credential, or telemetry identity | prohibited | prohibited |
+| External account, credential, or persistent identity | prohibited | prohibited |
 | Fixed effect, route, delivery, evidence, refusal, and error classes | stored | stored |
 | Wall time | stored | stored |
 | Monotonic timings and durations | prohibited | possible fixed buckets after review |
@@ -658,8 +656,8 @@ Preview 0 may launch on a platform only when all of these requirements pass:
    namespace, verify key absence, and never report success while retained
    ciphertext remains decryptable.
 6. Local CLI and agent reads use the existing authenticated authorization path.
-   History content, query fields, identifiers, counts, and results remain absent
-   from product telemetry.
+   History content, query fields, identifiers, counts, and results are never
+   transmitted off the device.
 7. Schema and storage-profile compatibility tests cover upgrades, unsupported
    newer formats, corruption, and rollback. An older binary must leave an
    unknown store untouched; a newer binary must refuse unsafe mutation rather
@@ -889,7 +887,7 @@ platform qualifies.
 - Disabling the feature leaves data intact. Deletion is a separate explicit operation.
 - Normal uninstall also leaves encrypted data, preferences, and namespace-scoped keys intact; only explicit purge performs key destruction and file cleanup.
 
-## Security, privacy, and telemetry
+## Security and privacy
 
 ### Trust boundaries
 
@@ -902,15 +900,12 @@ platform qualifies.
 - Full local-store rollback is not claimed to be detectable without an independent checkpoint.
 - Encryption does not hide filesystem metadata. Directory and chunk counts, file sizes, modification times, and the configured rotation cadence can reveal coarse activity timing to a local observer who can inspect the history root.
 
-### Telemetry firewall
+### Data egress
 
-History and product telemetry are separate systems:
+History is the only record of driver activity, and it stays local:
 
-- no history event, field, identifier, result, count, path, title, URL, query, summary, or content is copied into telemetry;
-- the existing CLI telemetry classifier may emit only a closed command name and closed history operation such as `enable`, `status`, or `delete`;
-- telemetry enablement does not enable history;
-- history enablement does not change telemetry payloads;
-- telemetry identifiers are never written into history;
+- no history event, field, identifier, result, count, path, title, URL, query, summary, or content is transmitted off the device;
+- the driver exposes no product telemetry switch because it emits no product telemetry;
 - history access cannot be inferred as permission to upload data;
 - any future aggregate measurement requires a separate privacy review and explicit contract change.
 
@@ -932,10 +927,6 @@ Rejected. Trajectory recording is caller-directed and may contain screenshots, a
 ### Use the SDK activity observer
 
 Rejected as the internal persistence seam. It is host-facing and per-runtime. The canonical dispatch hook has the authoritative tool and action outcome context.
-
-### Register history as the session observer
-
-Rejected for Preview 0 because the current registration is single-owner and already used by telemetry. A future multi-observer registry may be useful independently, but history does not require it to ship.
 
 ### Start with continuous desktop accessibility observers
 
@@ -1060,7 +1051,7 @@ Deferred. Bounded authenticated-record scanning is sufficient while the experime
 - permission, pause-attribution, retention-reduction confirmation, and namespace-isolation tests;
 - one-to-one operation/capability mapping tests that reject generic argument-selected privilege changes;
 - unknown additive field and unsupported schema-version tests;
-- telemetry firewall tests;
+- no-network and no-upload tests;
 - feature-off no-op tests.
 
 ### Preview 0 integration tests

@@ -249,7 +249,7 @@ async def env_sandbox(env):
     async def factory():
         return env
 
-    sb = Sandbox(EnvTransport(env_factory=factory), _telemetry_enabled=False)
+    sb = Sandbox(EnvTransport(env_factory=factory))
     await sb._connect()
     return sb
 

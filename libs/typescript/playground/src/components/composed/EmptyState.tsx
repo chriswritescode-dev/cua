@@ -30,8 +30,6 @@ interface EmptyStateWithInputProps {
   welcomeMessage?: string;
   /** Custom hint message when model/computer not selected */
   selectionHint?: string;
-  /** Optional telemetry callback when example prompt is selected */
-  onExamplePromptSelected?: (promptId: string, promptTitle: string) => void;
   /** Toast callback for user notifications */
   onToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
   /** Callback to open the Add Sandbox modal */
@@ -48,7 +46,6 @@ export function EmptyStateWithInput({
   logo,
   welcomeMessage = 'How can I help you today?',
   selectionHint = 'Make sure to select a model and sandbox!',
-  onExamplePromptSelected,
   onToast,
   onAddComputer,
 }: EmptyStateWithInputProps) {
@@ -60,7 +57,6 @@ export function EmptyStateWithInput({
         logo={logo}
         welcomeMessage={welcomeMessage}
         selectionHint={selectionHint}
-        onExamplePromptSelected={onExamplePromptSelected}
         onToast={onToast}
         onAddComputer={onAddComputer}
       />
@@ -82,7 +78,6 @@ interface EmptyStateContentProps {
   };
   welcomeMessage: string;
   selectionHint: string;
-  onExamplePromptSelected?: (promptId: string, promptTitle: string) => void;
   onToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
   onAddComputer?: () => void;
 }
@@ -96,7 +91,6 @@ function EmptyStateContent({
   logo,
   welcomeMessage,
   selectionHint,
-  onExamplePromptSelected,
   onToast,
   onAddComputer,
 }: EmptyStateContentProps) {
@@ -213,10 +207,7 @@ function EmptyStateContent({
         </motion.div>
 
         {/* Example prompts */}
-        <ExamplePrompts
-          onSelectPrompt={handleSelectPrompt}
-          onExamplePromptSelected={onExamplePromptSelected}
-        />
+        <ExamplePrompts onSelectPrompt={handleSelectPrompt} />
       </div>
     </motion.div>
   );

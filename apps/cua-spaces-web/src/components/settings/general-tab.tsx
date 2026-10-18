@@ -75,7 +75,7 @@ export const showCuaIn = (row: CoreRow, say: Say): CoreRow => ({
 
 /**
  * Settings, General: the few things a person sets every day. Start at login,
- * where Cua lives (Mac), appearance, the shortcut (Mac) and usage data.
+ * where Cua lives (Mac), appearance and the shortcut (Mac).
  * Everything else moved: Advanced, Connectors, the Volume
  * and Keyvault pages.
  */
@@ -86,12 +86,8 @@ export function GeneralTab() {
   const mac = showsMacShellSettings();
   const page = settings?.page;
   const general = page?.sections.find((s) => s.id === "general");
-  const telemetry = page?.sections.find((s) => s.id === "privacy");
   const notch = general?.rows.find((r) => r.id === "notch");
-  const telemetryRow = telemetry?.rows.find((r) => r.id === "telemetry");
-  const dataLink = telemetry?.rows.find((r) => r.id === "telemetry-note");
   const values = settings?.values;
-  const { openExternal } = useSession();
   const { core } = useBridge();
   const tips = useTips();
   // Show tips and Reset tips: what the core makes of the row (`settings.choose`), saved with the settings.
@@ -102,21 +98,7 @@ export function GeneralTab() {
 
   return (
     <div data-settings-tab="general">
-      <SettingsGroup
-        title={t("settings.general.everyday")}
-        footer={
-          dataLink?.linkLabel && dataLink.linkUrl ? (
-            <button
-              type="button"
-              data-telemetry-link=""
-              className="text-brand-strong outline-none hover:underline focus-visible:underline"
-              onClick={() => void openExternal(dataLink.linkUrl!).catch(fail(t("settings.general.open_failed")))}
-            >
-              {dataLink.linkLabel}
-            </button>
-          ) : null
-        }
-      >
+      <SettingsGroup title={t("settings.general.everyday")}>
         <LaunchAtLogin />
         {mac && notch ? (
           <CoreSettingsRow
@@ -161,26 +143,6 @@ export function GeneralTab() {
         />
         <LanguageRow />
         <ShortcutRow shortcut={settings?.globalShortcut} onChange={(accelerator) => chooseSetting("global-shortcut", accelerator)} />
-        {telemetryRow ? (
-          <CoreSettingsRow
-            row={{ ...telemetryRow, kind: "toggle" }}
-            description={t("settings.general.telemetry_help")}
-            onChoose={(_, option) => void updateSetting("telemetry", option === "on").catch(fail(t("settings.general.telemetry_failed")))}
-          />
-        ) : values ? (
-          <SettingsRow
-            label={t("settings.general.telemetry")}
-            description={t("settings.general.telemetry_help")}
-            htmlFor="telemetry"
-            control={
-              <Switch
-                id="telemetry"
-                checked={values.telemetry}
-                onCheckedChange={(on) => void updateSetting("telemetry", on).catch(fail(t("settings.general.telemetry_failed")))}
-              />
-            }
-          />
-        ) : null}
       </SettingsGroup>
       <CliSettingsSection />
       <SharingGroup />

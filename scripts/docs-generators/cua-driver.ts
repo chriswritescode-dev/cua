@@ -137,12 +137,12 @@ export const CLI_GROUPS: CliGroup[] = [
     slug: 'serve-and-configure',
     title: 'Serve, configure and update',
     summary:
-      'Serve MCP and call tools from the shell; run the daemon; grant permissions and diagnose; configure the driver, telemetry and cursor; update and pick a release channel',
+      'Serve MCP and call tools from the shell; run the daemon; grant permissions and diagnose; configure the driver and cursor; update and pick a release channel',
     commands: [
       'mcp', 'connect', 'mcp-config', 'list-tools', 'describe', 'call', 'manifest', 'dump-docs',
       'serve', 'stop', 'status', 'sessions', 'revoke', 'autostart',
       'permissions', 'kwin-capture', 'doctor', 'diagnose', 'test',
-      'config', 'telemetry', 'cursor-theme', 'cursor',
+      'config', 'cursor-theme', 'cursor',
       'check-update', 'update', 'channel',
     ],
   },

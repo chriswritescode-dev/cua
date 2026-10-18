@@ -150,8 +150,8 @@ export const CLI_GROUPS: CliGroup[] = [
   {
     slug: 'account-and-setup',
     title: 'Account and setup',
-    summary: 'Sign in and out, user defaults, the cua daemon, health checks and usage telemetry',
-    commands: ['auth', 'config', 'daemon', 'doctor', 'telemetry', 'experiments'],
+    summary: 'Sign in and out, user defaults, the cua daemon and health checks',
+    commands: ['auth', 'config', 'daemon', 'doctor', 'experiments'],
   },
   {
     slug: 'pool',

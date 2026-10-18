@@ -5,7 +5,7 @@
 //! privacy policy, terms, system status, an issue report), the copyright line, and, where
 //! the app updates itself (the macOS app through Sparkle, Windows and Linux
 //! through electron-updater), the update controls: automatic checks,
-//! automatic installs, the channel (Stable or Nightly), Check Now and the last
+//! the channel (Stable or Nightly), Check Now and the last
 //! check. There are no betas any more: the Nightly channel replaced them, and
 //! an install that chose Beta is on Nightly.
 //!
@@ -58,7 +58,7 @@ pub enum UpdateChannel {
 }
 
 impl UpdateChannel {
-    /// The id the channel picker, the bridges and telemetry use.
+    /// The id the channel picker and the settings file use.
     pub fn id(self) -> &'static str {
         match self {
             UpdateChannel::Stable => "stable",
@@ -76,9 +76,9 @@ impl UpdateChannel {
     }
 }
 
-/// The Sparkle channels an updater on `channel` may install from (Stable:
-/// none but the default one). Every item of the nightly appcast is on the
-/// `nightly` channel, so an app on Stable installs none of them even if it
+/// The Sparkle channels an updater on `channel` may check (Stable: none but
+/// the default one). Every item of the nightly appcast is on the
+/// `nightly` channel, so an app on Stable checks none of them even if it
 /// read that feed.
 pub fn allowed_channels(channel: UpdateChannel) -> Vec<String> {
     match channel {
@@ -156,8 +156,6 @@ pub struct AboutInput {
     pub updater: bool,
     /// The updater checks on its own.
     pub auto_check: bool,
-    /// The updater downloads and installs on its own.
-    pub auto_install: bool,
     /// The chosen channel.
     pub channel: UpdateChannel,
     /// The last check, as the shell formats a date; `None`: never.
@@ -198,16 +196,10 @@ pub struct AboutLink {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AboutUpdates {
-    /// "Check for and download updates automatically".
+    /// "Check for updates automatically".
     pub auto_check_label: String,
     /// Checked.
     pub auto_check: bool,
-    /// "Install a downloaded update when Cua Spaces quits".
-    pub auto_install_label: String,
-    /// Checked.
-    pub auto_install: bool,
-    /// It can be used (only with automatic checks).
-    pub auto_install_enabled: bool,
     /// "Updates".
     pub channel_label: String,
     /// Stable, Nightly.
@@ -331,11 +323,8 @@ pub fn view(input: &AboutInput) -> AboutView {
         url,
     };
     let updates = input.updater.then(|| AboutUpdates {
-        auto_check_label: "Check for and download updates automatically".into(),
+        auto_check_label: "Check for updates automatically".into(),
         auto_check: input.auto_check,
-        auto_install_label: "Install a downloaded update when Cua Spaces quits".into(),
-        auto_install: input.auto_install,
-        auto_install_enabled: input.auto_check,
         channel_label: "Updates".into(),
         channels: [
             (UpdateChannel::Stable, "Stable"),
@@ -526,7 +515,6 @@ mod tests {
             os: "macOS 26.0 (arm64)".into(),
             updater: true,
             auto_check: true,
-            auto_install: false,
             channel: UpdateChannel::Stable,
             last_check: None,
             checking: false,
@@ -574,7 +562,7 @@ mod tests {
     #[test]
     fn update_controls_follow_the_updater() {
         let u = view(&input()).updates.unwrap();
-        assert!(u.auto_check && !u.auto_install && u.auto_install_enabled);
+        assert!(u.auto_check);
         assert_eq!(u.last_check, "Last check: Never");
         assert_eq!(u.check_label, "Check Now");
         assert!(u.check_enabled);
@@ -593,7 +581,7 @@ mod tests {
         i.last_check = Some("9/30/26, 3:04 PM".into());
         i.checking = true;
         let u = view(&i).updates.unwrap();
-        assert!(!u.auto_install_enabled);
+        assert!(!u.auto_check);
         assert_eq!(u.last_check, "Last check: 9/30/26, 3:04 PM");
         assert_eq!(u.check_label, "Checking\u{2026}");
         assert!(!u.check_enabled);
@@ -688,11 +676,10 @@ mod tests {
             i.version = version.into();
             i.channel = UpdateChannel::Stable;
             let u = view(&i).updates.unwrap();
-            assert!(
-                u.channel_note
-                    .unwrap()
-                    .contains("stays until the next Stable release")
-            );
+            assert!(u
+                .channel_note
+                .unwrap()
+                .contains("stays until the next Stable release"));
             assert_eq!(u.download_label.as_deref(), Some("Download Stable"));
             assert_eq!(u.download_url.as_deref(), Some(DOWNLOAD_URL));
         }
@@ -776,21 +763,17 @@ mod tests {
             "Cua Spaces updated, but could not refresh the Cua skills in your AI agents \
              (exit status 1). Run `cua agents update` to try again."
         );
-        assert!(
-            refresh_notice(&RefreshReport {
-                agents_error: None,
-                daemon_error: Some(String::new()),
-            })
-            .unwrap()
-            .contains("restart the Cua daemon. Quit")
-        );
-        assert!(
-            refresh_notice(&RefreshReport {
-                agents_error: Some("a".into()),
-                daemon_error: Some("b".into()),
-            })
-            .unwrap()
-            .contains("or restart the Cua daemon")
-        );
+        assert!(refresh_notice(&RefreshReport {
+            agents_error: None,
+            daemon_error: Some(String::new()),
+        })
+        .unwrap()
+        .contains("restart the Cua daemon. Quit"));
+        assert!(refresh_notice(&RefreshReport {
+            agents_error: Some("a".into()),
+            daemon_error: Some("b".into()),
+        })
+        .unwrap()
+        .contains("or restart the Cua daemon"));
     }
 }

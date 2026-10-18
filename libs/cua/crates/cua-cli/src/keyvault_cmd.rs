@@ -13,8 +13,8 @@
 //!
 //! A passphrase is never an argument: `--passphrase` prompts on the terminal
 //! with echo off, and `--passphrase-stdin` reads one line from stdin for
-//! scripts. It is sent only to the broker, never logged or stored, never in
-//! telemetry (which records `keyvault.init`, not arguments), and zeroized.
+//! scripts. It is sent only to the broker, never logged or stored, and
+//! zeroized.
 
 use clap::{Args, Subcommand};
 

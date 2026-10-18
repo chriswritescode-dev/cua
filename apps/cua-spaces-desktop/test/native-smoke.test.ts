@@ -26,8 +26,6 @@ describe.skipIf(!built)("the native layer in Node", () => {
       HOME: home,
       USERPROFILE: home,
       CUA_HOME: path.join(home, ".cua"),
-      CUA_TELEMETRY: "0",
-      DO_NOT_TRACK: "1",
       CUA_KEYCHAIN_NONINTERACTIVE: "1",
     });
     native = await loadNative(dir);

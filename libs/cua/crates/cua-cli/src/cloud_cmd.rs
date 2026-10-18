@@ -657,13 +657,6 @@ pub async fn run(
             let result = spaces
                 .cloud_connect(t, make_default, ttl_hours, Some(options))
                 .await;
-            link_event(
-                "connect",
-                &provider,
-                result
-                    .as_ref()
-                    .map(|c| (c.provider.auth.as_str(), c.provider.status.as_str())),
-            );
             let c = match result {
                 Ok(c) => c,
                 // Every run ends with a status, also when it errs.
@@ -732,13 +725,6 @@ pub async fn run(
             let result = spaces
                 .cloud_approve(provider.to_ascii_lowercase(), deny)
                 .await;
-            link_event(
-                if deny { "deny" } else { "approve" },
-                &provider.to_ascii_lowercase(),
-                result
-                    .as_ref()
-                    .map(|p| (p.auth.as_str(), p.status.as_str())),
-            );
             let p = result?;
             if json {
                 json_line(out, provider_json(&p));
@@ -763,20 +749,6 @@ pub async fn run(
             let result = spaces
                 .cloud_disconnect(provider.to_ascii_lowercase(), delete)
                 .await;
-            link_event(
-                "disconnect",
-                &provider.to_ascii_lowercase(),
-                result.as_ref().map(|d| {
-                    (
-                        "none",
-                        if d.disconnected {
-                            "not_connected"
-                        } else {
-                            "connected"
-                        },
-                    )
-                }),
-            );
             let d = result?;
             if json {
                 json_line(
@@ -1123,28 +1095,6 @@ fn provider_line(p: &cua_sdk::CloudProvider) -> String {
         "not connected · no credentials found".to_string()
     };
     format!("{:<13} {state}", p.title)
-}
-
-/// `cua_cloud_link` for one action: the cloud's word, how it is linked
-/// and where it stands (or that it failed). Only vocabulary words leave
-/// this device: never an account, a region or a token.
-fn link_event<E>(action: &str, cloud: &str, result: Result<(&str, &str), &E>) {
-    use cua_telemetry::Outcome;
-    let (auth, status, outcome) = match result {
-        Ok((auth, status)) => (
-            if auth.is_empty() { "none" } else { auth },
-            status,
-            if status == "failed" {
-                Outcome::Error
-            } else {
-                Outcome::Ok
-            },
-        ),
-        Err(_) => ("none", "error", Outcome::Error),
-    };
-    if let Some(e) = cua_telemetry::events::cloud_link(action, cloud, auth, status, outcome) {
-        cua_telemetry::capture(e);
-    }
 }
 
 /// What to do about a cloud, one short line each: what is wrong with its

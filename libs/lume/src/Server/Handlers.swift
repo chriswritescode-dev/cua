@@ -7,9 +7,6 @@ extension Server {
     // MARK: - VM Management Handlers
 
     func handleListVMs(storage: String? = nil) async throws -> HTTPResponse {
-        // Record telemetry
-        TelemetryClient.shared.record(event: TelemetryEvent.apiVMList)
-
         do {
             let vmController = LumeController()
             let vms = try vmController.list(storage: storage)
@@ -25,9 +22,6 @@ extension Server {
     }
 
     func handleGetVM(name: String, storage: String? = nil) async throws -> HTTPResponse {
-        // Record telemetry
-        TelemetryClient.shared.record(event: TelemetryEvent.apiVMGet)
-
         // Check if an async pull is in progress for this VM name
         let pullProgress = await PullProgressTracker.shared.getPullProgress(for: name)
         let pullError = await PullProgressTracker.shared.getError(for: name)
@@ -134,12 +128,6 @@ extension Server {
         }
 
         let imageName = request.image.split(separator: ":").first.map(String.init) ?? request.image
-        // Telemetry: the catalog id or `custom`, never the reference.
-        TelemetryClient.shared.record(event: TelemetryEvent.apiPull, properties: [
-            "image": TelemetryClient.imageId(
-                request.image, registry: request.registry, organization: request.organization)
-        ])
-
         let vmName = request.name ?? imageName
         let tracker = PullProgressTracker.shared
 
@@ -158,7 +146,6 @@ extension Server {
         }
 
         let token = await tracker.begin(name: vmName, cancellable: true)
-        let pullStartedAt = Date()
 
         let task = Task.detached { @MainActor @Sendable in
             let outcome: PullProgressTracker.Outcome
@@ -187,15 +174,6 @@ extension Server {
                         metadata: ["name": vmName, "error": error.localizedDescription])
                 }
             }
-            let succeeded: Bool
-            if case .completed = outcome { succeeded = true } else { succeeded = false }
-            TelemetryClient.shared.recordOperationCompleted(
-                operation: "pull_start",
-                transport: .http,
-                success: succeeded,
-                errorClass: succeeded ? .none : .operationError,
-                elapsed: Date().timeIntervalSince(pullStartedAt)
-            )
             // Last step: a waiting cancel returns once this ran, after cleanup.
             await tracker.finish(name: vmName, token: token, outcome: outcome)
         }
@@ -222,14 +200,6 @@ extension Server {
                 body: try JSONEncoder().encode(APIError(message: "Invalid request body"))
             )
         }
-
-        // Record telemetry
-        TelemetryClient.shared.record(event: TelemetryEvent.apiVMCreate, properties: [
-            "os_type": request.os.lowercased(),
-            "cpu": request.cpu,
-            "memory": request.memory,
-            "disk_size": request.diskSize
-        ])
 
         do {
             let sizes = try request.parse()
@@ -277,9 +247,6 @@ extension Server {
     }
 
     func handleDeleteVM(name: String, storage: String? = nil) async throws -> HTTPResponse {
-        // Record telemetry
-        TelemetryClient.shared.record(event: TelemetryEvent.apiVMDelete)
-
         do {
             let vmController = LumeController()
             try await vmController.delete(name: name, storage: storage)
@@ -302,9 +269,6 @@ extension Server {
                 body: try JSONEncoder().encode(APIError(message: "Invalid request body"))
             )
         }
-
-        // Record telemetry
-        TelemetryClient.shared.record(event: TelemetryEvent.apiVMClone)
 
         do {
             let vmController = LumeController()
@@ -346,9 +310,6 @@ extension Server {
                 body: try JSONEncoder().encode(APIError(message: "Invalid request body"))
             )
         }
-
-        // Record telemetry
-        TelemetryClient.shared.record(event: TelemetryEvent.apiVMUpdate)
 
         do {
             let vmController = LumeController()
@@ -424,9 +385,6 @@ extension Server {
         force: Bool = false,
         timeout: TimeInterval = VM.defaultStopTimeout
     ) async throws -> HTTPResponse {
-        // Record telemetry
-        TelemetryClient.shared.record(event: TelemetryEvent.apiVMStop)
-
         Logger.info(
             "Stopping VM",
             metadata: [
@@ -577,11 +535,6 @@ extension Server {
                     diskPath: nil, nvramPath: nil, network: nil, clipboard: nil, vnc: nil)
             }
 
-            // Record telemetry
-            TelemetryClient.shared.record(event: TelemetryEvent.apiVMRun, properties: [
-                "headless": request.noDisplay ?? false
-            ])
-
             Logger.info(
                 "Parsed request",
                 metadata: [
@@ -692,12 +645,6 @@ extension Server {
             )
         }
 
-        // Telemetry: the catalog id or `custom`, never the reference.
-        TelemetryClient.shared.record(event: TelemetryEvent.apiPull, properties: [
-            "image": TelemetryClient.imageId(
-                request.image, registry: request.registry, organization: request.organization)
-        ])
-
         let vmName = request.name ?? (request.image.split(separator: ":").first.map(String.init) ?? request.image)
         let token = await PullProgressTracker.shared.begin(name: vmName, cancellable: false)
         do {
@@ -766,10 +713,6 @@ extension Server {
             )
         }
 
-        // Record telemetry
-        TelemetryClient.shared.record(event: TelemetryEvent.apiPush)
-        let pushStartedAt = Date()
-
         // Trigger push asynchronously, return Accepted immediately
         Task.detached { @MainActor @Sendable in
             do {
@@ -790,23 +733,9 @@ extension Server {
                 Logger.info(
                     "Background push completed successfully for image: \(request.imageName):\(request.tags.joined(separator: ","))"
                 )
-                TelemetryClient.shared.recordOperationCompleted(
-                    operation: "push",
-                    transport: .http,
-                    success: true,
-                    errorClass: .none,
-                    elapsed: Date().timeIntervalSince(pushStartedAt)
-                )
             } catch {
                 Logger.error(
                     "Background push failed for image: \(request.imageName):\(request.tags.joined(separator: ",")) - Error: \(error.localizedDescription)"
-                )
-                TelemetryClient.shared.recordOperationCompleted(
-                    operation: "push",
-                    transport: .http,
-                    success: false,
-                    errorClass: .operationError,
-                    elapsed: Date().timeIntervalSince(pushStartedAt)
                 )
             }
         }
@@ -824,9 +753,6 @@ extension Server {
     }
 
     func handleGetImages(_ request: HTTPRequest) async throws -> HTTPResponse {
-        // Record telemetry
-        TelemetryClient.shared.record(event: TelemetryEvent.apiImages)
-
         let pathAndQuery = request.path.split(separator: "?", maxSplits: 1)
         let queryParams =
             pathAndQuery.count > 1
@@ -1146,8 +1072,7 @@ extension Server {
                     networkMode: networkMode,
                     clipboard: clipboard,
                     vncPolicy: vncPolicy,
-                    forwards: forwards,
-                    telemetryTransport: .http
+                    forwards: forwards
                 )
                 Logger.info("VM run ended in background task", metadata: ["name": name])
             } catch {

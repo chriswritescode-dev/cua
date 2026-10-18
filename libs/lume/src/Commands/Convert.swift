@@ -43,8 +43,6 @@ struct Convert: AsyncParsableCommand {
     func run() async throws {
         if verbose { Logger.setVerbose() }
 
-        TelemetryClient.shared.record(event: TelemetryEvent.convert)
-
         let targetComponents = targetImage.split(separator: ":")
         guard targetComponents.count == 2, let primaryTag = targetComponents.last else {
             throw ValidationError("Invalid target image format. Expected format: name:tag")

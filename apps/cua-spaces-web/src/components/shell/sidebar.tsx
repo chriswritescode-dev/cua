@@ -9,7 +9,7 @@ import { Loader2Icon, TriangleAlertIcon } from "lucide-react";
 import type { SignInFooter, Space } from "@/bridge";
 import { spokenName } from "@/bridge/space-names";
 
-import { signInFooter, useBridge, useDriver, useFeatureRecorded, useNotifications, useSession, useSpaces } from "@/bridge";
+import { signInFooter, useBridge, useDriver, useNotifications, useSession, useSpaces } from "@/bridge";
 import { CuaKey } from "@/components/cua-key";
 import { DriverAttentionLabel } from "@/components/driver/attention";
 import { Button } from "@/components/ui/button";
@@ -105,7 +105,7 @@ export function Sidebar() {
       <SidebarTip />
       {/* Free only, near a limit: "2 of 2 computers in use. Pro allows 5.", right above the account line. */}
       <ProBanner />
-      {/* A ready update is a compact button at the end of the account line. */}
+      {/* A found release is a compact button at the end of the account line. */}
       <AccountFooter trailing={<SidebarUpdateButton />} />
       <ResizeHandle />
     </aside>
@@ -196,7 +196,6 @@ export function AccountFooter({ trailing }: { trailing?: ReactNode }) {
   // A browser sign-in that has not come back for a while: offer a code.
   const waitingOnBrowser = footer?.state === "waiting" && !footer.code;
   const stuck = useAfter(waitingOnBrowser, STILL_WAITING_MS);
-  useFeatureRecorded("sign_in_still_waiting", stuck);
   // The last attempt used a code: another code would not help.
   const triedCode = useRef(false);
   if (footer?.state === "waiting" && footer.code) triedCode.current = true;

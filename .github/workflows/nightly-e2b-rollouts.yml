@@ -32,8 +32,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  CUA_TELEMETRY: "0"
-  DO_NOT_TRACK: "1"
   CARGO_TERM_COLOR: never
   CARGO_BUILD_JOBS: "4"
 

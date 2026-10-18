@@ -147,9 +147,7 @@ export type ImportOptions = Message<"cua.env.v1.ImportOptions"> & {
    * Set by the Cua Keyvault broker when it delivers a session it authorized
    * (a consent grant, an unattended rule or a first-party approval), to
    * `keyvault`; empty for a direct SDK send. Not a secret and not verified
-   * by the guest. cua-spacesd counts deliveries with and without it
-   * (present or absent) in its opt-in aggregate telemetry; nothing else
-   * reads it.
+   * by the guest; nothing else reads it.
    *
    * @generated from field: string broker_grant = 5;
    */

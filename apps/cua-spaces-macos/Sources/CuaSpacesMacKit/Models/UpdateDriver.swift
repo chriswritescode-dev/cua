@@ -7,29 +7,30 @@ import Sparkle
 
 /// What the page shows about an update, the JSON behind the bridge's
 /// `update.get`:
-/// `{status, currentVersion, version, percent, notesUrl, message}`.
+/// `{status, currentVersion, version, notesUrl, instructions, message}`.
 public struct UpdateState: Equatable, Sendable {
     public enum Status: String, Sendable {
-        case idle, checking, available, downloading, downloaded, error
+        case idle, checking, available, error
     }
 
     public var status: Status
     /// This app's full version.
     public var currentVersion: String
-    /// The update's version (the appcast item's display version).
+    /// The newer release the last check found.
     public var version: String?
-    /// 0 to 100 while downloading, else nil.
-    public var percent: Int?
     public var notesUrl: String?
+    /// How to update by hand; nil unless an update is available.
+    public var instructions: String?
+    /// Why the last check failed (`error` only).
     public var message: String?
 
-    public init(status: Status = .idle, currentVersion: String, version: String? = nil, percent: Int? = nil,
-                notesUrl: String? = nil, message: String? = nil) {
+    public init(status: Status = .idle, currentVersion: String, version: String? = nil,
+                notesUrl: String? = nil, instructions: String? = nil, message: String? = nil) {
         self.status = status
         self.currentVersion = currentVersion
         self.version = version
-        self.percent = percent
         self.notesUrl = notesUrl
+        self.instructions = instructions
         self.message = message
     }
 
@@ -44,14 +45,20 @@ public struct UpdateState: Equatable, Sendable {
         return "https://github.com/trycua/cua/releases/tag/cua-spaces-v\(version)"
     }
 
+    /// What a found release says: this app notifies, it never installs.
+    public static func manualUpdateMessage(version: String) -> String {
+        "A newer Cua Spaces release (\(version)) is available. Update by pulling the repository and rebuilding: "
+            + "git pull && apps/cua-spaces-macos/scripts/build-release.sh"
+    }
+
     /// The bridge's record; absent values are explicit nulls.
     public var json: [String: Any] {
         [
             "status": status.rawValue,
             "currentVersion": currentVersion,
             "version": version.map { $0 as Any } ?? NSNull(),
-            "percent": percent.map { $0 as Any } ?? NSNull(),
             "notesUrl": notesUrl.map { $0 as Any } ?? NSNull(),
+            "instructions": instructions.map { $0 as Any } ?? NSNull(),
             "message": message.map { $0 as Any } ?? NSNull(),
         ]
     }
@@ -63,13 +70,8 @@ public struct UpdateFlow: Equatable, Sendable {
     public private(set) var state: UpdateState
     /// A check the user started (its errors are shown).
     public private(set) var userCheck = false
-    private var received: UInt64 = 0
-    private var expected: UInt64 = 0
 
     public init(currentVersion: String) { state = .idle(currentVersion: currentVersion) }
-
-    /// The download takes the first 90 percent of the bar, extraction the rest.
-    private static let downloadShare = 90.0
 
     /// A user-visible check begins.
     public mutating func userCheckStarted() {
@@ -77,43 +79,12 @@ public struct UpdateFlow: Equatable, Sendable {
         state = UpdateState(status: .checking, currentVersion: state.currentVersion)
     }
 
-    /// An update was found; it downloads at once.
+    /// A newer release was found: it is reported, never downloaded or
+    /// installed. The instruction says to pull the repository and rebuild.
     public mutating func found(version: String) {
-        received = 0
-        expected = 0
         state = UpdateState(status: .available, currentVersion: state.currentVersion, version: version,
-                            notesUrl: UpdateState.notesURL(version: version))
-    }
-
-    public mutating func downloadStarted() {
-        received = 0
-        expected = 0
-        setPercent(0)
-    }
-
-    public mutating func expectedLength(_ length: UInt64) {
-        expected = length
-        setPercent(downloadPercent)
-    }
-
-    public mutating func receivedData(_ length: UInt64) {
-        received += length
-        setPercent(downloadPercent)
-    }
-
-    public mutating func extractionStarted() { setPercent(Int(Self.downloadShare)) }
-
-    /// `progress` is 0 to 1.
-    public mutating func extractionProgress(_ progress: Double) {
-        let p = min(max(progress.isFinite ? progress : 0, 0), 1)
-        setPercent(Int((Self.downloadShare + (100 - Self.downloadShare) * p).rounded()))
-    }
-
-    /// Downloaded, extracted, and waiting for the user's restart.
-    public mutating func downloaded() {
-        state.status = .downloaded
-        state.percent = nil
-        state.message = nil
+                            notesUrl: UpdateState.notesURL(version: version),
+                            instructions: UpdateState.manualUpdateMessage(version: version))
     }
 
     public mutating func notFound() {
@@ -126,88 +97,24 @@ public struct UpdateFlow: Equatable, Sendable {
         state = UpdateState(status: .error, currentVersion: state.currentVersion, message: message)
     }
 
-    /// Sparkle ended its session (after an install, an error, or no update).
+    /// Sparkle ended its session. A found release stays reported (its
+    /// session ended because the app declined it); only a check nobody saw
+    /// end becomes idle.
     public mutating func dismissed() {
         userCheck = false
-        if state.status == .error { return }
-        state = .idle(currentVersion: state.currentVersion)
-    }
-
-    private var downloadPercent: Int {
-        guard expected > 0 else { return 0 }
-        return Int((Double(min(received, expected)) / Double(expected) * Self.downloadShare).rounded())
-    }
-
-    private mutating func setPercent(_ percent: Int) {
-        guard state.version != nil else { return }
-        state.status = .downloading
-        // Never backwards.
-        state.percent = max(state.percent ?? 0, min(max(percent, 0), 100))
+        if state.status == .checking { state = .idle(currentVersion: state.currentVersion) }
     }
 }
 
-/// Sparkle's user driver without windows: a background update downloads on
-/// its own and waits for the page's "Restart to update". Sparkle's
-/// ready-to-install reply is held until `installNow`; nothing restarts the
-/// app before that.
+/// Sparkle's user driver without windows: a check reports what it found and
+/// declines every download, so this app never installs an update itself.
 @MainActor
 public final class UpdateUserDriver: NSObject, SPUUserDriver {
     public private(set) var flow: UpdateFlow
     /// Told after every state change.
     public var onChange: (() -> Void)?
-    /// `downloaded` when the update is ready to install.
-    public var onEvent: ((String) -> Void)?
-    /// Sparkle's held "ready to install" reply.
-    private var heldReply: ((SPUUserUpdateChoice) -> Void)?
-    /// An update downloaded on the silent path (`willInstallUpdateOnQuit`).
-    /// Sparkle's session for it has ended and its installer tool waits for
-    /// the app to quit, so the install block it handed out is dead.
-    private var silentPending = false
-    /// "Restart to update" was pressed on the silent path; the resumed
-    /// session's ready-to-install reply is answered with `.install`.
-    private var installWhenReady = false
-    /// Starts a check, which resumes the silently downloaded update and
-    /// reaches `showReady` (set by `UpdatesModel`).
-    public var resumeSilentUpdate: (() -> Void)?
-    private var told = false
-
-    // MARK: - When "Restart to update" does nothing
-
-    /// How long a restart may take before it is treated as stuck.
-    var restartGrace: TimeInterval = 6
-    /// Runs `work` after `delay` seconds (tests run it by hand).
-    var schedule: (TimeInterval, @escaping () -> Void) -> Void = { delay, work in
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
-    }
-    /// Quits the app, so Sparkle's own installer applies the staged update on
-    /// the way out (set by `UpdatesModel`).
-    public var quitApp: (() -> Void)?
-    /// Each click on "Restart to update" is one attempt; a late timer of an
-    /// older attempt does nothing.
-    private var restartAttempt = 0
-
-    /// The plain line shown when the update could not be applied by the click
-    /// or by quitting from here.
-    static let restartStuckMessage =
-        "Cua Spaces could not restart by itself. Quit it from the menu bar and open it again to finish the update."
-
-    /// Called when a restart was asked for. A working restart quits the app,
-    /// so a process still running after the grace time is a stuck one: quit
-    /// it (the update is staged, Sparkle installs it at quit), and if even
-    /// that does not end the app, say what to do.
-    private func watchRestart() {
-        restartAttempt += 1
-        let attempt = restartAttempt
-        schedule(restartGrace) { [weak self] in
-            guard let self, attempt == self.restartAttempt else { return }
-            NSLog("Cua Spaces: Restart to update did not restart the app; quitting so the staged update installs")
-            self.quitApp?()
-            self.schedule(self.restartGrace) { [weak self] in
-                guard let self, attempt == self.restartAttempt, self.flow.state.status != .error else { return }
-                self.handleError(Self.restartStuckMessage)
-            }
-        }
-    }
+    /// Shows an error to the person who started the check.
+    var presentError: (String) -> Void = UpdateUserDriver.alertError
 
     public var state: UpdateState { flow.state }
 
@@ -225,46 +132,6 @@ public final class UpdateUserDriver: NSObject, SPUUserDriver {
     /// The user pressed Check Now.
     public func beginUserCheck() { changed { $0.userCheckStarted() } }
 
-    /// Both paths end here: the update waits for the user.
-    private func becameReady() {
-        changed { $0.downloaded() }
-        if !told {
-            told = true
-            onEvent?("downloaded")
-        }
-    }
-
-    /// The silent path (`automaticallyDownloadsUpdates`): Sparkle installs on
-    /// quit, or at once when `installNow` resumes the update.
-    public func silentlyDownloaded(version: String) {
-        silentPending = true
-        if flow.state.version == nil { changed { $0.found(version: version) } }
-        becameReady()
-    }
-
-    /// Restart to update: the held reply, or the silent path's install.
-    /// False when nothing is downloaded.
-    @discardableResult
-    public func installNow() -> Bool {
-        guard flow.state.status == .downloaded else { return false }
-        if let reply = heldReply {
-            heldReply = nil
-            reply(.install)
-            watchRestart()
-            return true
-        }
-        if silentPending, let resume = resumeSilentUpdate {
-            // Sparkle ignores the install block once it is not given the
-            // install (`willInstallUpdateOnQuit` returns false), so resume
-            // the update through a check and answer its ready prompt.
-            installWhenReady = true
-            resume()
-            watchRestart()
-            return true
-        }
-        return false
-    }
-
     /// The update cycle ended; a check nobody saw end is idle.
     public func cycleFinished() {
         if flow.state.status == .checking { changed { $0.dismissed() } }
@@ -274,15 +141,12 @@ public final class UpdateUserDriver: NSObject, SPUUserDriver {
 
     /// What `showUpdateFound` does, over plain values.
     func handleFound(version: String, informationOnly: Bool, reply: @escaping (SPUUserUpdateChoice) -> Void) {
-        // An information-only item has nothing to install.
         guard !informationOnly else {
-            changed { $0.notFound() }
             reply(.dismiss)
             return
         }
-        told = false
         changed { $0.found(version: version) }
-        reply(.install)
+        reply(.dismiss)
     }
 
     public func showUpdateFound(with appcastItem: SUAppcastItem, state: SPUUserUpdateState,
@@ -294,10 +158,7 @@ public final class UpdateUserDriver: NSObject, SPUUserDriver {
     // MARK: - SPUUserDriver
 
     public func show(_ request: SPUUpdatePermissionRequest, reply: @escaping (SUUpdatePermissionResponse) -> Void) {
-        // Checking and downloading are on by default (SUEnableAutomaticChecks,
-        // SUAutomaticallyUpdate); a user's own choice is kept. Nothing
-        // restarts the app without a click on "Restart to update".
-        reply(SUUpdatePermissionResponse(automaticUpdateChecks: true, automaticUpdateDownloading: true as NSNumber,
+        reply(SUUpdatePermissionResponse(automaticUpdateChecks: true, automaticUpdateDownloading: false as NSNumber,
                                          sendSystemProfile: false))
     }
 
@@ -316,38 +177,26 @@ public final class UpdateUserDriver: NSObject, SPUUserDriver {
         acknowledgement()
     }
 
-    /// An error is logged and kept in the state: the menus and Settings show
-    /// a plain line for it (no dialog, so nothing loops).
+    /// A background error is logged only; the check's user sees an alert.
     func handleError(_ message: String) {
+        let shown = flow.userCheck
         NSLog("Cua Spaces: the updater failed: %@", message)
-        installWhenReady = false
         changed { $0.failed(message) }
+        if shown { presentError(message) }
     }
 
-    public func showDownloadInitiated(cancellation: @escaping () -> Void) { changed { $0.downloadStarted() } }
-    public func showDownloadDidReceiveExpectedContentLength(_ expectedContentLength: UInt64) {
-        changed { $0.expectedLength(expectedContentLength) }
-    }
-    public func showDownloadDidReceiveData(ofLength length: UInt64) { changed { $0.receivedData(length) } }
-    public func showDownloadDidStartExtractingUpdate() { changed { $0.extractionStarted() } }
-    public func showExtractionReceivedProgress(_ progress: Double) { changed { $0.extractionProgress(progress) } }
+    public func showDownloadInitiated(cancellation: @escaping () -> Void) {}
+    public func showDownloadDidReceiveExpectedContentLength(_ expectedContentLength: UInt64) {}
+    public func showDownloadDidReceiveData(ofLength length: UInt64) {}
+    public func showDownloadDidStartExtractingUpdate() {}
+    public func showExtractionReceivedProgress(_ progress: Double) {}
 
     public func showReady(toInstallAndRelaunch reply: @escaping (SPUUserUpdateChoice) -> Void) {
-        // Held until installNow: replying here would restart the app.
-        becameReady()
-        if installWhenReady {
-            installWhenReady = false
-            reply(.install)
-            return
-        }
-        heldReply = reply
+        reply(.dismiss)
     }
 
     public func showInstallingUpdate(withApplicationTerminated applicationTerminated: Bool,
-                                     retryTerminatingApplication: @escaping () -> Void) {
-        // The page already said "Restarting"; the app quits on its own.
-        if !applicationTerminated { return }
-    }
+                                     retryTerminatingApplication: @escaping () -> Void) {}
 
     public func showUpdateInstalledAndRelaunched(_ relaunched: Bool, acknowledgement: @escaping () -> Void) {
         acknowledgement()
@@ -356,10 +205,15 @@ public final class UpdateUserDriver: NSObject, SPUUserDriver {
     public func showUpdateInFocus() {}
 
     public func dismissUpdateInstallation() {
-        heldReply = nil
-        silentPending = false
-        installWhenReady = false
-        told = false
         changed { $0.dismissed() }
+    }
+
+    private static func alertError(_ message: String) {
+        let alert = NSAlert()
+        alert.messageText = "Update Error!"
+        alert.informativeText = message
+        alert.addButton(withTitle: "OK")
+        NSApp.activate()
+        alert.runModal()
     }
 }

@@ -18,7 +18,7 @@ Results go to <work>/results/<stamp>.json and a Markdown matrix to stdout
 
 Host safety (these are hard rules, not options):
 - every cua process gets its own CUA_HOME under <work>/h (never ~/.cua), the
-  file credential store (never the Keychain), no browser, no telemetry and
+  file credential store (never the Keychain), no browser and
   a throwaway teleport home;
 - the suite only stops or kills processes it started (the daemon whose
   discovery file is in one of its own homes and whose executable is the
@@ -72,8 +72,16 @@ def sh(cmd, timeout, env=None, cwd=None):
     """Runs `cmd` (a list) with a hard timeout; the process group is killed
     on timeout, so a hung child can never hold the suite."""
     t = time.monotonic()
-    p = subprocess.Popen(cmd, env=env, cwd=cwd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE, text=True, start_new_session=True)
+    p = subprocess.Popen(
+        cmd,
+        env=env,
+        cwd=cwd,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
     try:
         out, err = p.communicate(timeout=timeout)
         return Res(p.returncode, out, err, time.monotonic() - t)
@@ -119,16 +127,15 @@ class Home:
 
     def env(self, **over):
         e = {k: v for k, v in os.environ.items() if not k.startswith("CUA_")}
-        e.update({
-            "CUA_HOME": str(self.path),
-            "CUA_CREDENTIAL_STORE": "file",
-            "CUA_NO_BROWSER": "1",
-            "CUA_TELEMETRY": "0",
-            "CUA_TELEMETRY_FORBID_NETWORK": "1",
-            "DO_NOT_TRACK": "1",
-            "CUA_SPACES_TELEPORT_HOME": str(self.path / "teleport"),
-            "CUA_DAEMON_NO_RELAY": "1",
-        })
+        e.update(
+            {
+                "CUA_HOME": str(self.path),
+                "CUA_CREDENTIAL_STORE": "file",
+                "CUA_NO_BROWSER": "1",
+                "CUA_SPACES_TELEPORT_HOME": str(self.path / "teleport"),
+                "CUA_DAEMON_NO_RELAY": "1",
+            }
+        )
         e.update(self.extra)
         for k, v in over.items():
             if v is None:
@@ -175,9 +182,19 @@ class Run:
             secs, ok, detail = time.monotonic() - t, False, f"{type(e).__name__}: {e}"
             traceback.print_exc()
         detail = "" if detail is None or detail is True else str(detail)
-        self.steps.append({"step": name, "ok": ok, "secs": round(secs, 2), "detail": str(detail if detail is not None else "")[:600]})
+        self.steps.append(
+            {
+                "step": name,
+                "ok": ok,
+                "secs": round(secs, 2),
+                "detail": str(detail if detail is not None else "")[:600],
+            }
+        )
         mark = "PASS" if ok else "FAIL"
-        print(f"    [{mark}] {name} {secs:.1f}s {('- ' + detail[:300]) if detail and not ok else ''}", flush=True)
+        print(
+            f"    [{mark}] {name} {secs:.1f}s {('- ' + detail[:300]) if detail and not ok else ''}",
+            flush=True,
+        )
         if not ok:
             self.ok = False
             raise StepFailed(f"{name}: {detail}")
@@ -255,12 +272,19 @@ def ready(h, sid, budget):
         else:
             checks = [c for c in rep.get("checks", []) if c.get("status") == "fail"]
             skew = []
-            failed = [f"{c.get('id')}: {c.get('message')} {c.get('facts') or ''}"
-                      for c in checks if c not in skew]
+            failed = [
+                f"{c.get('id')}: {c.get('message')} {c.get('facts') or ''}"
+                for c in checks
+                if c not in skew
+            ]
         if not failed:
             if rep is not None and skew:
                 first_fail = (first_fail or []) + [f"note: {skew[0].get('message')}"]
-            settle = f", desktop settled after {time.monotonic() - t:.1f}s ({first_fail[0][:80]})" if first_fail else ""
+            settle = (
+                f", desktop settled after {time.monotonic() - t:.1f}s ({first_fail[0][:80]})"
+                if first_fail
+                else ""
+            )
             return f"spacesd {row['spacesd_version']}, {len(feats)} features, {len(rep.get('checks', []))} doctor checks{settle}"
         first_fail = first_fail or failed
         if time.monotonic() + 3 > end:
@@ -298,7 +322,9 @@ class Suite:
         self.cua = pathlib.Path(args.cua).expanduser()
         self.mit_cua = pathlib.Path(args.mit_cua).expanduser() if args.mit_cua else None
         self.other_cua = pathlib.Path(args.other_cua).expanduser() if args.other_cua else None
-        self.teleport_test = pathlib.Path(args.teleport_test).expanduser() if args.teleport_test else None
+        self.teleport_test = (
+            pathlib.Path(args.teleport_test).expanduser() if args.teleport_test else None
+        )
         self.work = pathlib.Path(args.work).expanduser()
         self.runs = args.runs
         self.prefix = "rel" + uuid.uuid4().hex[:4]
@@ -351,7 +377,10 @@ class Suite:
             if str(s.get("id", "")).startswith("local:"):
                 for attempt in (1, 2):
                     d = h.run(["spaces", "delete", s["id"], "--force"], 300)
-                    print(f"    cleanup: delete {s['id']} (try {attempt}): exit {d.rc} {d.secs:.1f}s {d.text()[-200:]}", flush=True)
+                    print(
+                        f"    cleanup: delete {s['id']} (try {attempt}): exit {d.rc} {d.secs:.1f}s {d.text()[-200:]}",
+                        flush=True,
+                    )
                     if d.rc == 0:
                         break
         owned = h.path / "vmm" / "lume" / "owned"
@@ -398,7 +427,10 @@ class Suite:
                         run.notes.append(f"cleanup: {e}")
                 run.secs = round(time.monotonic() - run.t0, 1)
                 self.results.append(run)
-                print(f"   -> {'PASS' if run.ok else 'FAIL'} ({run.secs}s){' ' + run.error[:300] if run.error else ''}", flush=True)
+                print(
+                    f"   -> {'PASS' if run.ok else 'FAIL'} ({run.secs}s){' ' + run.error[:300] if run.error else ''}",
+                    flush=True,
+                )
 
     def name(self, tag, n):
         return f"{self.prefix}-{tag}-{n}"
@@ -410,6 +442,7 @@ class Suite:
             if s.get("pid"):
                 raise StepFailed(f"a daemon already answers in a fresh home: {s}")
             return "no daemon"
+
         run.step("status (no daemon)", not_running, 15)
         if n % 2:
             run.step("daemon start", lambda: daemon_start(h), 15)
@@ -424,6 +457,7 @@ class Suite:
                 if not s.get("pid"):
                     raise StepFailed(f"cua daemon mcp did not start a daemon: {r.text()[-200:]}")
                 return f"autostarted pid {s['pid']}"
+
             run.step("daemon autostart (cua daemon mcp)", autostart, 30)
 
         def version():
@@ -431,6 +465,7 @@ class Suite:
             if s.get("daemon_version") != self.version or s.get("mode") != "daemon":
                 raise StepFailed(f"status {s}, cua --version {self.version}")
             return f"daemon {s['daemon_version']} pid {s['pid']}"
+
         run.step("version reported", version, 15)
 
         def extensions():
@@ -438,20 +473,36 @@ class Suite:
             if "already running" not in out:
                 raise StepFailed(f"second start did not find the Cua Spaces daemon complete: {out}")
             return out
+
         run.step("extension set complete (second start keeps it)", extensions, 15)
-        run.step("spaces ls answers", lambda: need(h.run(["spaces", "ls", "--json"], 20), "ls").out[:80], 20)
+        run.step(
+            "spaces ls answers",
+            lambda: need(h.run(["spaces", "ls", "--json"], 20), "ls").out[:80],
+            20,
+        )
 
     # 2/3. lifecycle
     def lifecycle(self, run, h, n, image, tag, create_budget, extra=()):
         run.step("daemon start", lambda: daemon_start(h), 20)
         name = self.name(tag, n)
         sid = f"local:{name}"
-        run.step("create", lambda: create_space(h, image, name, create_budget, extra)["id"], create_budget)
+        run.step(
+            "create",
+            lambda: create_space(h, image, name, create_budget, extra)["id"],
+            create_budget,
+        )
         run.step("ready (spacesd + doctor)", lambda: ready(h, sid, 180), 180)
         run.step("desktop screenshot", lambda: screenshot(h, sid, self.tmp), 90)
         run.step("exec", lambda: exec_ok(h, sid), 60)
-        run.step("stop (suspend)", lambda: need(h.run(["sb", "suspend", sid], 180), "suspend").text()[-80:], 180)
-        run.step("resume", lambda: need(h.run(["sb", "resume", sid], 600), "resume").text()[-80:], 600)
+        run.step(
+            "stop (suspend)",
+            lambda: need(h.run(["sb", "suspend", sid], 180), "suspend").text()[-80:],
+            180,
+        )
+        run.step(
+            "resume", lambda: need(h.run(["sb", "resume", sid], 600), "resume").text()[-80:], 600
+        )
+
         def clock():
             # The first doctor after the resume: its clock check must pass.
             rep = h.run(["doctor", sid, "--json", "--no-host", "--only", "time"], 90).json() or {}
@@ -459,8 +510,21 @@ class Suite:
             if not skew or skew.get("status") == "fail":
                 raise StepFailed(f"time.skew: {skew}")
             return skew.get("message", "")
+
         run.step("clock check after resume", clock, 90)
-        run.step("exec after resume", lambda: wait_until(lambda: h.run(["sb", "exec", sid, "echo cua-ok"], 30).out.count("cua-ok"), 240, 3, "exec after resume") and "ok", 240)
+        run.step(
+            "exec after resume",
+            lambda: (
+                wait_until(
+                    lambda: h.run(["sb", "exec", sid, "echo cua-ok"], 30).out.count("cua-ok"),
+                    240,
+                    3,
+                    "exec after resume",
+                )
+                and "ok"
+            ),
+            240,
+        )
         run.step("ready after resume", lambda: ready(h, sid, 180), 180)
 
         run.step("delete", lambda: delete_space(h, sid), 240)
@@ -469,7 +533,9 @@ class Suite:
         self.lifecycle(run, h, n, "linux", "lnx", 600)
 
     def s_macos_slim(self, run, h, n):
-        self.lifecycle(run, h, n, "macos:26-slim", "mslim", 3600, ("--memory-mb", "6144", "--cpus", "4"))
+        self.lifecycle(
+            run, h, n, "macos:26-slim", "mslim", 3600, ("--memory-mb", "6144", "--cpus", "4")
+        )
 
     def s_macos(self, run, h, n):
         self.lifecycle(run, h, n, "macos:26", "mfull", 3600, ("--memory-mb", "6144", "--cpus", "4"))
@@ -492,7 +558,9 @@ class Suite:
                     if e.get("space") == sid:
                         raise StepFailed(f"volume error: {e.get('error')}")
                 return next((v for v in st.get("volumes") or [] if v.get("space") == sid), None)
+
             return json.dumps(wait_until(probe, 150, 2, "volume attached"))
+
         info = json.loads(run.step("volume attached at start", mounted, 150))
         mnt = info.get("mount_path", "/volume")
         folder = ('"$HOME"/' + "'" + mnt[2:] + "'") if mnt.startswith("~/") else f"'{mnt}'"
@@ -503,16 +571,33 @@ class Suite:
             space_dir = f"spaces/{folder_name}"
             gdir = f"{folder}/spaces/{folder_name}"
             token = uuid.uuid4().hex
-            need(h.run(["sb", "exec", sid, f"echo {token} > {gdir}/guest.txt && sync"], 60), "guest write")
-            wait_until(lambda: token in h.run(["volume", "cat", f"{space_dir}/guest.txt"], 20).out, 60, 2,
-                       f"host sees the guest write in {space_dir}")
+            need(
+                h.run(["sb", "exec", sid, f"echo {token} > {gdir}/guest.txt && sync"], 60),
+                "guest write",
+            )
+            wait_until(
+                lambda: token in h.run(["volume", "cat", f"{space_dir}/guest.txt"], 20).out,
+                60,
+                2,
+                f"host sees the guest write in {space_dir}",
+            )
             src = self.tmp / f"{name}.txt"
             htoken = uuid.uuid4().hex
             src.write_text(htoken)
             need(h.run(["volume", "put", f"{space_dir}/host.txt", str(src)], 30), "volume put")
-            wait_until(lambda: htoken in h.run(["sb", "exec", sid, f"cat {gdir}/host.txt 2>/dev/null || true"], 30).out,
-                       60, 2, "guest sees the host write")
+            wait_until(
+                lambda: (
+                    htoken
+                    in h.run(
+                        ["sb", "exec", sid, f"cat {gdir}/host.txt 2>/dev/null || true"], 30
+                    ).out
+                ),
+                60,
+                2,
+                "guest sees the host write",
+            )
             return f"round trip {space_dir} <-> {mnt}/spaces/{folder_name}"
+
         run.step("round trip host <-> guest", round_trip, 180)
         run.step("delete", lambda: delete_space(h, sid), 300)
 
@@ -520,26 +605,48 @@ class Suite:
         # and the volume error must be visible.
         def break_storage():
             # S3 with no keys and nothing listening: no usable storage.
-            r = h.run(["volume", "config", "set", "--backend", "s3", "--bucket", "cua-reliability-missing",
-                       "--endpoint", "http://127.0.0.1:9", "--path-style"], 30)
+            r = h.run(
+                [
+                    "volume",
+                    "config",
+                    "set",
+                    "--backend",
+                    "s3",
+                    "--bucket",
+                    "cua-reliability-missing",
+                    "--endpoint",
+                    "http://127.0.0.1:9",
+                    "--path-style",
+                ],
+                30,
+            )
             return f"exit {r.rc}: {r.text()[-200:]}"
+
         run.step("inject: unusable volume storage", break_storage, 30)
         run.step("daemon restart", lambda: (h.run(["daemon", "stop"], 20), daemon_start(h))[1], 40)
         name2 = self.name(tag + "f", n)
         sid2 = f"local:{name2}"
-        run.step("create with broken volume", lambda: create_space(h, image, name2, 3600, extra)["id"], 3600)
+        run.step(
+            "create with broken volume",
+            lambda: create_space(h, image, name2, 3600, extra)["id"],
+            3600,
+        )
         run.step("ready despite volume failure", lambda: ready(h, sid2, 300), 300)
 
         def visible_error():
             def probe():
                 st = vol_status()
-                err = next((e for e in st.get("volume_errors") or [] if e.get("space") == sid2), None)
+                err = next(
+                    (e for e in st.get("volume_errors") or [] if e.get("space") == sid2), None
+                )
                 if err:
                     return f"volume_errors: {err['error'][:240]}"
                 if any(v.get("space") == sid2 for v in st.get("volumes") or []):
                     return "mounted anyway (cache in front of the store)"
                 return None
+
             return wait_until(probe, 150, 3, "a volume verdict for the Space")
+
         run.step("volume error is visible (or it mounts)", visible_error, 150)
         run.step("delete", lambda: delete_space(h, sid2), 300)
 
@@ -557,10 +664,18 @@ class Suite:
 
         def start_other():
             env = h.env()
-            p = subprocess.Popen([str(other), "daemon", "start", "--foreground"], env=env,
-                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-            wait_until(lambda: (h.discovery() or {}).get("pid") == p.pid, 15, 0.2, "other daemon up")
+            p = subprocess.Popen(
+                [str(other), "daemon", "start", "--foreground"],
+                env=env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            wait_until(
+                lambda: (h.discovery() or {}).get("pid") == p.pid, 15, 0.2, "other daemon up"
+            )
             return f"{other.name} daemon pid {p.pid} version {(h.discovery() or {}).get('version')}"
+
         run.step("another bundle's daemon on the socket", start_other, 20)
         old = (h.discovery() or {}).get("pid")
 
@@ -569,6 +684,7 @@ class Suite:
             if r.timed_out:
                 raise StepFailed("spaces ls hung against the other daemon")
             return f"exit {r.rc}"
+
         run.step("client does not hang on it", ls_bounded, 30)
 
         def replaced():
@@ -579,6 +695,7 @@ class Suite:
             if pid_alive(old):
                 raise StepFailed(f"old daemon {old} still running: {out}")
             return out
+
         run.step("daemon start replaces it", replaced, 30)
 
     def s_stale_socket(self, run, h, n):
@@ -591,19 +708,38 @@ class Suite:
             s.close()
             dead = subprocess.Popen(["true"])
             dead.wait()
-            (h.path / "daemon.json").write_text(json.dumps({
-                "pid": dead.pid, "socket_path": str(sock), "loopback_url": None,
-                "token": "t", "version": "0.0.1"}))
+            (h.path / "daemon.json").write_text(
+                json.dumps(
+                    {
+                        "pid": dead.pid,
+                        "socket_path": str(sock),
+                        "loopback_url": None,
+                        "token": "t",
+                        "version": "0.0.1",
+                    }
+                )
+            )
             return f"socket + discovery of dead pid {dead.pid}"
+
         run.step("plant stale socket", plant, 5)
-        run.step("status is 'not running', bounded", lambda: need(h.run(["daemon", "status", "--json"], 15), "status", (1,)).out[:120], 15)
-        run.step("spaces ls works (embedded)", lambda: need(h.run(["spaces", "ls", "--json"], 20), "ls").out[:80], 20)
+        run.step(
+            "status is 'not running', bounded",
+            lambda: need(h.run(["daemon", "status", "--json"], 15), "status", (1,)).out[:120],
+            15,
+        )
+        run.step(
+            "spaces ls works (embedded)",
+            lambda: need(h.run(["spaces", "ls", "--json"], 20), "ls").out[:80],
+            20,
+        )
         run.step("daemon start", lambda: daemon_start(h), 15)
+
         def version():
             s = daemon_status(h)
             if s.get("daemon_version") != self.version:
                 raise StepFailed(f"status {s}")
             return f"daemon {s['daemon_version']} pid {s['pid']}"
+
         run.step("version", version, 15)
 
     def s_crash(self, run, h, n):
@@ -613,11 +749,21 @@ class Suite:
         state = {}
 
         def crash_mid_create():
-            p = subprocess.Popen([str(self.cua), "spaces", "create", "linux", "--name", name, "--json"],
-                                 env=h.env(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                                 start_new_session=True)
+            p = subprocess.Popen(
+                [str(self.cua), "spaces", "create", "linux", "--name", name, "--json"],
+                env=h.env(),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                start_new_session=True,
+            )
             # Mid-create: the container exists (booting / starting services).
-            wait_until(lambda: name in sh(["docker", "ps", "-a", "--format", "{{.Names}}"], 10).out, 120, 0.5, "container created")
+            wait_until(
+                lambda: name in sh(["docker", "ps", "-a", "--format", "{{.Names}}"], 10).out,
+                120,
+                0.5,
+                "container created",
+            )
             time.sleep(1)
             pid = (h.discovery() or {}).get("pid")
             os.kill(pid, signal.SIGKILL)
@@ -628,6 +774,7 @@ class Suite:
                 raise StepFailed("the client hung after its daemon died")
             state["client"] = (p.returncode, out[-300:])
             return f"killed daemon {pid}; client exit {p.returncode}: {out.strip()[-200:]}"
+
         run.step("SIGKILL the daemon mid-create; client returns", crash_mid_create, 180)
         run.step("daemon restart", lambda: daemon_start(h), 20)
 
@@ -637,6 +784,7 @@ class Suite:
                 # Any state: a created-but-not-started container counts.
                 live = name in sh(["docker", "ps", "-a", "--format", "{{.Names}}"], 10).out.split()
                 return (row, live)
+
             end = time.monotonic() + 120
             row = live = None
             while time.monotonic() < end:
@@ -652,6 +800,7 @@ class Suite:
                 exec_ok(h, sid)
                 return f"recovered: {sid} listed and answers"
             return "reported: create failed, nothing left running"
+
         run.step("Space recovered or cleanly gone (no zombie)", recovered, 180)
 
     def s_two_clients(self, run, h, n):
@@ -664,8 +813,16 @@ class Suite:
             procs = []
             for i in range(2):
                 script = f"for i in 1 2 3 4 5; do '{self.cua}' sb exec {sid} 'echo cua-ok-{i}' || exit 1; '{self.cua}' spaces ls --json >/dev/null || exit 2; done"
-                procs.append(subprocess.Popen(["bash", "-c", script], env=h.env(), stdout=subprocess.PIPE,
-                                              stderr=subprocess.STDOUT, text=True, start_new_session=True))
+                procs.append(
+                    subprocess.Popen(
+                        ["bash", "-c", script],
+                        env=h.env(),
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        start_new_session=True,
+                    )
+                )
             outs = []
             for p in procs:
                 try:
@@ -679,6 +836,7 @@ class Suite:
             if not all(o.count("cua-ok") == 5 for o in outs):
                 raise StepFailed(f"missing output: {outs}")
             return "2 clients x 5 exec+ls"
+
         run.step("two clients at once", concurrent, 180)
         run.step("delete", lambda: delete_space(h, sid), 240)
 
@@ -689,12 +847,21 @@ class Suite:
         sid = f"local:{name}"
         run.step("create", lambda: create_space(h, "linux", name, 600)["id"], 600)
         run.step("daemon stop", lambda: need(h.run(["daemon", "stop"], 30), "stop").out.strip(), 30)
-        run.step("daemon gone", lambda: wait_until(lambda: not daemon_status(h).get("pid"), 15, 0.5, "daemon gone") and "gone", 15)
+        run.step(
+            "daemon gone",
+            lambda: (
+                wait_until(lambda: not daemon_status(h).get("pid"), 15, 0.5, "daemon gone")
+                and "gone"
+            ),
+            15,
+        )
         run.step("daemon start again", lambda: daemon_start(h), 20)
+
         def listed():
             if not space_row(h, sid):
                 raise StepFailed(f"{sid} not listed after the restart")
             return "listed"
+
         run.step("Space still listed", listed, 30)
         run.step("reconnects (exec)", lambda: exec_ok(h, sid, 60), 60)
         run.step("ready", lambda: ready(h, sid, 180), 180)
@@ -713,29 +880,54 @@ class Suite:
             # A signed-in session (file store) whose relay and API are
             # unreachable: the daemon's relay attach fails.
             import base64
+
             b = lambda d: base64.urlsafe_b64encode(json.dumps(d).encode()).rstrip(b"=").decode()
             tok = f"{b({'alg': 'none'})}.{b({'sub': 'reliability', 'exp': int(time.time()) + 3600})}.x"
             exp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + 3500))
             path = h.path / "credentials.json"
-            path.write_text(json.dumps({"access_token": tok, "refresh_token": None,
-                                        "expires_at": exp, "token_type": "Bearer"}))
+            path.write_text(
+                json.dumps(
+                    {
+                        "access_token": tok,
+                        "refresh_token": None,
+                        "expires_at": exp,
+                        "token_type": "Bearer",
+                    }
+                )
+            )
             path.chmod(0o600)
             return "fake session"
+
         run.step("signed in, with nothing reachable", fake_session, 5)
-        run.step("daemon start (relay unreachable)", lambda: daemon_start(h, 20, CUA_DAEMON_NO_RELAY=None), 20)
-        run.step("spaces ls bounded", lambda: need(h.run(["spaces", "ls", "--json"], 30, CUA_DAEMON_NO_RELAY=None), "ls").out[:80], 30)
+        run.step(
+            "daemon start (relay unreachable)",
+            lambda: daemon_start(h, 20, CUA_DAEMON_NO_RELAY=None),
+            20,
+        )
+        run.step(
+            "spaces ls bounded",
+            lambda: need(h.run(["spaces", "ls", "--json"], 30, CUA_DAEMON_NO_RELAY=None), "ls").out[
+                :80
+            ],
+            30,
+        )
         name = self.name("off", n)
         sid = f"local:{name}"
         run.step("create local", lambda: create_space(h, "linux", name, 600)["id"], 600)
         run.step("exec", lambda: exec_ok(h, sid), 60)
 
         def cloud_error():
-            r = h.run(["spaces", "create", "linux", "--on", "cloud", "--json"], 60, CUA_DAEMON_NO_RELAY=None)
+            r = h.run(
+                ["spaces", "create", "linux", "--on", "cloud", "--json"],
+                60,
+                CUA_DAEMON_NO_RELAY=None,
+            )
             if r.timed_out:
                 raise StepFailed("cloud create hung while offline")
             if r.rc == 0:
                 raise StepFailed(f"cloud create succeeded offline?: {r.out[:200]}")
             return r.text()[-200:]
+
         run.step("cloud create fails fast, clearly", cloud_error, 60)
         run.step("local still fine", lambda: exec_ok(h, sid), 60)
         run.step("delete", lambda: delete_space(h, sid), 240)
@@ -761,32 +953,51 @@ class Suite:
             if sh(["docker", "image", "inspect", img], 20).rc == 0:
                 raise StepFailed("the image was pulled despite the refusal")
             return txt[-240:]
+
         run.step("create refused before the pull", refused, 60)
 
     # 9. teleport (no secrets) into a macOS Space
     def s_teleport(self, run, h, n):
         if not self.teleport_test:
-            raise StepFailed("needs --teleport-test (cargo test -p cua-spaces-ext --test e2e_teleport_app --no-run)")
+            raise StepFailed(
+                "needs --teleport-test (cargo test -p cua-spaces-ext --test e2e_teleport_app --no-run)"
+            )
         run.step("daemon start", lambda: daemon_start(h), 20)
         name = self.name("tp", n)
         sid = f"local:{name}"
-        run.step("create macos:26", lambda: create_space(h, "macos:26", name, 3600, ("--memory-mb", "6144", "--cpus", "4"))["id"], 3600)
+        run.step(
+            "create macos:26",
+            lambda: create_space(h, "macos:26", name, 3600, ("--memory-mb", "6144", "--cpus", "4"))[
+                "id"
+            ],
+            3600,
+        )
         run.step("ready", lambda: ready(h, sid, 300), 300)
 
         def teleport():
             info = need(h.run(["sb", "info", sid, "--json"], 30), "sb info").json() or {}
             url = (info.get("endpoints") or {}).get("env")
             token = json.loads((h.path / "spaces-credentials.json").read_text())[sid]["token"]
-            env = h.env(CUA_SPACES_E2E_MACOS_URL=url, CUA_SPACES_E2E_MACOS_TOKEN=token,
-                        RUST_LOG="warn")
-            r = sh([str(self.teleport_test), "e2e_teleport_chrome_without_sign_ins_into_a_macos_space",
-                    "--exact", "--nocapture"], 900, env=env)
+            env = h.env(
+                CUA_SPACES_E2E_MACOS_URL=url, CUA_SPACES_E2E_MACOS_TOKEN=token, RUST_LOG="warn"
+            )
+            r = sh(
+                [
+                    str(self.teleport_test),
+                    "e2e_teleport_chrome_without_sign_ins_into_a_macos_space",
+                    "--exact",
+                    "--nocapture",
+                ],
+                900,
+                env=env,
+            )
             log = self.tmp / f"teleport-{name}.log"
             log.write_text(r.out + "\n" + r.err)
             if r.timed_out or r.rc != 0 or "1 passed" not in r.out or "skipped:" in (r.out + r.err):
                 raise StepFailed(f"exit {r.rc}; see {log}: {(r.out + r.err)[-500:]}")
             timing = [l for l in (r.out + r.err).splitlines() if l.startswith("TIMING")]
             return "; ".join(timing)[-300:]
+
         run.step("teleport Chrome, signed-in state unticked", teleport, 900)
         run.step("delete", lambda: delete_space(h, sid), 300)
 
@@ -796,12 +1007,18 @@ class Suite:
         by = {}
         for r in self.results:
             by.setdefault(r.scenario, []).append(r)
-        lines = [f"cua {self.version} ({self.cua})", "",
-                 "| Scenario | Runs | Pass | p50 | max | Failures |", "|---|---|---|---|---|---|"]
+        lines = [
+            f"cua {self.version} ({self.cua})",
+            "",
+            "| Scenario | Runs | Pass | p50 | max | Failures |",
+            "|---|---|---|---|---|---|",
+        ]
         for s, rs in by.items():
             secs = [r.secs for r in rs]
             fails = "; ".join(f"run {r.n}: {r.error[:160]}" for r in rs if not r.ok)
-            lines.append(f"| {s} | {len(rs)} | {sum(r.ok for r in rs)}/{len(rs)} | {statistics.median(secs):.0f}s | {max(secs):.0f}s | {fails or '-'} |")
+            lines.append(
+                f"| {s} | {len(rs)} | {sum(r.ok for r in rs)}/{len(rs)} | {statistics.median(secs):.0f}s | {max(secs):.0f}s | {fails or '-'} |"
+            )
         lines += ["", "Per step (p50 / max over passing runs):", ""]
         for s, rs in by.items():
             steps = {}
@@ -810,11 +1027,24 @@ class Suite:
                     if st["ok"]:
                         steps.setdefault(st["step"], []).append(st["secs"])
             if steps:
-                lines.append(f"- **{s}**: " + ", ".join(f"{k} {statistics.median(v):.1f}/{max(v):.1f}s" for k, v in steps.items()))
+                lines.append(
+                    f"- **{s}**: "
+                    + ", ".join(
+                        f"{k} {statistics.median(v):.1f}/{max(v):.1f}s" for k, v in steps.items()
+                    )
+                )
         return "\n".join(lines)
 
 
-ABBREV = {"teleport": "tp", "volume-macos": "mvol", "stale-daemon": "sdmn", "stale-socket": "ssck", "two-clients": "two", "macos-slim": "mslim", "macos": "mfull"}
+ABBREV = {
+    "teleport": "tp",
+    "volume-macos": "mvol",
+    "stale-daemon": "sdmn",
+    "stale-socket": "ssck",
+    "two-clients": "two",
+    "macos-slim": "mslim",
+    "macos": "mfull",
+}
 
 SCENARIOS = {
     "fresh": Suite.s_fresh,
@@ -835,19 +1065,36 @@ SCENARIOS = {
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("--cua", required=True, help="the app's bundled cua (Cua Spaces build)")
-    ap.add_argument("--mit-cua", help="an MIT-only cua (no Cua Spaces extensions), for the stale-daemon scenario")
-    ap.add_argument("--other-cua", help="another bundle's cua (for example an older app), for the stale-daemon scenario")
-    ap.add_argument("--teleport-test", help="the e2e_teleport_app test binary (cargo test -p cua-spaces-ext --test e2e_teleport_app --no-run)")
+    ap.add_argument(
+        "--mit-cua",
+        help="an MIT-only cua (no Cua Spaces extensions), for the stale-daemon scenario",
+    )
+    ap.add_argument(
+        "--other-cua",
+        help="another bundle's cua (for example an older app), for the stale-daemon scenario",
+    )
+    ap.add_argument(
+        "--teleport-test",
+        help="the e2e_teleport_app test binary (cargo test -p cua-spaces-ext --test e2e_teleport_app --no-run)",
+    )
     ap.add_argument("--scenarios", default=",".join(SCENARIOS))
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--work", default=str(HOME / ".cache/cua-reliability/reliability"))
     args = ap.parse_args()
-    if os.environ.get("CUA_HOME") and pathlib.Path(os.environ["CUA_HOME"]).resolve() == REAL_CUA_HOME.resolve():
+    if (
+        os.environ.get("CUA_HOME")
+        and pathlib.Path(os.environ["CUA_HOME"]).resolve() == REAL_CUA_HOME.resolve()
+    ):
         sys.exit("refusing: CUA_HOME is the real ~/.cua")
     suite = Suite(args)
-    print(f"cua {suite.version}; work {suite.work}; prefix {suite.prefix}; preexisting VMs {sorted(suite.preexisting_vms)}", flush=True)
+    print(
+        f"cua {suite.version}; work {suite.work}; prefix {suite.prefix}; preexisting VMs {sorted(suite.preexisting_vms)}",
+        flush=True,
+    )
     for name in [s.strip() for s in args.scenarios.split(",") if s.strip()]:
         if name not in SCENARIOS:
             sys.exit(f"unknown scenario {name}; one of {', '.join(SCENARIOS)}")
@@ -857,7 +1104,9 @@ def main():
         suite.scenario(name, lambda run, h, n, f=SCENARIOS[name]: f(suite, run, h, n))
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     out = suite.work / "results" / stamp
-    out.with_suffix(".json").write_text(json.dumps([r.__dict__ for r in suite.results], indent=1, default=str))
+    out.with_suffix(".json").write_text(
+        json.dumps([r.__dict__ for r in suite.results], indent=1, default=str)
+    )
     md = suite.report()
     out.with_suffix(".md").write_text(md + "\n")
     print("\n" + md)

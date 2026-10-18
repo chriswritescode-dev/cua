@@ -8,8 +8,7 @@
 //! `environ` array while another thread walks it, and libc's own readers (the
 //! resolver inside `getaddrinfo`, libX11) take no lock, so the test binary
 //! crashes with SIGSEGV. Tests use [`Overrides`] instead; it only affects the
-//! calling thread and the child processes it configures with
-//! [`Overrides::apply`].
+//! calling thread.
 
 use std::ffi::OsString;
 
@@ -70,18 +69,6 @@ mod overrides {
                 self.saved.push((name.to_owned(), previous));
             }
             self
-        }
-
-        /// Give a child process this thread's view of the environment.
-        pub(crate) fn apply(command: &mut std::process::Command) {
-            OVERRIDES.with(|map| {
-                for (name, value) in map.borrow().iter() {
-                    match value {
-                        Some(value) => command.env(name, value),
-                        None => command.env_remove(name),
-                    };
-                }
-            });
         }
     }
 

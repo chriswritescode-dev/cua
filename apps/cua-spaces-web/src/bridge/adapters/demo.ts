@@ -38,7 +38,6 @@ import {
   demoBusyMachines,
   demoBusyRows,
   demoSpaceRows,
-  demoTelemetry,
 } from "./demo-data";
 import { demoNewSpaceState, newSpaceDemoHandlers, type DemoClouds, type DemoNewSpaceState } from "./demo/new-space";
 import { demoShareHandlers } from "./demo/share";
@@ -50,6 +49,7 @@ import { demoKeyvaultSetupHandlers, demoKeyvaultSetupState, demoNoVaultOverview,
 import { unsupportedStreamOps } from "../ops/stream";
 import { unsupportedPresenceOps } from "../ops/presence";
 import { unsupportedRuntimeFixOps } from "../ops/runtime-fix";
+import { unsupportedCrashReportingOps } from "../ops/crash-reporting";
 import type { CliInstallPlan } from "../contracts/first-run";
 import { unsupportedChecklistOps } from "../ops/checklist";
 import { demoTeleportHandlers } from "./demo/teleport";
@@ -71,7 +71,6 @@ import { demoGithubHandlers, demoGithubState, type DemoGithubStart } from "./dem
 import { demoCiHandlers, demoCiState, type DemoCiStart } from "./demo/ci";
 import { demoHostSetupHandlers, demoHostSetupState, demoHostStatusFor, type DemoHostSetupState } from "./demo/host-setup";
 import { demoSpaceDetailHandlers, demoSpaceDetailState, type DemoSpaceDetailState } from "./demo/space-detail";
-import { demoTelemetryHandlers, demoTelemetryState, type DemoTelemetryState } from "./demo/telemetry";
 import { demoLinksHandlers, demoLinksState, type DemoLinksState, type DemoSharesPreset } from "./demo/links";
 import { demoResourcesHandlers, demoResourcesState, type DemoResourcesState } from "./demo/resources";
 import { demoDriverHandlers, demoDriverState, type DemoDriverState } from "./demo/driver";
@@ -157,7 +156,7 @@ export interface DemoOptions {
   /** The machine the demo runs on: a Mac on Apple silicon unless set (the
    * Electron shell passes its own system and architecture). */
   platform?: DemoPlatform;
-  /** Where the updater is at start (`?demo=update-ready`, `?demo=update-downloading`, `?demo=update-error`). */
+  /** Where the updater is at start (`?demo=update`: a newer release; `?demo=update-error`). */
   update?: Partial<UpdateState>;
   /** A This Mac prompt to show (`?demo=nudge-second-agent`, `?demo=nudge-risky`). */
   nudge?: "second-agent" | "risky";
@@ -248,7 +247,7 @@ const DEMO_NOTES = "https://github.com/trycua/cua/releases/tag/cua-spaces-v0.9.3
  * SwiftUI host's shape), `?demo=unenrolled` (this device not enrolled),
  * `?demo=agents-readonly` (Cua can't write Hermes's config),
  * `?demo=claude-signed-in` / `claude-expired` / `claude-none` (Claude Code's sign-in imported, run out, or not there to import),
- * `?demo=update-ready` (an update is downloaded), `?demo=update-downloading`, `?demo=update-error`,
+ * `?demo=update` (a newer release is available), `?demo=update-error`,
  * `?demo=clouds` (AWS and Hetzner connected; `clouds-budget`, `clouds-untrusted`,
  * `clouds-token`, `clouds-approval`: one thing wrong with one of them;
  * `clouds-cli`: AWS linked through the AWS CLI's sign-in, offering OIDC;
@@ -427,13 +426,18 @@ export function demoOptionsFromSearch(search: string): DemoOptions {
             : undefined,
     ...(flags.has("intel-mac") ? { platform: { os: "macos" as const, arch: "amd64" as const } } : {}),
     ...(flags.has("linux-pc") ? { platform: { os: "linux" as const, arch: "amd64" as const } } : {}),
-    ...(flags.has("update-ready")
-      ? { update: { status: "downloaded" as const, version: "0.9.3", percent: 100, notesUrl: DEMO_NOTES } }
-      : flags.has("update-downloading")
-        ? { update: { status: "downloading" as const, version: "0.9.3", percent: 42, notesUrl: DEMO_NOTES } }
-        : flags.has("update-error")
-          ? { update: { status: "error" as const, message: "The network connection was lost." } }
-          : {}),
+    ...(flags.has("update")
+      ? {
+          update: {
+            status: "available" as const,
+            version: "0.9.3",
+            notesUrl: DEMO_NOTES,
+            instructions: `A newer Cua Spaces release (0.9.3) is available. Update by pulling the repository and rebuilding: git pull && pnpm --dir apps/cua-spaces build`,
+          },
+        }
+      : flags.has("update-error")
+        ? { update: { status: "error" as const, message: "The network connection was lost." } }
+        : {}),
   };
 }
 
@@ -441,7 +445,6 @@ export function demoOptionsFromSearch(search: string): DemoOptions {
 const DEMO_MAC_HOST_SETTINGS: HostSettings = {
   keyvaultAutoWipe: false,
   keyvaultUnlockPrompt: true,
-  keyvaultSiteIcons: true,
   keyvaultProtection: [
     { label: "Touch ID", value: "Asked by the Cua daemon to widen access" },
     { label: "Unlock", value: "Mac login" },
@@ -449,10 +452,9 @@ const DEMO_MAC_HOST_SETTINGS: HostSettings = {
   ],
 };
 
-const DEMO_KEYVAULT_ROWS: Partial<Record<string, "keyvaultAutoWipe" | "keyvaultUnlockPrompt" | "keyvaultSiteIcons">> = {
+const DEMO_KEYVAULT_ROWS: Partial<Record<string, "keyvaultAutoWipe" | "keyvaultUnlockPrompt">> = {
   "keyvault-auto-wipe": "keyvaultAutoWipe",
   "keyvault-unlock-prompt": "keyvaultUnlockPrompt",
-  "keyvault-site-icons": "keyvaultSiteIcons",
 };
 
 /** Simulated: one more of the account's computers (`?demo=clouds-many`). */
@@ -518,7 +520,6 @@ export function createDemoAdapter(options: DemoOptions = {}): DataAdapter & { re
       const v = demoVolumeState(now(), options.onboarded !== false, options.platform, options.ci !== undefined);
       return options.shares ? { ...v, experiments: { ...v.experiments, tcpShares: true } } : v;
     })(),
-    ...demoTelemetryState(),
     ...demoRelayUsageState(),
     ...demoSpacesSettingsState(),
     links: demoLinksState(now(), options.shares),
@@ -600,7 +601,6 @@ export function createDemoAdapter(options: DemoOptions = {}): DataAdapter & { re
   const settingsSnapshot = (): SettingsSnapshot => ({
     values: { ...state.settings },
     defaultLocation: { value: state.settings.defaultLocation, source: "config", path: "~/.cua/config.toml" },
-    telemetry: demoTelemetry(state.settings.telemetry),
     hostSettings: { ...state.hostSettings, runtimes: demoRuntimesInput(state.runtimes) },
     // The macOS hosts register ⌘⇧Space; the Windows and Linux shells have none.
     globalShortcut: state.platform.os === "macos" ? { label: state.settings.hotkey, registered: true } : null,
@@ -1254,7 +1254,6 @@ export function createDemoAdapter(options: DemoOptions = {}): DataAdapter & { re
       setSettings: (p) => ((state.settings = { ...state.settings, ...p }), emit({ type: "settings.changed" })),
       addMachine: (m) => ((state.paired = [...state.paired, m]), emit({ type: "machines.changed" })),
     }),
-    ...demoTelemetryHandlers(ctx),
     ...(options.noTeam ? { "teams.list": () => ({ teams: [], currentTeamId: null }) } : {}),
     ...demoRelayUsageHandlers(ctx),
     ...demoSpacesSettingsHandlers(ctx, () => handlers["machines.list"]({}) as MachineRow[]),
@@ -1298,6 +1297,7 @@ export function createDemoAdapter(options: DemoOptions = {}): DataAdapter & { re
     ...demoCiHandlers({ state: ciState, now, wait, stepMs: step, signedIn: () => Boolean(state.identity) }),
     ...unsupportedPresenceOps("demo"),
     ...unsupportedRuntimeFixOps("demo"),
+    ...unsupportedCrashReportingOps("demo"),
     "cli.plan": () => cliPlan(),
     "cli.install": async () => {
       await wait(step);
@@ -1336,7 +1336,6 @@ interface DemoLinksStateField {
 export interface DemoState
   extends DemoDriverState,
     DemoLinksStateField,
-    DemoTelemetryState,
     DemoRelayUsageState,
     DemoSpacesSettingsState,
     DemoResourcesState,

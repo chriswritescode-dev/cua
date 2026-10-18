@@ -22,9 +22,6 @@
         "autoCheck": {
           "type": "boolean"
         },
-        "autoInstall": {
-          "type": "boolean"
-        },
         "channel": {
           "enum": [
             "stable",
@@ -48,7 +45,6 @@
         "os",
         "updater",
         "autoCheck",
-        "autoInstall",
         "channel",
         "lastCheck",
         "checking"
@@ -5279,9 +5275,6 @@
             "hotkey": {
               "type": "string"
             },
-            "telemetry": {
-              "type": "boolean"
-            },
             "defaultLocation": {
               "type": "string"
             },
@@ -5358,7 +5351,6 @@
             "theme",
             "menuBar",
             "hotkey",
-            "telemetry",
             "defaultLocation",
             "launchAtLogin",
             "updateChannel"
@@ -5391,40 +5383,6 @@
             "value",
             "source",
             "path"
-          ]
-        },
-        "telemetry": {
-          "type": [
-            "object",
-            "null"
-          ],
-          "properties": {
-            "enabled": {
-              "type": "boolean"
-            },
-            "source": {
-              "type": "string"
-            },
-            "sourceKind": {
-              "type": "string"
-            },
-            "noticeShown": {
-              "type": "boolean"
-            },
-            "noticeText": {
-              "type": "string"
-            },
-            "docsUrl": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "enabled",
-            "source",
-            "sourceKind",
-            "noticeShown",
-            "noticeText",
-            "docsUrl"
           ]
         },
         "hostSettings": {
@@ -5471,12 +5429,6 @@
               ]
             },
             "keyvaultUnlockPrompt": {
-              "type": [
-                "boolean",
-                "null"
-              ]
-            },
-            "keyvaultSiteIcons": {
               "type": [
                 "boolean",
                 "null"
@@ -5572,8 +5524,7 @@
       },
       "required": [
         "values",
-        "defaultLocation",
-        "telemetry"
+        "defaultLocation"
       ]
     },
     "ShareEntry": {
@@ -6379,41 +6330,6 @@
         "currentTeamId"
       ]
     },
-    "TelemetryLinkNotice": {
-      "type": "object",
-      "properties": {
-        "due": {
-          "type": "boolean"
-        },
-        "title": {
-          "type": "string"
-        },
-        "body": {
-          "type": "string"
-        },
-        "okLabel": {
-          "type": "string"
-        },
-        "turnOffLabel": {
-          "type": "string"
-        },
-        "detailsLabel": {
-          "type": "string"
-        },
-        "docsUrl": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "due",
-        "title",
-        "body",
-        "okLabel",
-        "turnOffLabel",
-        "detailsLabel",
-        "docsUrl"
-      ]
-    },
     "ThreadEntry": {
       "type": "object",
       "properties": {
@@ -7119,8 +7035,6 @@
             "idle",
             "checking",
             "available",
-            "downloading",
-            "downloaded",
             "error"
           ]
         },
@@ -7133,13 +7047,13 @@
             "null"
           ]
         },
-        "percent": {
+        "notesUrl": {
           "type": [
-            "number",
+            "string",
             "null"
           ]
         },
-        "notesUrl": {
+        "instructions": {
           "type": [
             "string",
             "null"
@@ -7156,7 +7070,6 @@
         "status",
         "currentVersion",
         "version",
-        "percent",
         "notesUrl",
         "message"
       ]
@@ -10970,22 +10883,6 @@
     "teams.list": {
       "$ref": "#/$defs/TeamsList"
     },
-    "telemetry.acknowledgeLinkNotice": {
-      "type": "null"
-    },
-    "telemetry.linkNotice": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/TelemetryLinkNotice"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "telemetry.track": {
-      "type": "null"
-    },
     "teleport.catalog": {
       "type": "array",
       "items": {
@@ -11668,9 +11565,6 @@
       ]
     },
     "update.get": {
-      "$ref": "#/$defs/UpdateState"
-    },
-    "update.install": {
       "$ref": "#/$defs/UpdateState"
     },
     "volume.approve": {
@@ -15321,22 +15215,6 @@
     "teams.list": {
       "$ref": "#/$defs/TeamsList"
     },
-    "telemetry.acknowledgeLinkNotice": {
-      "type": "null"
-    },
-    "telemetry.linkNotice": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/TelemetryLinkNotice"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "telemetry.track": {
-      "type": "null"
-    },
     "teleport.catalog": {
       "type": "array",
       "items": {
@@ -15739,9 +15617,6 @@
       }
     },
     "update.get": {
-      "$ref": "#/$defs/UpdateState"
-    },
-    "update.install": {
       "$ref": "#/$defs/UpdateState"
     },
     "volume.approve": {

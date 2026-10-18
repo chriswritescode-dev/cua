@@ -123,7 +123,6 @@ async def test_plain_image_mcp_local_gvisor(monkeypatch):
             wait_for=http("mcp", "/health"),
             local=True,
             name=f"cua-e2e-unified-{secrets.token_hex(3)}",
-            telemetry_enabled=False,
         ) as sb:
             assert (await sb.info()).location == "local"
             await _exercise(sb, env_expected=True)
@@ -198,7 +197,6 @@ async def test_plain_image_layers_build_locally(monkeypatch, tmp_path):
                 local=True,
                 memory="512MB",
                 name=f"cua-e2e-layers-{secrets.token_hex(3)}",
-                telemetry_enabled=False,
             ) as sb:
                 r = await sb.service("web").request("GET", "/")
                 assert r.status_code == 200, r.text

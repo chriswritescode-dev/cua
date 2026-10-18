@@ -12,13 +12,12 @@
 // (crash-reporting.ts). Reports stop when the switch goes off (the SDK is
 // closed, and every event is checked again); a switch turned on takes effect
 // at the next launch.
-import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
 import * as Sentry from "@sentry/electron/main";
 import { app } from "electron";
 import {
   crashConsent,
   crashEnv,
+  localConsentSource,
   crashTestKind,
   environmentFor,
   onConsentMayHaveChanged,
@@ -26,7 +25,6 @@ import {
   releaseFor,
   scrubEvent,
   setCrashSettings,
-  type ConsentSource,
   type ScrubbableEvent,
 } from "./crash-reporting";
 
@@ -49,20 +47,7 @@ const DROPPED = new Set([
   "GpuContext",
 ]);
 
-function machine(): ConsentSource {
-  return {
-    env: process.env,
-    read: (file) => {
-      try {
-        return readFileSync(file, "utf8");
-      } catch {
-        return null;
-      }
-    },
-    exists: (file) => existsSync(file),
-    home: homedir(),
-  };
-}
+const machine = localConsentSource;
 
 /** Starts Sentry when a DSN is configured and the switch allows it; call first thing in the main process. */
 export function initCrashReporting(): void {
@@ -76,7 +61,7 @@ export function initCrashReporting(): void {
 
   Object.assign(process.env, crashEnv({ dsn, release, environment }));
   setCrashSettings({ dsn, release, environment, uiTest: test === "ui" });
-  const home = homedir();
+  const home = machine().home;
   Sentry.init({
     dsn,
     release,

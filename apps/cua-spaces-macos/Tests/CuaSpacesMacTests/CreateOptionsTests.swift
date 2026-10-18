@@ -19,8 +19,7 @@ struct CreateOptionsTests {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("cua-options-\(UUID().uuidString)")
         let model = AppModel(backend: backend, keyvault: KeyvaultModel(client: nil),
                              onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
-                             settingsPath: dir.appendingPathComponent("settings.json").path,
-                             telemetry: FixtureTelemetry())
+                             settingsPath: dir.appendingPathComponent("settings.json").path)
         return (WebUIBridge(model: model, allowedOrigins: []), model)
     }
 

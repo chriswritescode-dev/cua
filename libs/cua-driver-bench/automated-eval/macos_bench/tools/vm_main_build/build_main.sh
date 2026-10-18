@@ -8,7 +8,6 @@
 source $HOME/.cargo/env
 export CUA_DRIVER_SOURCE_SHA=$(cat ~/bench-work/cua-main/SOURCE_SHA)
 export CUA_DRIVER_GIT_SHA=$CUA_DRIVER_SOURCE_SHA
-export CUA_DRIVER_RS_TELEMETRY_ENABLED=false
 cd ~/bench-work/cua-main/src/libs/cua-driver/rust
 date -u
 rustup show active-toolchain 2>&1 | tail -1

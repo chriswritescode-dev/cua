@@ -177,27 +177,23 @@
     {
       "signIn": { "kind": "idle" },
       "menuBar": false,
-      "telemetry": null,
       "agents": null
     },
     {
       "apiKeyClient": "client-123",
       "signIn": { "kind": "failed", "message": "The code expired" },
       "menuBar": true,
-      "telemetry": { "enabled": false, "lockedBy": "DO_NOT_TRACK" },
       "agents": [],
       "agentsBusy": false
     },
     {
       "signIn": { "kind": "waiting", "userCode": "WXYZ-1234" },
-      "telemetry": { "enabled": true },
       "agentsBusy": false,
       "agentsPending": ["cursor"]
     },
     {
       "identity": "ada@example.com",
       "canSignOut": true,
-      "telemetry": { "enabled": true },
       "agentsBusy": true
     }
   ],

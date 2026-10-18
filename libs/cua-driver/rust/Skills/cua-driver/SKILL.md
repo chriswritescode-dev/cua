@@ -48,7 +48,7 @@ The MCP server instructions carry the same rules, so they apply even when this f
 | Goal                                      | Tool or command                                                                                       | Read when needed                                      |
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
 | Check installation and capabilities       | `cua-driver --version`, `status`, `doctor`, `describe <tool>`; MCP `tools/list`                       | [Runtime](RUNTIME.md)                                 |
-| Install, update, or grant macOS permissions | `update --apply`, `permissions status`; MDM, authorized VNC approval, or ask the user               | [macOS](MACOS.md#install-and-approve-permissions)     |
+| Install, update, or grant macOS permissions | `check-update`, `skills install`, `permissions status`; MDM, authorized VNC approval, or ask the user | [macOS](MACOS.md#install-and-approve-permissions)     |
 | Find or open the requested app            | `list_apps`, `list_windows`, `launch_app`                                                             | Current platform guide below                          |
 | View a local file in the GUI              | `launch_app({bundle_id, urls:["file:///…"]})` opens it in that app                                    | Current platform guide below                          |
 | Observe one window                        | `get_window_state({pid, window_id, query})`                                                           | [Workflow](WORKFLOW.md)                               |

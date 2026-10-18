@@ -15,8 +15,8 @@ import type { CreateFix, FailureStreak } from "./contracts/spaces";
 
 /** Hosts whose own model runs every create the page starts (the SwiftUI
  * and Electron apps' `AppModel.runCreate`): they retry a passing failure
- * themselves and tell the page (`CreateProgress.retry`), and they record
- * the create's usage events. Elsewhere the page does both. */
+ * themselves and tell the page (`CreateProgress.retry`). Elsewhere the
+ * page does. */
 export const HOST_RUNS_CREATES: Record<BridgeMode, boolean> = {
   tauri: false,
   webkit: true,

@@ -12,7 +12,6 @@ fn cua(teams: Option<&str>, args: &[&str]) -> Output {
     cmd.args(args)
         .env("HOME", home.path())
         .env("CUA_HOME", home.path().join(".cua"))
-        .env("CUA_TELEMETRY", "0")
         .env("CUA_RELAY_URL", "http://127.0.0.1:9")
         .env_remove("CUA_ENV")
         .env_remove("CUA_API_KEY")

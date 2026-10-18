@@ -101,7 +101,7 @@ function AboutPage() {
             <UpdateRows
               updates={updates}
               canChange={data.canChange && !unavailable}
-              onChange={(on) => void setAbout({ autoCheck: on, autoInstall: on }).catch(toastError(t("settings.about.update_settings_failed")))}
+              onChange={(on) => void setAbout({ autoCheck: on }).catch(toastError(t("settings.about.update_settings_failed")))}
               onCheck={() => void checkNow().catch(toastError(t("settings.about.check_failed")))}
             />
           </div>
@@ -135,7 +135,7 @@ function AboutPage() {
   );
 }
 
-/** "Keep Cua Spaces up to date": one switch for checking, downloading and installing when you quit. */
+/** "Check for new releases": the switch for the check; a release is announced, never downloaded. */
 function UpdateRows({
   updates: u,
   canChange,
