@@ -1,7 +1,6 @@
-"""Partial (per-platform) releases: install.sh and install.ps1 take the newest
-build that exists for their own platform (CUA-2068; python3 -m unittest
-discover -s scripts/install/tests). install.ps1 runs only on Windows: its half
-is in install.Tests.ps1 ('mixed versions'), built the same way.
+"""Partial (per-platform) releases: a manifest takes the newest build that
+exists for each platform (CUA-2068; python3 -m unittest discover -s
+scripts/install/tests).
 
 The manifest is built the way cd-cua-spaces.yml builds it: release 1.2.3 ships
 every platform, 1.2.4 only macOS and 1.2.5 only Linux, each merged into the
@@ -21,8 +20,6 @@ import unittest
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-SH = HERE.parent / "install.sh"
-PS1 = HERE.parent / "install.ps1"
 TOOL = HERE.parent / "release_manifest.py"
 CHECK = HERE.parent / "check_release_manifest.py"
 
@@ -139,32 +136,6 @@ class MixedVersions(unittest.TestCase):
         args = ["python3", str(CHECK), "--dir", str(work), "--component", "app", "--version", "1.2.4", "--base-url", base]
         self.assertNotEqual(subprocess.run(args, capture_output=True).returncode, 0)
         self.assertEqual(subprocess.run([*args, "--allow-carried-forward"], capture_output=True, text=True).returncode, 0)
-
-    def sh(self, os_name, arch, prefix, *extra):
-        env = {
-            "PATH": os.environ["PATH"], "HOME": str(prefix), "CUA_HOME": str(prefix / ".cua"),
-            "CUA_INSTALL_OS": os_name, "CUA_INSTALL_ARCH": arch,
-            "CUA_INSTALL_MANIFEST_URL": self.manifest_url, "CUA_TELEMETRY_FORBID_NETWORK": "1",
-        }
-        return subprocess.run(
-            ["sh", str(SH), "--yes", "--no-onboarding", "--app-only", "--prefix", str(prefix / "p"), *extra],
-            env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=120,
-        )
-
-    def test_install_sh_installs_the_newest_linux_build(self):
-        for arch, label in (("x86_64", "linux-x64"), ("aarch64", "linux-arm64")):
-            prefix = Path(tempfile.mkdtemp(dir=self.tmp.name))
-            p = self.sh("linux", arch, prefix)
-            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
-            ran = subprocess.run([str(prefix / "p/bin/cua-spaces")], capture_output=True, text=True)
-            self.assertEqual(ran.stdout.strip(), "cua-spaces 1.2.5", label)
-
-    def test_install_sh_plans_the_newest_macos_build(self):
-        prefix = Path(tempfile.mkdtemp(dir=self.tmp.name))
-        p = self.sh("Darwin", "arm64", prefix, "--dry-run")
-        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
-        self.assertIn("cua-spaces-v1.2.4/cua-spaces-1.2.4-darwin-universal.dmg", p.stdout)
-        self.assertNotIn("1.2.3", p.stdout)
 
 
 if __name__ == "__main__":

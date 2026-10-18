@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Disposable Ubuntu X11 tutorial smoke; never run on a personal desktop.
 
-Tests the checked-out canonical installer and its published component release,
-not a source-built Driver. No LLM account or client registration is exercised.
+Tests the checked-out canonical installer, which builds the Driver from this
+source tree rather than installing a published component release.
+No LLM account or client registration is exercised.
 The tutorial's standard profile is overridden with the explicitly authorized
 test-only --dangerously-bypass-approvals on this disposable desktop.
 
@@ -257,8 +258,6 @@ def main():
         scripts = ROOT / "libs/cua-driver/scripts"
         package = tomllib.loads((ROOT / "libs/cua-driver/rust/Cargo.toml").read_text())
         source_version = package["workspace"]["package"]["version"]
-        helper = (scripts / "_install-rust.sh").read_text()
-        baked = re.search(r'^CUA_DRIVER_RS_BAKED_VERSION="([0-9.]+)"', helper, re.M).group(1)
         provenance = {
             "source_path": str(ROOT),
             "git_top_level": str(top),
@@ -266,23 +265,18 @@ def main():
             "checkout_sha": sha,
             "dirty_status": dirty,
             "source_version": source_version,
-            "installer_baked_version": baked,
-            "upstream_comparison": "not requested",
+            "installer_mode": "source build",
             "installer_sha256": {
                 name: hashlib.sha256((scripts / name).read_bytes()).hexdigest()
-                for name in ("install.sh", "_install-rust.sh", "_install-common.sh")
+                for name in ("install.sh", "_install-rust.sh")
             },
-            "coverage": "source-tree release installer + published Linux component binary",
+            "coverage": "source-tree installer building the Linux driver",
             "permission_override": "test-only unrestricted; tutorial recommends standard",
         }
         save(evidence, "provenance.json", provenance)
         require(
             top == ROOT and sha == os.environ["CUA_DOCS_SOURCE_SHA"] and not dirty,
             "Source preflight must match the exact clean checkout SHA",
-        )
-        require(
-            source_version == baked,
-            "Source and baked release differ; review the intended release before running",
         )
         # Fixed legacy cleanup is outside the overridden package home. Refuse
         # any existing installation, symlink or service rather than sweeping it.
@@ -310,16 +304,14 @@ def main():
         for key in (
             "GH_TOKEN",
             "GITHUB_TOKEN",
-            "CUA_DRIVER_RS_VERSION",
-            "CUA_DRIVER_VERSION",
             "CUA_DRIVER_PERMISSION_MODE",
             "CUA_DRIVER_DANGEROUSLY_BYPASS_APPROVALS",
             "WAYLAND_DISPLAY",
         ):
             env.pop(key, None)
         for name, leaf in (
-            ("CUA_DRIVER_RS_HOME", "package"),
-            ("CUA_DRIVER_RS_INSTALL_DIR", "bin"),
+            ("CUA_DRIVER_LOCAL_HOME", "package"),
+            ("CUA_DRIVER_LOCAL_INSTALL_DIR", "bin"),
             ("TMPDIR", "staging"),
             ("XDG_DATA_HOME", "data"),
             ("XDG_CONFIG_HOME", "config"),
@@ -328,7 +320,7 @@ def main():
             location = task / leaf
             location.mkdir()
             env[name] = str(location)
-        env.update(CUA_DRIVER_RS_KEEP_VERSIONS="0", CUA_DRIVER_RS_UPDATE_CHECK="false")
+        env.update(CUA_DRIVER_RS_UPDATE_CHECK="false")
         save(
             evidence,
             "installer-boundaries.json",
@@ -342,13 +334,12 @@ def main():
                 ],
                 "legacy_cleanup": "absent, checked before install",
                 "prior_local_cleanup": "fresh empty package home",
-                "release_gc": "disabled",
                 "macos_cleanup": "unreachable on Linux",
                 "process_cleanup": "no matching Driver process or user service before install",
             },
         )
         installed = run(
-            ["bash", str(scripts / "install.sh"), "--no-modify-path"],
+            ["bash", str(scripts / "install.sh")],
             env=env,
             timeout=300,
             check=False,
@@ -363,20 +354,18 @@ def main():
         )
         version = run([str(binary), "--version"], env=env).stdout.strip()
         require(
-            re.search(rf"(?<![\d.]){re.escape(baked)}(?![\d.])", version),
-            "Installed version differs from baked release",
+            re.search(rf"(?<![\d.]){re.escape(source_version)}(?![\d.])", version),
+            "Installed version differs from the source tree version",
         )
-        url = f"https://github.com/trycua/cua/releases/download/cua-driver-rs-v{baked}/cua-driver-rs-{baked}-linux-x86_64-binary.tar.gz"
         require(
-            url in installed.stdout,
-            "Installer did not report the expected exact component asset URL",
+            "releases/download" not in installed.stdout + installed.stderr,
+            "Installer downloaded a release artifact",
         )
         provenance.update(
             installed_path=str(binary),
             resolved_binary=str(resolved),
             installed_version=version,
             binary_sha256=hashlib.sha256(resolved.read_bytes()).hexdigest(),
-            component_asset_url=url,
         )
         save(evidence, "provenance.json", provenance)
         endpoint = task / "driver.sock"

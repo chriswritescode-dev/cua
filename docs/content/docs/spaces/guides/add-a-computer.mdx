@@ -269,7 +269,10 @@ To host on your tailnet without the relay at all, see
 ssh mini.your-tailnet.ts.net
 
 # on the mini, non-interactively:
-curl -fsSL https://cua.ai/install.sh | sh -s -- -y --select spaces,host --no-onboarding
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+scripts/install/install.sh -y --select spaces,host --no-onboarding
 ```
 
 `-y` accepts the install without the checklist, `--select spaces,host` picks the

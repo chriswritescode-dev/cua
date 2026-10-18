@@ -345,7 +345,7 @@ class UninstallMacTest(unittest.TestCase):
         self.assertTrue(box.exists(".cua/agent-setup.json"))
         self.assertIn("older than the version that removes only Cua Spaces' entries", result.stdout)
         self.assertIn("agent step is skipped", result.stdout)
-        self.assertIn("install.sh | sh -s -- --cli-only --yes", result.stdout)
+        self.assertIn("scripts/install/install.sh", result.stdout)
         self.assertIn("run: cua agents remove", result.stdout)
         # A note, not a warning, and the run says it is done.
         self.assertNotIn("older than the version", result.stderr)

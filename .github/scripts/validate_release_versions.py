@@ -45,75 +45,6 @@ def stable_version_tuple(version: str) -> tuple[int, int, int]:
     return int(major), int(minor), int(patch)
 
 
-def driver_installer_versions(root: Path) -> dict[str, str]:
-    base = root / "libs/cua-driver"
-    return {
-        ".github/release-state/cua-driver-rs-published-version": (
-            root / ".github/release-state/cua-driver-rs-published-version"
-        ).read_text().strip(),
-        "scripts/_install-rust.sh": read_match(
-            base / "scripts/_install-rust.sh", r'^CUA_DRIVER_RS_BAKED_VERSION="([^"]+)"'
-        ),
-        "scripts/install.ps1": read_match(
-            base / "scripts/install.ps1",
-            r'^\$Script:CuaDriverRsBakedVersion\s*=\s*"([^"]+)"',
-        ),
-    }
-
-
-WITHDRAWN_VERSIONS_PATH = ".github/release-state/cua-driver-rs-withdrawn-versions"
-# The installers run from `curl | bash` and `irm | iex` and cannot read repo
-# files, so each carries a baked copy of the withdrawn list that must mirror
-# WITHDRAWN_VERSIONS_PATH exactly.
-SHELL_WITHDRAWN_VERSIONS = re.compile(
-    r'^CUA_DRIVER_RS_WITHDRAWN_VERSIONS="([^"]*)" # withdrawn-installer-versions$',
-    re.MULTILINE,
-)
-POWERSHELL_WITHDRAWN_VERSIONS = re.compile(
-    r"^\$Script:CuaDriverRsWithdrawnVersions\s*=\s*@\(([^)]*)\) # withdrawn-installer-versions$",
-    re.MULTILINE,
-)
-
-
-def driver_withdrawn_versions(root: Path) -> dict[str, str]:
-    """Releases that must never be installed, baked, or certified."""
-    return read_withdrawn_versions(root / WITHDRAWN_VERSIONS_PATH)
-
-
-def _single_match(path: Path, pattern: re.Pattern[str]) -> str:
-    matches = list(pattern.finditer(path.read_text(encoding="utf-8-sig")))
-    if len(matches) != 1:
-        raise VersionError(
-            f"expected exactly one withdrawn-versions sentinel in {path}, found {len(matches)}"
-        )
-    return matches[0].group(1)
-
-
-def driver_installer_withdrawn_versions(root: Path) -> dict[str, list[str]]:
-    """Withdrawn lists baked into each installer."""
-    base = root / "libs/cua-driver/scripts"
-    shell = _single_match(base / "_install-rust.sh", SHELL_WITHDRAWN_VERSIONS).split()
-    powershell = re.findall(
-        r"'([^']*)'", _single_match(base / "install.ps1", POWERSHELL_WITHDRAWN_VERSIONS)
-    )
-    return {"scripts/_install-rust.sh": shell, "scripts/install.ps1": powershell}
-
-
-def read_withdrawn_versions(path: Path) -> dict[str, str]:
-    """Parse a withdrawn-versions file: one ``x.y.z # reason`` entry per line."""
-    if not path.exists():
-        return {}
-    withdrawn: dict[str, str] = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        version, _, reason = line.partition("#")
-        version = version.strip()
-        if not version:
-            continue
-        stable_version_tuple(version)
-        withdrawn[version] = reason.strip() or "withdrawn"
-    return withdrawn
-
-
 def driver_versions(root: Path) -> tuple[str, dict[str, str]]:
     base = root / "libs/cua-driver"
     docs_dir = "docs/content/docs/cua-driver/reference"
@@ -186,9 +117,6 @@ def lume_versions(root: Path) -> tuple[str, dict[str, str]]:
     values = {
         "src/Main.swift": read_match(
             base / "src/Main.swift", r'static let current: String = "([^"]+)"'
-        ),
-        "scripts/install.sh": read_match(
-            base / "scripts/install.sh", r'^LUME_BAKED_VERSION="([^"]+)"'
         ),
         "docs/http-api.mdx:body": read_match(
             root / docs_dir / "http-api.mdx", r"Documented against Lume \*\*(\S+)\*\*\."
@@ -376,29 +304,6 @@ def validate(root: Path, product: str) -> None:
         expected, values = driver_versions(root)
         values[".release-please-manifest.json"] = str(manifest["libs/cua-driver"])
         require_equal("Cua Driver", expected, values)
-        installers = driver_installer_versions(root)
-        installer_version = next(iter(installers.values()))
-        require_equal("Cua Driver baked installers", installer_version, installers)
-        withdrawn = driver_withdrawn_versions(root)
-        if installer_version in withdrawn:
-            raise VersionError(
-                f"Cua Driver baked installers advertise withdrawn release {installer_version}: "
-                f"{withdrawn[installer_version]}"
-            )
-        expected_withdrawn = sorted(withdrawn, key=stable_version_tuple)
-        for name, baked in driver_installer_withdrawn_versions(root).items():
-            for version in baked:
-                stable_version_tuple(version)
-            if sorted(baked, key=stable_version_tuple) != expected_withdrawn:
-                raise VersionError(
-                    f"Cua Driver {name} withdraws {baked or 'nothing'}, but "
-                    f"{WITHDRAWN_VERSIONS_PATH} withdraws {expected_withdrawn or 'nothing'}"
-                )
-        if stable_version_tuple(installer_version) > stable_version_tuple(expected):
-            raise VersionError(
-                f"Cua Driver baked installers advertise {installer_version}, "
-                f"ahead of source release {expected}"
-            )
     if product in {"all", "perception"}:
         expected, values = perception_versions(root)
         values[".release-please-manifest.json"] = str(

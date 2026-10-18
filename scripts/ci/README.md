@@ -403,16 +403,13 @@ To check Windows, run the `windows` subcommand on a Windows machine.
 
 ### Runbook: roll the installers back to the last good release
 
-Use this runbook when the canary issue opens, or when users report that default installs fail. #4150 is the worked example.
+Use this runbook when a source install fails on a supported OS.
 
-1. **Confirm the failure.** Read the canary run. Then run the verifier above against the baked version (`.github/release-state/cua-driver-rs-published-version`).
-2. **Choose the rollback version.** Pick the newest earlier release that passes the verifier on macOS and Windows and whose installer-compatibility run passes. List assets with `gh release view cua-driver-rs-v<version> --json assets`.
-3. **Open a `fix(cua-driver): ...` pull request** that makes these changes:
-   - Add the bad version with its reason and issue link to `.github/release-state/cua-driver-rs-withdrawn-versions`, and to both installer copies of the list.
-   - Set `CUA_DRIVER_RS_BAKED_VERSION` in `_install-rust.sh`, `$Script:CuaDriverRsBakedVersion` in `install.ps1`, and `.github/release-state/cua-driver-rs-published-version` to the rollback version. The three must agree.
-   - Run `python3 .github/scripts/validate_release_versions.py --product driver` and `python3 -m pytest libs/cua-driver/scripts/tests/test_install_version_fallback.py`.
-4. **Merge it.** The branded endpoints serve `main`. The canary runs on the push, so compare its installed version with the rollback version. To recheck the public one-liners after the endpoints refresh, dispatch `Monitor branded installer endpoints`.
-5. **Ship the fix as a new Release Please release.** Its tag run bakes the installers forward automatically once the published assets pass verification. Leave the withdrawn release and its assets in place for audit.
+1. **Confirm the failure.** Run `libs/cua-driver/scripts/install.sh` (or `install.ps1`) from the failing commit and read the build/install output.
+2. **Choose the rollback commit.** Find the newest commit whose installer build passes on macOS and Windows (`git log -- libs/cua-driver`).
+3. **Open a `fix(cua-driver): ...` pull request** that reverts the offending change, or updates the local build for the platform that broke. There is no baked version to change: installers always build the checkout they run from.
+4. **Verify the worktree.** Run `python3 -m pytest libs/cua-driver/scripts/tests`, `scripts/install/tests/run.sh`, and `bash -n libs/cua-driver/scripts/install.sh`.
+5. **Merge it.** Users pick up the fix by pulling the repository and rerunning the installer; nothing is published for them to download.
 
 ## Cua Driver release gate before merge and nightly
 

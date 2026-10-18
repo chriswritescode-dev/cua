@@ -17,7 +17,10 @@ sandbox needs an Apple silicon Mac.
 ## Install
 
 ```bash skip="host-install"
-curl -fsSL https://cua.ai/install.sh | sh -s -- --cli-only   # or: pip install cua, npm i -g @trycua/cua
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+scripts/install/install.sh --cli-only                 # or: pip install cua, npm i -g @trycua/cua
 ```
 
 ## Linux sandbox

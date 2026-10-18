@@ -10,11 +10,9 @@ ahead. If you are not sure they did, ask them first. Never share the code.
 
 ## You run on your user's computer (Hermes, Claude Code, Codex, ...)
 
-1. If `cua --version` fails, install Cua (Windows: `powershell -c "irm https://cua.ai/install.ps1 | iex"`):
-
-   ```bash skip="host-install"
-   curl -fsSL https://cua.ai/install.sh | sh
-   ```
+1. If `cua --version` fails, build Cua from a checkout: `git clone
+   https://github.com/chriswritescode-dev/cua.git && cd cua && git checkout
+   local-build && scripts/install/install.sh` (Windows: `scripts\install\install.ps1`).
 
 2. Join with the code from the link (or the link itself). If it prints a sign-in link (no browser),
    show it to your user.

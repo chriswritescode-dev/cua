@@ -7,8 +7,8 @@ gates that make that sequence impossible:
 1. a run that can publish must notarize, and says so before building;
 2. the release job cannot start until the exact candidate archives pass the
    macOS and Windows signature verification jobs;
-3. the installer bake runs only after the published assets pass signature
-   verification and the canonical installers install them on every platform;
+3. the published assets pass signature verification and the canonical
+   installers install them on every platform, after the release;
 4. no path skips those gates with always() or a similar status override.
 """
 
@@ -149,11 +149,10 @@ def test_release_job_needs_signature_verification(cd: dict) -> None:
     assert release["outputs"]["version"] == "${{ steps.version.outputs.version }}"
 
 
-def test_installer_bake_needs_post_publication_verification(cd: dict) -> None:
+def test_post_publication_verification_follows_the_release(cd: dict) -> None:
     jobs = cd["jobs"]
     signatures = jobs["verify-published-signatures"]
     installers = jobs["verify-published-installers"]
-    bake = jobs["advance-installer-version"]
 
     assert signatures["uses"] == "./.github/workflows/cua-driver-release-signatures.yml"
     assert signatures["with"] == {"version": "${{ needs.release.outputs.version }}", "source": "release"}
@@ -163,27 +162,12 @@ def test_installer_bake_needs_post_publication_verification(cd: dict) -> None:
         assert needs(job) == {"release"}
         assert "if" not in job
 
-    assert needs(bake) == {"release", "verify-published-signatures", "verify-published-installers"}
-    assert "if" not in bake
-    advance = step(bake, "Advance public installer version through a pull request")
-    assert advance["env"]["VERSION"] == "${{ needs.release.outputs.version }}"
-    assert "--withdrawn-path \"$UPDATE_ROOT/.github/release-state/cua-driver-rs-withdrawn-versions\"" in advance["run"]
-    assert "validate_release_versions.py" in advance["run"]
 
-
-def test_only_the_gated_bake_job_moves_the_public_installers(cd: dict) -> None:
-    assert sorted(publishing_jobs(cd)) == ["advance-installer-version", "release"]
+def test_only_the_release_job_moves_public_state(cd: dict) -> None:
+    assert sorted(publishing_jobs(cd)) == ["release"]
     release_text = yaml.safe_dump(cd["jobs"]["release"])
     assert "--state-path" not in release_text
     assert "refs/heads/main" not in release_text
-    staged = step(cd["jobs"]["release"], "Stage release files")["run"]
-    assert "--withdrawn-path release-control/.github/release-state/cua-driver-rs-withdrawn-versions" in staged
-    assert {
-        "verify-macos-release-signatures",
-        "verify-windows-release-signatures",
-        "verify-published-signatures",
-        "verify-published-installers",
-    } <= ancestors(cd, "advance-installer-version")
 
 
 def test_no_gate_is_bypassed_by_a_status_override(cd: dict) -> None:
@@ -193,7 +177,6 @@ def test_no_gate_is_bypassed_by_a_status_override(cd: dict) -> None:
         "verify-windows-release-signatures",
         "verify-published-signatures",
         "verify-published-installers",
-        "advance-installer-version",
     ):
         condition = str(cd["jobs"][name].get("if", ""))
         assert not any(override in condition for override in STATUS_OVERRIDES), name

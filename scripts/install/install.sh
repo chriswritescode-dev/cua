@@ -1,17 +1,23 @@
 #!/bin/sh
-# Cua installer: the `cua` CLI, the Cua Spaces app and agent extras.
+# Cua source installer: build and install the `cua` CLI, cua-spacesd, the Cua
+# Spaces app and agent extras from this repository checkout.
 #
-#   curl -fsSL https://cua.ai/install.sh | sh
-#   curl -fsSL https://cua.ai/install.sh | sh -s -- --select cua-driver
-#   curl -fsSL https://cua.ai/install.sh | sh -s -- --cli-only --yes
-#   curl -fsSL https://cua.ai/install.sh | sh -s -- --pair K7QM-4XPB-2RHD
+# Run it from a checkout:
+#
+#   git clone https://github.com/chriswritescode-dev/cua.git
+#   cd cua
+#   git checkout local-build
+#   scripts/install/install.sh
+#   scripts/install/install.sh --select cua-driver
+#   scripts/install/install.sh --cli-only --yes
+#   scripts/install/install.sh --pair K7QM-4XPB-2RHD
 #
 # In a terminal it first says what Cua Spaces is, then lets you choose what to
-# add to the command-line tools (the `cua` program: always installed, except
-# with --app-only):
-#   spaces      the Cua Spaces app (macOS and Linux; default on both)
+# add to the command-line tools (the `cua` program: always built, except with
+# --app-only):
+#   spaces      the Cua Spaces app (macOS only; default on there)
 #   cua-driver  Cua Driver, which lets AI agents use apps while you keep
-#               working: installs it and adds its skill and MCP server to
+#               working: builds it and adds its skill and MCP server to
 #               your agents (default off)
 # Signing in adds this computer to your account: after `cua auth login`
 # succeeds, the installer runs `cua host setup`, so your other devices can
@@ -28,59 +34,37 @@
 #   --app-only          install only the Cua Spaces app (no CLI)
 #   --mode host|client  preselect the app's first-run choice (implies spaces)
 #   --pair CODE         add this machine to your account with a one-time code
-#                       from the Cua Spaces app (Add a computer): installs and
+#                       from the Cua Spaces app (Add a computer): builds and
 #                       runs `cua host setup --pair CODE`, no sign-in, no checklist
 #   --relay URL         relay for --pair (default https://relay.cua.ai)
 #   --no-host           sign in only: do not add this computer to your account
 #   --no-provide-spaces add this computer without creating Spaces for your
 #                       other devices on it (cua host setup --no-provide-spaces)
 #                       A computer that already has a cua with `host setup --pair`
-#                       (and the app) uses them instead of downloading again;
-#                       --version, --prefix or CUA_INSTALL_REINSTALL=1 install anyway
-#   --version VERSION   install this CLI release (default: latest)
+#                       (and the app) uses them instead of building again;
+#                       --prefix or CUA_INSTALL_REINSTALL=1 builds anyway
 #   --prefix DIR        install under DIR (DIR/bin, DIR/Applications)
 #   --modify-path       add the bin dir to your shell profile without asking
 #   --no-modify-path    never edit your shell profile (print the one-line command)
 #   --no-onboarding     do not run `cua auth login` afterwards (nor add this computer)
 #   --no-skills         with cua-driver, add only its MCP server to your agents,
 #                       not its skill (by default both are added)
-#   -v, --verbose       print every step (manifest, downloads, signature checks)
-#   --require-signature fail unless a signature (minisign/cosign) verifies
+#   -v, --verbose       print every step (checkout paths, builds, installs)
 #   --dry-run           print what would happen, change nothing
 #   -y, --yes           accept the selection and every prompt (non-interactive)
 #   -h, --help          show this help
 #
-# Environment (mostly for testing and mirrors):
+# Environment:
 #   CUA_INSTALL_NONINTERACTIVE=1      never prompt (defaults plus --select)
 #   CUA_INSTALL_VERBOSE=1             same as --verbose
-#   CUA_INSTALL_REINSTALL=1           with --pair, install the CLI and app even if present
-#   CUA_INSTALL_MANIFEST_URL  release-artifacts.json to read
-#   CUA_INSTALL_BASE_URL      release download base (default GitHub releases)
-#   CUA_INSTALL_DRIVER_URL    cua-driver installer (default cua.ai/driver/install.sh)
-#   CUA_INSTALL_REPO          GitHub repo (default trycua/cua)
+#   CUA_INSTALL_REINSTALL=1           with --pair, build the CLI and app even if present
+#   CUA_REPO_URL                      the clone this installer points at
 #   CUA_INSTALL_OS, CUA_INSTALL_ARCH  override platform detection
-#   CUA_INSTALL_MINISIGN_PUBKEY       minisign public key for artifacts
-#   CUA_HOME                  cua state dir (default ~/.cua)
-#   DO_NOT_TRACK=1 or CUA_TELEMETRY=0  send no install events (see below)
-#
-# Telemetry: the installer sends three anonymous events about its own run
-# (installer started, finished, or failed with the step and a fixed reason
-# word), under the same switches as every Cua program: DO_NOT_TRACK,
-# CUA_TELEMETRY, `[telemetry] enabled = "off"` in $CUA_HOME/config.toml, and
-# off in CI. Never names, paths or messages. Nothing on --dry-run.
-# https://cua.ai/docs/cua-sdk/concepts/telemetry
+#   CUA_HOME                          cua state dir (default ~/.cua)
+#   CARGO_TARGET_DIR                  cargo target directory (as cargo itself)
 set -eu
 
-REPO="${CUA_INSTALL_REPO:-trycua/cua}"
-BASE_URL="${CUA_INSTALL_BASE_URL:-https://github.com/$REPO/releases/download}"
-# Rolling release that always carries the newest release-artifacts.json.
-LATEST_TAG="cua-install-latest"
-# Release key for artifact signatures (filled in by the release process).
-MINISIGN_PUBKEY="${CUA_INSTALL_MINISIGN_PUBKEY:-}"
-# Only the release workflows may sign, each at its own release tag: the CLI
-# by cd-cua-sdk.yml at refs/tags/cua-sdk-v<version>, the app by
-# cd-cua-spaces.yml at refs/tags/cua-spaces-v<version> (cosign_identity).
-COSIGN_ISSUER="https://token.actions.githubusercontent.com"
+CUA_REPO_URL="${CUA_REPO_URL:-https://github.com/chriswritescode-dev/cua.git}"
 
 want_cli=1
 cli_only=0
@@ -96,11 +80,9 @@ tty_saved=""
 mode=""
 pair_code=""
 relay_url=""
-version=""
 prefix=""
 modify_path=0
 no_modify_path=0
-sig_noted=0
 path_hint=""
 verbose=0
 no_tty_noted=0
@@ -110,12 +92,11 @@ no_host=0
 no_provide_spaces=0
 did_host=""
 driver_skills=1
-require_sig=0
 dry_run=0
 assume_yes=0
 tmp=""
-mounted=""
 existing_cua=""
+repo_root=""
 # What this run installed, for the closing summary.
 did_cli=""
 did_app=""
@@ -126,13 +107,22 @@ did_driver=""
 say() { printf '%s\n' "$*"; }
 # step: one plain line per thing the installer does.
 step() { printf '%s\n' "$*"; }
-# info: detail for --verbose (manifest URLs, file names, signature checks).
+# info: detail for --verbose (checkout paths, build commands, installs).
 info() { [ "$verbose" = 0 ] || printf 'cua-install: %s\n' "$*"; }
 warn() { printf 'cua-install: warning: %s\n' "$*" >&2; }
 die() {
     printf 'cua-install: error: %s\n' "$*" >&2
-    tel_kind="$(tel_error_kind "$*")"
     exit 1
+}
+
+clone_hint() {
+    say "Cua is installed from a source checkout now. Build it locally:"
+    say ""
+    say "  git clone $CUA_REPO_URL"
+    say "  cd cua"
+    say "  git checkout local-build"
+    say "  scripts/install/install.sh"
+    say ""
 }
 
 usage() {
@@ -140,17 +130,9 @@ usage() {
 }
 
 cleanup() {
-    rc=$?
-    if [ "$rc" != 0 ] && [ "$tel_on" = 1 ] && [ "$tel_ended" = 0 ]; then
-        [ "$rc" != 130 ] || tel_kind=cancelled
-        tel_send installer_failed "$tel_stage" "${tel_kind:-other}"
-    fi
     if [ -n "$tty_saved" ]; then
         stty "$tty_saved" </dev/tty 2>/dev/null || true
         tty_saved=""
-    fi
-    if [ -n "$mounted" ]; then
-        hdiutil detach -quiet "$mounted" >/dev/null 2>&1 || true
     fi
     if [ -n "$tmp" ] && [ -d "$tmp" ]; then
         rm -rf "$tmp"
@@ -158,202 +140,6 @@ cleanup() {
 }
 trap cleanup EXIT
 trap 'exit 130' INT TERM
-
-# ---------------------------------------------------------------- telemetry
-
-# Three anonymous events about this install (cua_installer_step):
-# installer_started, then installer_completed or installer_failed with the
-# stage that was running and a fixed reason word. The same switches as
-# every Cua program (libs/cua/crates/cua-telemetry/src/config.rs); the same
-# anonymous install id, so the app's later events continue this install.
-# Never a name, a path, a URL or an error message. Best effort: a send never
-# fails or slows the install by more than a few seconds.
-TEL_ENDPOINT_DEFAULT="https://eu.i.posthog.com/batch/"
-TEL_KEY_PROD="phc_eSkLnbLxsnYFaXksif1ksbrNzYlJShr35miFLDppF14"
-TEL_KEY_STAGING="phc_xDNLpzypNLVGmzQeBZEgZDZK7Ea6yYAmAnGZ6hMtHNKG"
-tel_on=0
-tel_ended=0
-tel_stage=other
-tel_kind=""
-tel_version=""
-tel_id=""
-tel_session=""
-tel_ci=false
-
-tel_lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]'; }
-
-# tel_bool VALUE: prints on, off, or nothing (unset or not a switch word).
-tel_bool() {
-    case "$(tel_lower "$1")" in
-    0 | false | no | off | disable | disabled) echo off ;;
-    1 | true | yes | on | enable | enabled) echo on ;;
-    esac
-}
-
-# The [telemetry] enabled value in $CUA_HOME/config.toml (on, off, or nothing).
-tel_config() {
-    f="${CUA_HOME:-$HOME/.cua}/config.toml"
-    [ -r "$f" ] || return 0
-    v="$(awk '
-        /^[[:space:]]*\[/ { sect = $0; gsub(/[[:space:]\[\]]/, "", sect); next }
-        sect == "telemetry" && /^[[:space:]]*enabled[[:space:]]*=/ {
-            sub(/^[^=]*=[[:space:]]*/, ""); sub(/[[:space:]]*(#.*)?$/, ""); gsub(/"/, ""); print; exit
-        }' "$f" 2>/dev/null)"
-    tel_bool "$v"
-}
-
-tel_is_ci() {
-    for v in CI CONTINUOUS_INTEGRATION GITHUB_ACTIONS GITLAB_CI JENKINS_URL CIRCLECI BUILDKITE \
-        TF_BUILD TEAMCITY_VERSION TRAVIS APPVEYOR BITBUCKET_BUILD_NUMBER CODEBUILD_BUILD_ID DRONE HUDSON_URL; do
-        eval "x=\${$v:-}"
-        x="$(tel_lower "$x")"
-        case "$x" in "" | false | 0) ;; *) return 0 ;; esac
-    done
-    return 1
-}
-
-tel_hex() { # BYTES: random lowercase hex
-    od -An -N"$1" -tx1 /dev/urandom 2>/dev/null | tr -d ' \n'
-}
-
-# telemetry_init: decide, show the notice, load or create the install id.
-telemetry_init() {
-    tel_on=0
-    [ "$dry_run" = 0 ] || return 0
-    if [ -n "${CUA_POSTHOG_KEY:-}" ]; then
-        tel_key="$CUA_POSTHOG_KEY"
-    elif [ "$(tel_lower "${CUA_ENV:-}")" = staging ]; then
-        tel_key="$TEL_KEY_STAGING"
-    else
-        tel_key="$TEL_KEY_PROD"
-    fi
-    [ -n "$tel_key" ] || return 0
-    case "$(tel_lower "${DO_NOT_TRACK:-}")" in "" | 0 | false) ;; *) return 0 ;; esac
-    tel_is_ci && tel_ci=true
-    sw="$(tel_bool "${CUA_TELEMETRY:-}")"
-    if [ -z "$sw" ]; then
-        [ "$(tel_bool "${CUA_TELEMETRY_ENABLED:-}")" != off ] || return 0
-        [ "$(tel_bool "${CUA_TELEMETRY_DISABLED:-}")" != on ] || return 0
-        sw="$(tel_config)"
-        [ -n "$sw" ] || { [ "$tel_ci" = true ] && sw=off; }
-    fi
-    [ "$sw" != off ] || return 0
-    tel_endpoint="${CUA_TELEMETRY_ENDPOINT:-$TEL_ENDPOINT_DEFAULT}"
-    if [ "$(tel_bool "${CUA_TELEMETRY_FORBID_NETWORK:-}")" = on ]; then
-        case "$tel_endpoint" in
-        http://127.0.0.1[:/]* | http://localhost[:/]* | http://\[::1\][:/]*) ;;
-        *) return 0 ;;
-        esac
-    fi
-    has curl || has wget || return 0
-    dir="${CUA_HOME:-$HOME/.cua}/telemetry"
-    tel_id="$(cat "$dir/install_id" 2>/dev/null | tr -d '[:space:]')"
-    case "$tel_id" in
-    *[!0-9a-f]* | "") tel_id="" ;;
-    esac
-    [ "${#tel_id}" = 32 ] || tel_id=""
-    if [ -z "$tel_id" ]; then
-        tel_id="$(tel_hex 16)"
-        [ "${#tel_id}" = 32 ] || return 0
-        (umask 077 && mkdir -p "$dir" && printf '%s' "$tel_id" >"$dir/install_id") 2>/dev/null || true
-    fi
-    tel_session="$(tel_hex 16)"
-    [ "${#tel_session}" = 32 ] || return 0
-    tel_on=1
-    say "Cua sends anonymous data about this install (whether it worked, and where it stopped if not). Never names, file paths or anything you type."
-    say "To turn it off, set DO_NOT_TRACK=1. Details: https://cua.ai/docs/cua-sdk/concepts/telemetry"
-}
-
-# tel_error_kind MESSAGE: the fixed reason word for a die message.
-tel_error_kind() {
-    case "$1" in
-    *"checksum mismatch"*) echo checksum ;;
-    *signature* | *"release identity"*) echo signature ;;
-    *"unsupported OS"* | *"unsupported CPU"* | *"on Windows, run"*) echo unsupported_platform ;;
-    *"cannot create"* | *ermission*) echo permission_denied ;;
-    *"need curl"* | *"need sha256sum"* | *"not found; cannot"* | *"needs bash"* | *"needs QEMU"*) echo missing_tool ;;
-    *cancelled*) echo cancelled ;;
-    *"download failed"* | *"could not read"* | *"unsupported release manifest"*) echo network ;;
-    *) echo other ;;
-    esac
-}
-
-tel_os() {
-    case "$(uname -s 2>/dev/null)" in
-    Darwin) echo macos ;;
-    Linux) echo linux ;;
-    MINGW* | MSYS* | CYGWIN*) echo windows ;;
-    *) echo other ;;
-    esac
-}
-
-tel_os_major() {
-    case "$(uname -s 2>/dev/null)" in
-    Darwin) v="$(sw_vers -productVersion 2>/dev/null)" ;;
-    Linux) v="$(sed -n 's/^VERSION_ID=//p' /etc/os-release 2>/dev/null | tr -d '"')" ;;
-    *) v="" ;;
-    esac
-    v="${v%%[!0-9]*}"
-    v="$(printf '%s' "$v" | sed 's/^0*//')"
-    case "$v" in "" | ????*) echo 0 ;; *) echo "$v" ;; esac
-}
-
-tel_arch() {
-    case "$(uname -m 2>/dev/null)" in
-    arm64 | aarch64) echo arm64 ;;
-    x86_64 | amd64) echo x86_64 ;;
-    *) echo other ;;
-    esac
-}
-
-tel_items() {
-    items=""
-    [ "$want_cli" = 0 ] || items="cli"
-    [ "$sel_spaces" = 0 ] || items="${items:+$items+}spaces"
-    [ "$sel_driver" = 0 ] || items="${items:+$items+}cua_driver"
-    [ "$sel_host" = 0 ] || items="${items:+$items+}host"
-    echo "${items:-none}"
-}
-
-# tel_send STEP [STAGE KIND]: one cua_installer_step, at most 3 seconds.
-tel_send() {
-    [ "$tel_on" = 1 ] || return 0
-    step_name="$1"
-    stage=none
-    kind=none
-    outcome=ok
-    case "$step_name" in
-    installer_completed) tel_ended=1 ;;
-    installer_failed)
-        tel_ended=1
-        stage="${2:-other}"
-        kind="${3:-other}"
-        outcome=error
-        [ "$kind" != cancelled ] || outcome=cancelled
-        ;;
-    esac
-    pv="${tel_version:-${version:-}}"
-    case "$pv" in
-    [0-9]*.[0-9]*.[0-9]*) ;;
-    *) pv=0.0.0 ;;
-    esac
-    pv="${pv%%[!0-9A-Za-z.-]*}"
-    synthetic=false
-    [ "$(tel_bool "${CUA_TELEMETRY_SYNTHETIC:-}")" != on ] || synthetic=true
-    u="$(tel_hex 16)"
-    uuid="$(printf '%s' "$u" | sed 's/^\(.\{8\}\)\(.\{4\}\).\(.\{3\}\).\(.\{3\}\)\(.\{12\}\)$/\1-\2-4\3-8\4-\5/')"
-    # The $-prefixed names are PostHog property names, not shell expansions.
-    # shellcheck disable=SC2016
-    body="$(printf '{"api_key":"%s","batch":[{"event":"cua_installer_step","distinct_id":"%s","uuid":"%s","timestamp":"%s","properties":{"telemetry_schema_version":1,"event_version":1,"product":"cli","product_version":"%s","os_family":"%s","os_major":%s,"arch":"%s","is_ci":%s,"is_synthetic":%s,"process_session_id":"%s","sample_rate":1,"$process_person_profile":false,"$geoip_disable":true,"$lib":"cua-installer","$lib_version":"1.0.0","step":"%s","outcome":"%s","install_stage":"%s","error_kind":"%s","installer":"sh","items":"%s"}}]}' \
-        "$tel_key" "$tel_id" "$uuid" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$pv" "$(tel_os)" "$(tel_os_major)" "$(tel_arch)" \
-        "$tel_ci" "$synthetic" "$tel_session" "$step_name" "$outcome" "$stage" "$kind" "$(tel_items)")"
-    [ "$(tel_bool "${CUA_TELEMETRY_DEBUG:-}")" != on ] || printf '[cua telemetry] %s\n' "$body" >&2
-    if has curl; then
-        curl -s -o /dev/null --max-time 3 -H 'Content-Type: application/json' --data "$body" "$tel_endpoint" >/dev/null 2>&1 || true
-    else
-        wget -q -O /dev/null --timeout=3 --tries=1 --header='Content-Type: application/json' --post-data="$body" "$tel_endpoint" >/dev/null 2>&1 || true
-    fi
-}
 
 # ---------------------------------------------------------------- arguments
 
@@ -396,12 +182,6 @@ parse_args() {
             shift
             ;;
         --relay=*) relay_url="${1#--relay=}" ;;
-        --version)
-            [ $# -ge 2 ] || die "--version needs a value"
-            version="$2"
-            shift
-            ;;
-        --version=*) version="${1#--version=}" ;;
         --prefix)
             [ $# -ge 2 ] || die "--prefix needs a directory"
             prefix="$2"
@@ -415,7 +195,6 @@ parse_args() {
         --no-provide-spaces) no_provide_spaces=1 ;;
         --no-skills) driver_skills=0 ;;
         -v | --verbose) verbose=1 ;;
-        --require-signature) require_sig=1 ;;
         --dry-run) dry_run=1 ;;
         -y | --yes) assume_yes=1 ;;
         -h | --help)
@@ -474,31 +253,46 @@ parse_args() {
     "" | host | client) ;;
     *) die "--mode must be host or client, not '$mode'" ;;
     esac
-    version="${version#v}"
-    case "$version" in
-    "" | [0-9]*.[0-9]*.[0-9]*) ;;
-    *) die "--version must look like 1.2.3, not '$version'" ;;
-    esac
     case "$prefix" in
     "" | /*) ;;
     *) prefix="$(pwd)/$prefix" ;;
     esac
 }
 
+# ---------------------------------------------------------------- checkout
+
+# find_repo_root: the installer only works from a clone, and every component
+# is built from it; a piped script has no checkout to resolve.
+find_repo_root() {
+    case "${0:-}" in
+    "") die "this installer must run from a source checkout, not from a pipe" ;;
+    -*) die "this installer must run from a source checkout, not from a pipe" ;;
+    esac
+    script_dir="$(cd -- "$(dirname -- "$0")" 2>/dev/null && pwd)" ||
+        die "could not resolve the directory of $0; run scripts/install/install.sh from a checkout"
+    candidate="$(cd -- "$script_dir/../.." 2>/dev/null && pwd)" || candidate=""
+    [ -n "$candidate" ] || die "run scripts/install/install.sh from a cloned repository"
+    if [ ! -f "$candidate/libs/cua/Cargo.toml" ] || [ ! -f "$candidate/libs/cua-spacesd/Cargo.toml" ]; then
+        printf 'cua-install: error: %s is not a Cua checkout\n\n' "$script_dir" >&2
+        clone_hint >&2
+        exit 1
+    fi
+    repo_root="$candidate"
+}
+
 # ---------------------------------------------------------------- helpers
 
 has() { command -v "$1" >/dev/null 2>&1; }
 
-# Whether a human can answer prompts (curl | sh keeps /dev/tty usable).
+# Whether a human can answer prompts.
 tty_ok() {
     [ -t 1 ] || [ -t 2 ] || return 1
     (: </dev/tty) 2>/dev/null
 }
 
 # ask "prompt": read one answer into $answer from the terminal itself, never
-# from stdin (under `curl | sh` stdin is the script). Returns 1 when nobody
-# can answer: no terminal, or the terminal hit end of input. Running out of
-# input is never an answer.
+# from stdin. Returns 1 when nobody can answer: no terminal, or the terminal
+# hit end of input. Running out of input is never an answer.
 ask() {
     answer=""
     tty_ok || return 1
@@ -535,6 +329,71 @@ confirm() {
     [nN] | [nN][oO]) return 1 ;;
     *) [ "$2" = y ] ;;
     esac
+}
+
+run() {
+    if [ "$dry_run" = 1 ]; then
+        say "[dry-run] $*"
+    else
+        "$@"
+    fi
+}
+
+detect_platform() {
+    os="${CUA_INSTALL_OS:-$(uname -s)}"
+    arch="${CUA_INSTALL_ARCH:-$(uname -m)}"
+    case "$os" in
+    Darwin | darwin | macos) os=darwin ;;
+    Linux | linux) os=linux ;;
+    MINGW* | MSYS* | CYGWIN* | Windows_NT | windows)
+        die "on Windows, run scripts\\install\\install.ps1 from a PowerShell prompt in the checkout"
+        ;;
+    *) die "unsupported OS: $os" ;;
+    esac
+    case "$arch" in
+    x86_64 | amd64 | x64) arch=x64 ;;
+    arm64 | aarch64 | armv8*) arch=arm64 ;;
+    *) die "unsupported CPU architecture: $arch" ;;
+    esac
+    # A shell under Rosetta reports x86_64 on Apple silicon.
+    if [ "$os" = darwin ] && [ "$arch" = x64 ] && [ -z "${CUA_INSTALL_ARCH:-}" ]; then
+        if [ "$(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0)" = 1 ]; then
+            arch=arm64
+        fi
+    fi
+    if [ "$os" = linux ] && [ -z "${CUA_INSTALL_OS:-}" ] && has ldd; then
+        if ldd --version 2>&1 | grep -qi musl; then
+            warn "musl libc detected; the cua CLI needs glibc 2.31 or newer"
+        fi
+    fi
+    platform="$os-$arch"
+}
+
+# target_dir DEFAULT: where cargo puts release builds, honouring
+# CARGO_TARGET_DIR exactly as cargo does.
+target_dir() {
+    if [ -n "${CARGO_TARGET_DIR:-}" ]; then
+        case "$CARGO_TARGET_DIR" in
+        /*) printf '%s\n' "$CARGO_TARGET_DIR" ;;
+        *) printf '%s/%s\n' "$(pwd)" "$CARGO_TARGET_DIR" ;;
+        esac
+    else
+        printf '%s\n' "$1"
+    fi
+}
+
+cua_binary() { printf '%s/release/cua\n' "$(target_dir "$repo_root/libs/cua/target")"; }
+spacesd_binary() { printf '%s/release/cua-spacesd\n' "$(target_dir "$repo_root/libs/cua-spacesd/target")"; }
+
+# check_build_tools: fail before installing anything when a build cannot run.
+check_build_tools() {
+    if [ "$want_cli" = 1 ]; then
+        has cargo || die "cargo is required to build cua; install Rust from https://rustup.rs and rerun"
+    fi
+    if [ "$sel_driver" = 1 ]; then
+        has cargo || die "cargo is required to build cua-driver; install Rust from https://rustup.rs and rerun"
+        [ "$dry_run" = 1 ] || has bash || die "cua-driver: its installer needs bash; install bash and rerun"
+    fi
 }
 
 # ---------------------------------------------------------------- selection
@@ -598,8 +457,8 @@ init_selection() {
         list="$only_list"
     else
         list="$select_list"
-        # The app is a default on macOS and Linux, until --select names what
-        # to install: then only those items (and the CLI) are installed.
+        # The app is a default on macOS, until --select names what to
+        # install: then only those items (and the CLI) are installed.
         # --pair adds host to the list itself; it keeps the default.
         if spaces_supported && { [ -n "$pair_code" ] || [ -z "$(printf %s "$list" | tr -d ', ')" ]; }; then sel_spaces=1; fi
     fi
@@ -609,24 +468,27 @@ init_selection() {
         sel_spaces=1
     fi
     if [ "$sel_spaces" = 1 ] && ! spaces_supported; then
-        step "Cua Spaces is not available for $os; skipping the app"
+        if [ "$app_only" = 1 ]; then
+            die "the Cua Spaces app has no source build for $os; build it from apps/cua-spaces-desktop (pnpm), or use the SDK and CLI"
+        fi
+        step "Cua Spaces has no source build for $os; skipping the app (build it from apps/cua-spaces-desktop)"
         sel_spaces=0
     fi
 }
 
-# Cua Spaces ships for macOS (the SwiftUI app) and Linux (the Electron app,
-# .deb or AppImage).
+# Cua Spaces on macOS is the SwiftUI app; the Linux app has no source build
+# here (apps/cua-spaces-desktop builds with pnpm).
 spaces_supported() {
-    [ "$os" = darwin ] || [ "$os" = linux ]
+    [ "$os" = darwin ]
 }
 
 # --pair on a computer that already has Cua: use the `cua` that is there
 # (it must know `host setup --pair`) and keep the app that is there, instead
-# of downloading both again. Anything else (--prefix, --version, an old cua,
-# nothing installed) installs as before.
+# of building both again. Anything else (--prefix, an old cua, nothing
+# installed) builds as before.
 reuse_installed() {
     [ -n "$pair_code" ] || return 0
-    [ -z "$prefix" ] && [ -z "$version" ] && [ "${CUA_INSTALL_REINSTALL:-0}" != 1 ] || return 0
+    [ -z "$prefix" ] && [ "${CUA_INSTALL_REINSTALL:-0}" != 1 ] || return 0
     [ "$app_only" = 0 ] || return 0
     found=""
     for candidate in "$(command -v cua 2>/dev/null || true)" "$HOME/.local/bin/cua" /usr/local/bin/cua \
@@ -638,18 +500,13 @@ reuse_installed() {
         fi
     done
     [ -n "$found" ] || return 0
-    step "cua is already installed at $found; using it (CUA_INSTALL_REINSTALL=1 installs it again)"
+    step "cua is already installed at $found; using it (CUA_INSTALL_REINSTALL=1 builds it again)"
     existing_cua="$found"
     want_cli=0
-    case "$os" in
-    darwin)
-        if [ -d "/Applications/Cua Spaces.app" ] || [ -d "$HOME/Applications/Cua Spaces.app" ]; then sel_spaces=0; fi
-        ;;
-    linux)
-        if has cua-spaces || [ -x "$HOME/.local/bin/cua-spaces" ]; then sel_spaces=0; fi
-        ;;
-    esac
-    if [ "$sel_spaces" = 0 ] && spaces_supported; then step "Cua Spaces is already installed; keeping it"; fi
+    if [ -d "/Applications/Cua Spaces.app" ] || [ -d "$HOME/Applications/Cua Spaces.app" ]; then
+        sel_spaces=0
+        step "Cua Spaces is already installed; keeping it"
+    fi
 }
 
 # Show the checklist only when a human can answer it.
@@ -688,7 +545,7 @@ draw_rows() { # cursor row, or 0 for the numbered list
 # rows: arrows/numbers + space to toggle, Enter to install.
 checklist() {
     rows=""
-    # Spaces is offered only where it ships (macOS, Linux).
+    # Spaces is offered only where it builds from source (macOS).
     if spaces_supported; then rows="spaces"; fi
     rows="${rows:+$rows }cua-driver"
     n=0
@@ -752,208 +609,6 @@ checklist() {
     fi
     printf '\n' >/dev/tty
     picked=1
-}
-
-run() {
-    if [ "$dry_run" = 1 ]; then
-        say "[dry-run] $*"
-    else
-        "$@"
-    fi
-}
-
-detect_platform() {
-    os="${CUA_INSTALL_OS:-$(uname -s)}"
-    arch="${CUA_INSTALL_ARCH:-$(uname -m)}"
-    case "$os" in
-    Darwin | darwin | macos) os=darwin ;;
-    Linux | linux) os=linux ;;
-    MINGW* | MSYS* | CYGWIN* | Windows_NT | windows)
-        die "on Windows, run: irm https://cua.ai/install.ps1 | iex"
-        ;;
-    *) die "unsupported OS: $os" ;;
-    esac
-    case "$arch" in
-    x86_64 | amd64 | x64) arch=x64 ;;
-    arm64 | aarch64 | armv8*) arch=arm64 ;;
-    *) die "unsupported CPU architecture: $arch" ;;
-    esac
-    # A shell under Rosetta reports x86_64 on Apple silicon.
-    if [ "$os" = darwin ] && [ "$arch" = x64 ] && [ -z "${CUA_INSTALL_ARCH:-}" ]; then
-        if [ "$(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0)" = 1 ]; then
-            arch=arm64
-        fi
-    fi
-    if [ "$os" = linux ] && [ -z "${CUA_INSTALL_OS:-}" ] && has ldd; then
-        if ldd --version 2>&1 | grep -qi musl; then
-            warn "musl libc detected; the cua CLI needs glibc 2.31 or newer"
-        fi
-    fi
-    platform="$os-$arch"
-}
-
-# check_url URL: HTTPS only. Plain HTTP is allowed only to a loopback host
-# (tests and local mirrors), file:// only for a local manifest.
-check_url() {
-    case "$1" in
-    *[[:space:]]* | http://*@*) die "refusing a malformed download URL: $1" ;;
-    https://*) ;;
-    http://127.0.0.1[:/]* | http://localhost[:/]* | http://\[::1\][:/]*) ;;
-    file://*)
-        case "${manifest_url:-}" in
-        file://*) ;;
-        *) die "refusing a file:// URL from a remote manifest: $1" ;;
-        esac
-        ;;
-    *) die "refusing a non-HTTPS download: $1" ;;
-    esac
-}
-
-# fetch URL DEST
-fetch() {
-    check_url "$1"
-    case "$1" in
-    file://*)
-        cp "${1#file://}" "$2" || die "could not read $1"
-        return
-        ;;
-    esac
-    if has curl; then
-        # Redirects stay on HTTPS unless the URL itself is a loopback test server.
-        case "$1" in
-        https://*) proto='=https' ;;
-        *) proto='=https,http' ;;
-        esac
-        curl --proto "$proto" --proto-redir "$proto" --tlsv1.2 -fsSL --retry 3 -o "$2" "$1" || die "download failed: $1"
-    elif has wget; then
-        case "$1" in
-        https://*) wget -q --https-only -O "$2" "$1" || die "download failed: $1" ;;
-        *) wget -q -O "$2" "$1" || die "download failed: $1" ;;
-        esac
-    else
-        die "need curl or wget to download"
-    fi
-}
-
-sha256_of() {
-    if has sha256sum; then
-        sha256sum "$1" | cut -d' ' -f1
-    elif has shasum; then
-        shasum -a 256 "$1" | cut -d' ' -f1
-    elif has openssl; then
-        openssl dgst -sha256 "$1" | sed 's/.*= *//'
-    else
-        die "need sha256sum, shasum or openssl to verify downloads"
-    fi
-}
-
-# json_field LINE KEY: a string value from one manifest line.
-json_field() {
-    printf '%s\n' "$1" | sed -n "s/.*\"$2\" *: *\"\\([^\"]*\\)\".*/\\1/p"
-}
-
-# manifest_entry COMPONENT KIND: the artifact line for this platform.
-manifest_entry() {
-    grep "\"component\" *: *\"$1\"" "$manifest" |
-        grep "\"platform\" *: *\"$platform\"" |
-        grep "\"kind\" *: *\"$2\"" | head -n 1 || true
-}
-
-load_manifest() {
-    if [ -n "${CUA_INSTALL_MANIFEST_URL:-}" ]; then
-        manifest_url="$CUA_INSTALL_MANIFEST_URL"
-    elif [ -n "$version" ]; then
-        manifest_url="$BASE_URL/cua-sdk-v$version/release-artifacts.json"
-    else
-        manifest_url="$BASE_URL/$LATEST_TAG/release-artifacts.json"
-    fi
-    manifest="$tmp/release-artifacts.json"
-    fetch "$manifest_url" "$manifest"
-    grep -q '"schema" *: *1' "$manifest" || die "unsupported release manifest at $manifest_url"
-    manifest_dir="${manifest_url%/*}"
-    tel_version="$(sed -n 's/.*"version" *: *"\([0-9][0-9A-Za-z.-]*\)".*/\1/p' "$manifest" | head -n 1)"
-}
-
-# resolve_url VALUE: absolute URLs pass through; names are relative to the manifest.
-resolve_url() {
-    case "$1" in
-    *://*) printf '%s\n' "$1" ;;
-    *) printf '%s/%s\n' "$manifest_dir" "$1" ;;
-    esac
-}
-
-# cosign_identity ENTRY: the exact Sigstore certificate identity (workflow
-# at its release tag) that must have signed this manifest entry's artifact.
-cosign_identity() {
-    c="$(json_field "$1" component)"
-    v="$(json_field "$1" version)"
-    case "$v" in
-    "" | *[!0-9A-Za-z.+-]*) return 1 ;;
-    esac
-    case "$c" in
-    cli) printf 'https://github.com/%s/.github/workflows/cd-cua-sdk.yml@refs/tags/cua-sdk-v%s\n' "$REPO" "$v" ;;
-    app) printf 'https://github.com/%s/.github/workflows/cd-cua-spaces.yml@refs/tags/cua-spaces-v%s\n' "$REPO" "$v" ;;
-    *) return 1 ;;
-    esac
-}
-
-verify_signature() { # file entry
-    sig_ok=0
-    minisig="$(json_field "$2" minisig)"
-    if [ -n "$minisig" ] && [ -n "$MINISIGN_PUBKEY" ] && has minisign; then
-        fetch "$(resolve_url "$minisig")" "$1.minisig"
-        minisign -Vqm "$1" -x "$1.minisig" -P "$MINISIGN_PUBKEY" >/dev/null ||
-            die "minisign signature check failed for ${1##*/}"
-        sig_ok=1
-    fi
-    bundle="$(json_field "$2" cosign_bundle)"
-    if [ "$sig_ok" = 0 ] && [ -n "$bundle" ] && has cosign; then
-        fetch "$(resolve_url "$bundle")" "$1.sigstore.json"
-        identity="$(cosign_identity "$2")" ||
-            die "no release identity for ${1##*/} in the manifest"
-        cosign verify-blob --bundle "$1.sigstore.json" \
-            --certificate-identity "$identity" \
-            --certificate-oidc-issuer "$COSIGN_ISSUER" "$1" >/dev/null 2>&1 ||
-            die "cosign signature check failed for ${1##*/}"
-        sig_ok=1
-    fi
-    if [ "$sig_ok" = 0 ] && [ "$require_sig" = 1 ]; then
-        die "no verifiable signature for ${1##*/} (install minisign or cosign)"
-    fi
-    if [ "$sig_ok" = 0 ] && { [ -n "$minisig" ] || [ -n "$bundle" ]; }; then
-        # sha256 is checked either way; the closing summary says so. The
-        # detail is for --verbose.
-        if [ "$sig_noted" = 0 ]; then
-            sig_noted=1
-            info "release signatures were not checked: neither minisign nor cosign is installed (--require-signature makes that an error)"
-        fi
-    fi
-}
-
-# download COMPONENT KIND: sets $artifact to a verified local file.
-download() {
-    entry="$(manifest_entry "$1" "$2")"
-    [ -n "$entry" ] || die "no $1 $2 artifact for $platform in the release manifest"
-    name="$(json_field "$entry" name)"
-    url="$(resolve_url "$(json_field "$entry" url)")"
-    sum="$(json_field "$entry" sha256)"
-    [ -n "$name" ] && [ -n "$sum" ] || die "incomplete manifest entry for $1 $2 on $platform"
-    case "$name" in
-    */* | .* | "") die "bad artifact name in manifest: $name" ;;
-    esac
-    if [ "$dry_run" = 1 ]; then
-        say "[dry-run] download $url (sha256 $sum)"
-        artifact="$tmp/$name"
-        return
-    fi
-    info "downloading $name"
-    artifact="$tmp/$name"
-    fetch "$url" "$artifact"
-    actual="$(sha256_of "$artifact")"
-    if [ "$actual" != "$sum" ]; then
-        die "checksum mismatch for $name (the download is damaged or was changed; expected $sum, got $actual); nothing was installed"
-    fi
-    verify_signature "$artifact" "$entry"
 }
 
 # ---------------------------------------------------------------- the CLI
@@ -1032,48 +687,31 @@ To use cua, run this one line, then open a new Terminal window:
     fi
 }
 
-# version_gt A B: succeeds when cua version A is strictly newer than B (semver:
-# a pre-release sorts before its release; a dev build, 0.0.0 or one naming
-# "dev", counts as older than any release of the same or a later version).
-# Fails when either does not parse. Mirrors cua-home's version.rs.
-version_gt() {
-    awk -v a="$1" -v b="$2" '
-    function parse(v, o,    p, n, pre, k) {
-        sub(/^v/, "", v)
-        o["dev"] = (v ~ /dev/) ? 1 : 0
-        sub(/\+.*/, "", v)
-        pre = ""
-        k = index(v, "-")
-        if (k > 0) { pre = substr(v, k + 1); v = substr(v, 1, k - 1) }
-        n = split(v, p, ".")
-        if (n != 3 || v !~ /^[0-9]+\.[0-9]+\.[0-9]+$/) return 0
-        o["c"] = p[1] * 1000000000000 + p[2] * 1000000 + p[3]
-        if (o["c"] == 0) o["dev"] = 1
-        o["pre"] = pre
-        return 1
-    }
-    function cmppre(x, y,    xs, ys, nx, ny, i, m) {
-        if (x == "" && y == "") return 0
-        if (x == "") return 1
-        if (y == "") return -1
-        nx = split(x, xs, "."); ny = split(y, ys, ".")
-        m = nx < ny ? nx : ny
-        for (i = 1; i <= m; i++) {
-            if (xs[i] == ys[i]) continue
-            if (xs[i] ~ /^[0-9]+$/ && ys[i] ~ /^[0-9]+$/) return (xs[i] + 0 > ys[i] + 0) ? 1 : -1
-            if (xs[i] ~ /^[0-9]+$/) return -1
-            if (ys[i] ~ /^[0-9]+$/) return 1
-            return (xs[i] > ys[i]) ? 1 : -1
-        }
-        return (nx > ny) ? 1 : (nx < ny ? -1 : 0)
-    }
-    BEGIN {
-        if (!parse(a, A) || !parse(b, B)) exit 1
-        if (A["dev"] && !B["dev"]) exit !(A["c"] > B["c"])
-        if (!A["dev"] && B["dev"]) exit !(A["c"] >= B["c"])
-        if (A["c"] != B["c"]) exit !(A["c"] > B["c"])
-        exit !(cmppre(A["pre"], B["pre"]) > 0)
-    }'
+build_cua() {
+    step "Building the cua CLI from $repo_root"
+    run cargo build --release -p cua-cli --manifest-path "$repo_root/libs/cua/Cargo.toml"
+}
+
+# cua-host looks for cua-spacesd next to `cua`, so it is built and installed
+# into the same bin directory.
+build_spacesd() {
+    step "Building cua-spacesd from $repo_root"
+    if [ "$dry_run" = 1 ]; then
+        say "[dry-run] cargo build --release -p cua-spacesd --manifest-path $repo_root/libs/cua-spacesd/Cargo.toml"
+        return
+    fi
+    if [ "$os" = darwin ]; then
+        RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }-C link-arg=-Wl,-rpath,/usr/lib/swift" \
+            cargo build --release -p cua-spacesd --manifest-path "$repo_root/libs/cua-spacesd/Cargo.toml"
+    else
+        cargo build --release -p cua-spacesd --manifest-path "$repo_root/libs/cua-spacesd/Cargo.toml"
+    fi
+}
+
+put_binary() { # source destination
+    cp "$1" "$2.tmp.$$" || die "could not copy $1"
+    chmod 0755 "$2.tmp.$$"
+    mv -f "$2.tmp.$$" "$2"
 }
 
 # running_daemon_version CUA: the version of the daemon this cua finds running
@@ -1094,7 +732,7 @@ restart_old_daemon() {
     [ -n "$new_version" ] && [ "$new_version" != "$2" ] || return 0
     if "$1" daemon stop >/dev/null 2>&1 </dev/null; then
         if "$1" daemon start >/dev/null 2>&1 </dev/null; then
-            say "restarted the cua daemon ($2 -> $new_version); your Spaces keep running"
+            step "restarted the cua daemon ($2 -> $new_version); your Spaces keep running"
         else
             warn "stopped the old cua daemon ($2); it starts again with the next cua command"
         fi
@@ -1109,46 +747,22 @@ install_cli() {
     if ! confirm "Install the command-line tools to $target?" y; then
         die "cancelled; rerun with --prefix DIR to choose another location"
     fi
-    # Never a downgrade: a newer cua already there (a build the user made, or
-    # one from a later release than the manifest's) stays, unless this run
-    # asked for a version (--version rolls back on purpose).
-    if [ -z "$version" ] && [ -x "$target" ]; then
-        have="$("$target" --version 2>/dev/null | sed -n '1s/^cua  *\([^ ]*\).*/\1/p')"
-        want="$(json_field "$(manifest_entry cli tar.gz)" version)"
-        if [ -n "$have" ] && [ -n "$want" ] && version_gt "$have" "$want"; then
-            say "kept $target (cua $have is newer than the release's $want; use --version $want to go back)"
-            cua_bin="$target"
-            ensure_path "$bindir"
-            return
-        fi
-    fi
-    step "Installing the command-line tools to $target"
-    download cli tar.gz
+    build_cua
+    build_spacesd
     if [ "$dry_run" = 1 ]; then
-        say "[dry-run] install cua -> $target"
+        say "[dry-run] install $(cua_binary) -> $target"
+        say "[dry-run] install $(spacesd_binary) -> $bindir/cua-spacesd"
     else
-        mkdir -p "$tmp/cli"
-        tar -xzf "$artifact" -C "$tmp/cli" || die "could not unpack ${artifact##*/}"
-        src="$(find "$tmp/cli" -type f -name cua | head -n 1)"
-        [ -n "$src" ] || die "no cua binary inside ${artifact##*/}"
+        [ -x "$(cua_binary)" ] || die "cargo did not produce $(cua_binary)"
+        [ -x "$(spacesd_binary)" ] || die "cargo did not produce $(spacesd_binary)"
         mkdir -p "$bindir" || die "cannot create $bindir (try --prefix or run as root)"
-        # A daemon already running keeps serving the old binary after the swap
-        # (its exe shows "(deleted)"); note its version now, from the old cua.
+        # A daemon already running keeps serving the old binary after the
+        # swap; note its version now, from the old cua.
         old_daemon="$(running_daemon_version "$target")"
-        cp "$src" "$bindir/.cua.tmp.$$"
-        chmod 0755 "$bindir/.cua.tmp.$$"
-        mv -f "$bindir/.cua.tmp.$$" "$target"
+        put_binary "$(cua_binary)" "$target"
+        put_binary "$(spacesd_binary)" "$bindir/cua-spacesd"
         info "installed $target"
-        # macOS microVMs: the monitor and the guest init ship with the CLI
-        # and are found next to it, as is the static cua-spacesd injected
-        # into OCI images that carry none.
-        for extra in cua-vz cua-microvm-init cua-spacesd-linux-aarch64 cua-spacesd-linux-x86_64; do
-            xsrc="$(find "$tmp/cli" -type f -name "$extra" | head -n 1)"
-            [ -n "$xsrc" ] || continue
-            cp "$xsrc" "$bindir/.$extra.tmp.$$"
-            chmod 0755 "$bindir/.$extra.tmp.$$"
-            mv -f "$bindir/.$extra.tmp.$$" "$bindir/$extra"
-        done
+        info "installed $bindir/cua-spacesd"
         restart_old_daemon "$target" "$old_daemon"
         did_cli="$target"
     fi
@@ -1173,6 +787,8 @@ install_app_darwin() {
             ;;
         esac
     fi
+    script="$repo_root/apps/cua-spaces-macos/scripts/build-release.sh"
+    [ -f "$script" ] || die "missing $script"
     if [ -n "$prefix" ]; then
         appdir="$prefix/Applications"
     elif [ -w /Applications ]; then
@@ -1180,7 +796,7 @@ install_app_darwin() {
     else
         appdir="$HOME/Applications"
     fi
-    if ! confirm "Install Cua Spaces to $appdir?" y; then
+    if ! confirm "Build and install Cua Spaces to $appdir?" y; then
         if [ "$appdir" = /Applications ] && confirm "Install to $HOME/Applications instead?" y; then
             appdir="$HOME/Applications"
         else
@@ -1188,88 +804,26 @@ install_app_darwin() {
             return
         fi
     fi
-    step "Installing the Cua Spaces app to $appdir"
-    download app dmg
+    app_path="$appdir/Cua Spaces.app"
     if [ "$dry_run" = 1 ]; then
-        say "[dry-run] mount ${artifact##*/} and copy Cua Spaces.app -> $appdir"
-        app_path="$appdir/Cua Spaces.app"
+        say "[dry-run] bash $script --out $tmp/app"
+        say "[dry-run] copy $tmp/app/Cua Spaces.app -> $app_path"
         return
     fi
-    has hdiutil || die "hdiutil not found; cannot mount the disk image"
-    mounted="$tmp/mnt"
-    mkdir -p "$mounted"
-    hdiutil attach -nobrowse -readonly -noautoopen -quiet -mountpoint "$mounted" "$artifact" ||
-        {
-            mounted=""
-            die "could not mount ${artifact##*/}"
-        }
-    src="$(find "$mounted" -maxdepth 1 -name '*.app' | head -n 1)"
-    [ -n "$src" ] || die "no .app in ${artifact##*/}"
-    app_path="$appdir/${src##*/}"
+    step "Building the Cua Spaces app into $appdir"
+    bash "$script" --out "$tmp/app" || die "the Cua Spaces build failed"
+    src="$tmp/app/Cua Spaces.app"
+    [ -d "$src" ] || die "the Cua Spaces build produced no app bundle"
     mkdir -p "$appdir"
     rm -rf "$app_path.cua-new"
     ditto "$src" "$app_path.cua-new" 2>/dev/null || cp -R "$src" "$app_path.cua-new"
     rm -rf "$app_path"
     mv "$app_path.cua-new" "$app_path"
-    hdiutil detach -quiet "$mounted" >/dev/null 2>&1 || true
-    mounted=""
+    info "installed $app_path"
     did_app="$app_path"
 }
 
-install_app_linux() {
-    deb_entry="$(manifest_entry app deb)"
-    # Debian and Ubuntu: the .deb (apt resolves its dependencies), as root or
-    # with passwordless sudo. Anything else, or no privileges: the AppImage.
-    if [ -z "$prefix" ] && has apt-get && [ -n "$deb_entry" ]; then
-        sudo_cmd=""
-        if [ "$(id -u)" != 0 ]; then
-            if has sudo && sudo -n true 2>/dev/null; then sudo_cmd="sudo"; else sudo_cmd="none"; fi
-        fi
-        if [ "$sudo_cmd" != none ] && confirm "Install the Cua Spaces app with apt-get?" y; then
-            step "Installing the Cua Spaces app with apt-get"
-            download app deb
-            # shellcheck disable=SC2086
-            run $sudo_cmd apt-get install -y "$artifact"
-            app_path="cua-spaces"
-            did_app="$app_path"
-            return
-        fi
-    fi
-    bindir="$(cli_bin_dir)"
-    target="$bindir/cua-spaces"
-    if ! confirm "Install the Cua Spaces app to $target?" y; then
-        step "Skipping the Cua Spaces app"
-        return
-    fi
-    step "Installing the Cua Spaces app to $target"
-    download app appimage
-    app_path="$target"
-    if [ -n "$prefix" ]; then
-        desktop_dir="$prefix/share/applications"
-    else
-        desktop_dir="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
-    fi
-    if [ "$dry_run" = 1 ]; then
-        say "[dry-run] install AppImage -> $target"
-        say "[dry-run] write $desktop_dir/cua-spaces.desktop"
-        return
-    fi
-    mkdir -p "$bindir" "$desktop_dir"
-    cp "$artifact" "$bindir/.cua-spaces.tmp.$$"
-    chmod 0755 "$bindir/.cua-spaces.tmp.$$"
-    mv -f "$bindir/.cua-spaces.tmp.$$" "$target"
-    did_app="$target"
-    cat >"$desktop_dir/cua-spaces.desktop" <<EOF
-[Desktop Entry]
-Type=Application
-Name=Cua Spaces
-Comment=Reach your cloud Spaces and your own machines
-Exec="$target" %U
-Terminal=false
-Categories=Development;
-EOF
-}
-
+# The CLI runs Spaces as containers or VMs, so Linux needs a VM runtime.
 runtime_ready() {
     [ -n "${DOCKER_HOST:-}" ] || { has docker && docker info >/dev/null 2>&1; } ||
         { has "qemu-system-$(uname -m)" && has qemu-img; }
@@ -1294,13 +848,13 @@ linux_runtime() {
         say "[dry-run] $cua_bin runtime setup qemu"
         return
     fi
-    if confirm "Cua Spaces on Linux needs QEMU, a program that runs virtual computers. Install it now?" y; then
-        step "Installing QEMU, which Cua Spaces on Linux uses to run virtual computers"
+    if confirm "Cua on Linux needs QEMU, a program that runs virtual computers. Install it now?" y; then
+        step "Installing QEMU, which Cua on Linux uses to run virtual computers"
         if "$cua_bin" runtime setup qemu </dev/null && runtime_ready; then
             return
         fi
     fi
-    warn "Cua Spaces on Linux needs QEMU or Docker; install QEMU with: $(qemu_install_command) (or install Docker), then rerun the installer"
+    warn "Cua on Linux needs QEMU or Docker; install QEMU with: $(qemu_install_command) (or install Docker), then rerun the installer"
     runtime_failed=1
 }
 
@@ -1317,26 +871,19 @@ write_mode() {
 
 # ---------------------------------------------------------------- cua-driver
 
-# cua-driver's own release installer (it verifies each archive against the
-# release's SHA256SUMS and its Sigstore bundle), then the skill + MCP server.
+# cua-driver's own installer builds it from this checkout through
+# install-local and puts it next to `cua`, then the skill + MCP server.
 install_driver() {
-    if [ -n "$prefix" ]; then
-        driver_dir="$prefix/bin"
-        set -- --bin-dir "$driver_dir"
-    else
-        driver_dir="${CUA_DRIVER_RS_INSTALL_DIR:-$HOME/.local/bin}"
-        set --
-    fi
-    [ "$modify_path" = 1 ] || set -- "$@" --no-modify-path
-    [ "$require_sig" = 1 ] && set -- "$@" --require-signature
-    script="$tmp/cua-driver-install.sh"
+    script="$repo_root/libs/cua-driver/scripts/install.sh"
+    [ -f "$script" ] || die "missing $script"
+    bindir="$(cli_bin_dir)"
+    driver_bin="$bindir/cua-driver"
     if [ "$dry_run" = 1 ]; then
-        say "[dry-run] download $driver_url"
-        say "[dry-run] bash ${script##*/} $*"
+        say "[dry-run] bash $script --bin-dir $bindir"
     else
-        step "Installing Cua Driver and adding it to your AI agents"
-        fetch "$driver_url" "$script"
-        bash "$script" "$@" </dev/null || die "the cua-driver installer failed"
+        step "Building Cua Driver and installing it into $bindir"
+        bash "$script" --bin-dir "$bindir" </dev/null || die "the cua-driver installer failed"
+        info "installed $driver_bin"
     fi
     if [ "$driver_skills" = 1 ]; then
         info "adding the cua-driver skill and MCP server to your agents"
@@ -1345,9 +892,7 @@ install_driver() {
     fi
     set -- "$cua_bin" agents setup --cua-driver --agents all --yes
     [ "$driver_skills" = 1 ] || set -- "$@" --no-skills
-    if [ "$dry_run" = 1 ] || [ -x "$driver_dir/cua-driver" ]; then
-        set -- "$@" --mcp-command "$driver_dir/cua-driver"
-    fi
+    set -- "$@" --mcp-command "$driver_bin"
     if [ "$dry_run" = 1 ]; then
         say "[dry-run] $*"
     elif ! "$@" </dev/null; then
@@ -1356,10 +901,8 @@ install_driver() {
     did_driver=1
 }
 
-# Host this machine: joins the relay as the signed-in account. `cua host
-# setup` installs cua-spacesd itself; a spare machine that should also
-# provide Spaces for other devices (macOS VMs) needs Lume too, installed
-# separately with `cua runtime setup lume`.
+# Host this machine: joins the relay as the signed-in account. cua-spacesd is
+# installed with the CLI; macOS VM Spaces also need Lume (`cua runtime setup lume`).
 host_setup() {
     if [ -n "$pair_code" ]; then
         host_pair
@@ -1407,11 +950,11 @@ host_pair() {
         say "[dry-run] $*"
         return
     fi
-    # A CLI released before pairing exists would fail with a bare
+    # A CLI built before pairing exists would fail with a bare
     # "unexpected argument '--pair'"; say what to do instead.
     setup_help="$("$cua_bin" host setup --help 2>&1 </dev/null)"
     if ! printf '%s\n' "$setup_help" | grep -q -e '--pair'; then
-        die "the installed cua CLI ($("$cua_bin" --version 2>/dev/null || echo unknown)) cannot add a machine with a code (no 'cua host setup --pair'); update the CLI (cua update, or install a newer release: --version) or sign in instead: cua auth login && cua host setup"
+        die "the installed cua CLI ($("$cua_bin" --version 2>/dev/null || echo unknown)) cannot add a machine with a code (no 'cua host setup --pair'); build a newer checkout (git pull && scripts/install/install.sh) or sign in instead: cua auth login && cua host setup"
     fi
     # It provides Spaces and keeps its screen private, as a computer added
     # by signing in does; sharing its desktop is a choice on its page.
@@ -1438,16 +981,7 @@ join_and() {
 
 # Where to open the app from, in plain words.
 app_where() {
-    case "$os" in
-    darwin) printf 'open Cua Spaces from %s' "${app_path%/*}" ;;
-    *)
-        if [ "$app_path" = cua-spaces ]; then
-            printf 'open Cua Spaces from your app menu'
-        else
-            printf 'run %s' "$app_path"
-        fi
-        ;;
-    esac
+    printf 'open Cua Spaces from %s' "${app_path%/*}"
 }
 
 # The closing lines: what was installed, then what to do next, in plain words.
@@ -1460,7 +994,7 @@ summary() {
     say ""
     if [ $# -gt 0 ]; then
         checked=""
-        [ -z "$did_cli$did_app" ] || checked=" (downloads checked)"
+        [ -z "$did_cli$did_app" ] || checked=" (built from source)"
         say "Installed $(join_and "$@")$checked."
     fi
     if [ -n "$did_host" ]; then
@@ -1536,12 +1070,10 @@ run_onboarding() {
 
 main() {
     parse_args "$@"
-    telemetry_init
-    tel_stage=platform
     detect_platform
     init_selection
+    find_repo_root
     reuse_installed
-    tel_send installer_started
     tmp="$(mktemp -d 2>/dev/null || mktemp -d -t cua-install)"
     if wants_checklist; then
         checklist
@@ -1550,58 +1082,32 @@ main() {
         step "Dry run: nothing will be changed"
         say "[dry-run] would install: $(plan_items)"
     fi
-    # Nothing to download (--pair on a computer that has Cua): no manifest to read.
-    if [ "$want_cli" = 1 ] || [ "$sel_spaces" = 1 ] || [ "$sel_driver" = 1 ]; then
-        tel_stage=manifest
-        load_manifest
-        info "platform $platform, manifest $manifest_url"
-    fi
-    # Fail before installing anything when cua-driver cannot be installed.
-    driver_url="${CUA_INSTALL_DRIVER_URL:-https://cua.ai/driver/install.sh}"
-    if [ "$sel_driver" = 1 ]; then
-        check_url "$driver_url"
-        [ "$dry_run" = 1 ] || has bash || die "cua-driver: its installer needs bash; install bash and rerun"
-    fi
+    info "platform $platform, checkout $repo_root"
+    check_build_tools
     cua_bin="${existing_cua:-cua}"
     app_path=""
     if [ "$want_cli" = 1 ]; then
-        tel_stage=cli
         install_cli
     fi
     runtime_failed=0
-    tel_stage=runtime
-    if [ "$os" = linux ] && [ "$sel_spaces" = 1 ] && { [ "$dry_run" = 1 ] || has "$cua_bin"; }; then
+    if [ "$os" = linux ] && [ "$want_cli" = 1 ] && { [ "$dry_run" = 1 ] || has "$cua_bin"; }; then
         linux_runtime
-        if [ "$dry_run" != 1 ] && { [ "$want_cli" = 1 ] || [ -n "$existing_cua" ]; }; then
+        if [ "$dry_run" != 1 ]; then
             "$cua_bin" runtime doctor || runtime_failed=1
         fi
     fi
     if [ "$sel_spaces" = 1 ]; then
-        tel_stage=app
-        case "$os" in
-        darwin) install_app_darwin ;;
-        linux) install_app_linux ;;
-        esac
+        install_app_darwin
         write_mode
     fi
     if [ "$sel_driver" = 1 ]; then
-        tel_stage=driver
         install_driver
     fi
-    tel_stage=sign_in
     run_onboarding
     # Signing in adds this computer (unless --no-host); --select host adds
     # it even without a sign-in here.
     if [ "$sel_host" = 1 ] || { [ "$signed_in" = 1 ] && [ "$no_host" = 0 ]; }; then
-        tel_stage=host
         host_setup
-    fi
-    if [ "$runtime_failed" = 1 ]; then
-        tel_stage=runtime
-        tel_send installer_failed "$tel_stage" other
-    else
-        tel_stage=other
-        tel_send installer_completed
     fi
     summary
     if [ -n "$path_hint" ]; then

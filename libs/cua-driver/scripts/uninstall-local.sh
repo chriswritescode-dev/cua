@@ -118,6 +118,18 @@ if [[ "$OS" == "Darwin" && "$RESET_TCC" == "1" ]] && command -v tccutil >/dev/nu
     log "revoked TCC grants for com.trycua.driver.local"
 fi
 
+# install.sh exposes the local product as `cua-driver`; remove that alias only
+# when it resolves to the same local binary.
+ALIAS_LINK="$BIN_DIR/cua-driver"
+if [[ -L "$ALIAS_LINK" ]]; then
+    alias_target="$(resolve_link "$ALIAS_LINK")"
+    cli_target="$(resolve_link "$CLI_LINK")"
+    if [[ -n "$alias_target" && "$alias_target" == "$cli_target" ]] && is_local_target "$alias_target"; then
+        rm -f "$ALIAS_LINK"
+        log "removed $ALIAS_LINK"
+    fi
+fi
+
 # Remove the CLI only if it is an installer-created link into the local product.
 if [[ -L "$CLI_LINK" ]]; then
     target="$(resolve_link "$CLI_LINK")"

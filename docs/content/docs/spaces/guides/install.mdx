@@ -1,15 +1,14 @@
 ---
 title: Install
-description: 'Install the Cua Spaces app and the cua CLI on macOS, Windows or Linux, what the first-run screens ask, and how the app keeps itself up to date.'
+description: 'Build and install the Cua Spaces app and the cua CLI from a checkout, what the first-run screens ask, and how the app announces new releases.'
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 
-Cua Spaces runs on macOS, Windows (preview) and Linux. One command installs the
-`cua` CLI and the app. The [download page](https://cua.ai/download) has the
-app for each system, and every installer is attached to the
-[GitHub releases](https://github.com/trycua/cua/releases).
+Cua Spaces runs on macOS, Windows (preview) and Linux. This build installs from
+source: clone the fork, check out `local-build`, and run the source installer.
+Updates are explicit: pull the repository and rebuild.
 
 | System | Needs |
 |---|---|
@@ -20,10 +19,15 @@ app for each system, and every installer is attached to the
 <Tabs items={['macOS', 'Windows (preview)', 'Linux']}>
   <Tab value="macOS">
     ```bash skip="host-install"
-    curl -fsSL https://cua.ai/install.sh | sh
+    git clone https://github.com/chriswritescode-dev/cua.git
+    cd cua
+    git checkout local-build
+    scripts/install/install.sh
     ```
 
-    Or open the universal `.dmg` (or `.pkg`) from the release.
+    The installer builds Cua Spaces with
+    `apps/cua-spaces-macos/scripts/build-release.sh` and the `cua` CLI with
+    cargo. macOS 26 or later.
   </Tab>
   <Tab value="Windows (preview)">
     <Callout type="warn">
@@ -32,27 +36,33 @@ app for each system, and every installer is attached to the
     </Callout>
 
     ```powershell skip="host-install"
-    irm https://cua.ai/install.ps1 | iex
+    git clone https://github.com/chriswritescode-dev/cua.git
+    cd cua
+    git checkout local-build
+    powershell -ExecutionPolicy Bypass -File scripts\install\install.ps1
     ```
 
-    Or run `cua-spaces-<version>-windows-x64-setup.exe` (`windows-arm64` on Arm)
-    from the release. Windows may show a SmartScreen prompt the first time:
-    choose **More info**, then **Run anyway**. The publisher shows as **Cua AI, Inc.**
+    The Windows source build has no app target yet: the installer builds the
+    `cua` CLI and cua-spacesd. Build the app from
+    `apps/cua-spaces-desktop` with `pnpm dist:win` if you need it.
   </Tab>
   <Tab value="Linux">
     ```bash skip="host-install"
-    curl -fsSL https://cua.ai/install.sh | sh
+    git clone https://github.com/chriswritescode-dev/cua.git
+    cd cua
+    git checkout local-build
+    scripts/install/install.sh
     ```
 
-    The installer picks the supported **.deb** on Ubuntu 24.04. To install it by
-    hand, run `sudo apt install ./cua-spaces_<version>_<arch>.deb`. See
-    [Linux packages](#linux-packages).
+    The Linux source build has no app target yet: the installer builds the
+    `cua` CLI and cua-spacesd. Build the app from `apps/cua-spaces-desktop`
+    with `pnpm dist:linux` if you need it.
   </Tab>
 </Tabs>
 
 At a console the installer shows a checklist first. Add `--cli-only`
 (`-CliOnly` on Windows) to install the CLI alone. Other flags are `--select`,
-`--only`, `--app-only`, `--mode host|client`, `--version`, `--no-onboarding`,
+`--only`, `--app-only`, `--mode host|client`, `--pair`, `--no-onboarding`,
 `--no-host`, `--dry-run` and `--yes` (`-Select`, `-CliOnly` and so on on Windows).
 
 In a terminal the installer then signs you in. Over ssh, or on Linux without a
@@ -82,7 +92,8 @@ General**.
 
 ## Linux packages
 
-The supported package is the **.deb** on Ubuntu 24.04. It is sandboxed and
+The supported package is the **.deb** on Ubuntu 24.04, which
+`pnpm dist:linux` builds from `apps/cua-spaces-desktop`. It is sandboxed and
 installs the confirmation prompt (polkit) that sharing a Space and the Keyvault
 need. The prompt asks for your password in a desktop session with a polkit
 authentication agent, local or over a remote desktop such as xrdp. `sudo apt remove cua-spaces`
@@ -101,35 +112,33 @@ access to `/dev/kvm` to run same-architecture guests quickly. Run
 
 ## Updates
 
-Cua Spaces checks for new versions and downloads them in the background on
-macOS, Windows and Linux. The settings are in **Settings, About**, which also
-shows your version.
+Cua Spaces announces new releases; nothing is downloaded or installed for you.
+The settings are in **Settings, About**, which also shows your version.
 
-The app checks when it starts and again every few hours. When a new version is
-ready, **Update ready** appears at the bottom of the sidebar, with **Restart to
-update** and a **What's new** link to the release notes. Nothing restarts until
-you click. If an agent is still working, the app asks first.
+The app checks when it starts and again every few hours. When it finds a newer
+release, the sidebar's account line shows an **Update available** icon. Its menu
+gives the command that pulls the repository and rebuilds (`git pull && pnpm
+--dir apps/cua-spaces-desktop dist:mac` on macOS, `dist:win` on Windows and
+`dist:linux` on Linux) and a **What's new** link to the release notes. Nothing
+changes until you run the command.
 
 In **Settings, About**:
 
-- **Check for and download updates automatically** turns the background checks on
-  or off. With it off, press **Check Now** to check by hand.
-- **Install a downloaded update when Cua Spaces quits** installs a downloaded
-  update when you quit the app. It needs automatic checks.
-- **Last check** says when the app last looked.
+- **Check for new releases** turns the background checks on or off. With it off,
+  press **Check now** to check by hand.
+- **Last checked** says when the app last looked.
 
-On macOS, every update is the same notarized disk image as the download on the
-release page, and the app installs it only when its signature matches the key
-built into the app. Windows and Linux update through their own updater.
+A build with no update feed greys the rows out and says updates aren't
+available in this build.
 
 ### Stable or Beta
 
-**Update to:** picks the channel.
+**Get early releases (Beta)** in **Settings, Advanced** picks the channel.
 
-- **Stable**: tested releases.
-- **Beta**: releases and prereleases, with new features sooner and rough edges.
+- **Off**: tested releases.
+- **On**: releases and prereleases, with new features sooner and rough edges.
 
-Going back to Stable from a newer beta keeps the version you have until a newer
+Going back to Off from a newer beta keeps the version you have until a newer
 stable release is out.
 
 ### After an update

@@ -691,7 +691,7 @@ cua_scopes_agents_remove() {
 # failure: the uninstall finishes normally (the scripts are published before the
 # cua release that adds the flag). ~/.cua/agent-setup.json, the record
 # `cua agents remove` works from, stays unless --delete-spaces.
-OLD_CUA_AGENTS="this cua is older than the version that removes only Cua Spaces' entries from your agents: its 'cua agents remove' would also take Cua Driver's skill and MCP server out of Claude Code, Codex, Cursor and your other agents. So the agent step is skipped, and Cua Spaces' 'cua' MCP server and skills (cua-spaces, cua-volume, cua-sandboxes, gui-automation) stay in your agents. To remove them later, install the latest cua (curl -fsSL https://cua.ai/install.sh | sh -s -- --cli-only --yes) and run: cua agents remove"
+OLD_CUA_AGENTS="this cua is older than the version that removes only Cua Spaces' entries from your agents: its 'cua agents remove' would also take Cua Driver's skill and MCP server out of Claude Code, Codex, Cursor and your other agents. So the agent step is skipped, and Cua Spaces' 'cua' MCP server and skills (cua-spaces, cua-volume, cua-sandboxes, gui-automation) stay in your agents. To remove them later, build cua from a checkout (git clone https://github.com/chriswritescode-dev/cua.git, git checkout local-build, scripts/install/install.sh) and run: cua agents remove"
 
 # Removes the Cua Spaces skills and MCP entries (the `cua` server, `cua-local`
 # for Local) from the agents. Cua Driver's `cua-driver` skill and server, and
@@ -1283,7 +1283,7 @@ main() {
         info "finished, but some steps need your attention (see the warnings above)"
         exit 1
     fi
-    info "done. To install again: curl -fsSL https://cua.ai/install.sh | sh"
+    info "done. To install again: run scripts/install/install.sh in a checkout of https://github.com/chriswritescode-dev/cua.git (the local-build branch)"
 }
 
 main "$@"

@@ -15,9 +15,8 @@
 # Use `cargo build -p cua-driver` directly + invoke target\debug\cua-driver.exe
 # if you specifically want a faster-to-compile debug binary.
 #
-# Not for end-users — `irm https://.../install.ps1 | iex` fetches a
-# signed/built release from GitHub. This script is for the developer
-# loop (rapid edit/build/test on a Windows host).
+# This is the single source of truth for the local build. install.ps1
+# (the user-facing installer) delegates here.
 #
 # Separate local layout produced:
 #

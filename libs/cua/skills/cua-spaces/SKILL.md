@@ -60,7 +60,7 @@ user's Tailscale, or the LAN):
 1. ssh into it (Tailscale is only the ssh transport, the same as any LAN or
    internet address).
 2. Build the CLI from the repository:
-   `git clone https://github.com/trycua/cua.git ~/.cua/cua 2>/dev/null; git -C ~/.cua/cua pull --ff-only; cargo build --release -p cua-cli --manifest-path ~/.cua/cua/libs/cua/Cargo.toml`,
+   `git clone https://github.com/chriswritescode-dev/cua.git ~/.cua/cua 2>/dev/null; git -C ~/.cua/cua pull --ff-only; git -C ~/.cua/cua checkout local-build; ~/.cua/cua/scripts/install/install.sh --cli-only`,
    then use `~/.cua/cua/libs/cua/target/release/cua` for the steps below.
 3. Sign in on the mini: `cua auth login --remote` prints a device code and a
    URL. Show both to the user and have them approve it (on another signed-in

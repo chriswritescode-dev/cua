@@ -12,13 +12,16 @@ over MCP, and manages Spaces.
 ## Install
 
 ```bash skip="host-install"
-curl -fsSL https://cua.ai/install.sh | sh     # macOS, Linux: a checklist of what to install
-irm https://cua.ai/install.ps1 | iex          # Windows (PowerShell)
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+scripts/install/install.sh                    # macOS, Linux: a checklist of what to install
+powershell -ExecutionPolicy Bypass -File scripts\install\install.ps1   # Windows (PowerShell)
 pip install cua                               # CLI only (or uv tool install cua)
 npm install -g @trycua/cua                    # CLI only
 ```
 
-Add `-s -- --select cua-driver` to also set up the cua-driver MCP server and
+Add `--select cua-driver` to also set up the cua-driver MCP server and
 skill for your agents, or `--only ITEMS` to skip the checklist. Installer
 flags: [Install Cua Spaces](/spaces/guides/install).
 

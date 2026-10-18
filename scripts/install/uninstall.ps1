@@ -218,7 +218,7 @@ function Test-CuaScopesAgentsRemove {
 # `agents remove` would strip them, so the step is skipped. That is a note, not a
 # failure: the uninstall finishes normally (the scripts are published before the
 # cua release that adds the flag).
-$OldCuaAgents = 'this cua is older than the version that removes only Cua Spaces'' entries from your agents: its ''cua agents remove'' would also take Cua Driver''s skill and MCP server out of Claude Code, Codex, Cursor and your other agents. So the agent step is skipped, and Cua Spaces'' ''cua'' MCP server and skills (cua-spaces, cua-volume, cua-sandboxes, gui-automation) stay in your agents. To remove them later, install the latest cua (& ([scriptblock]::Create((irm https://cua.ai/install.ps1))) -CliOnly -Yes) and run: cua agents remove'
+$OldCuaAgents = 'this cua is older than the version that removes only Cua Spaces'' entries from your agents: its ''cua agents remove'' would also take Cua Driver''s skill and MCP server out of Claude Code, Codex, Cursor and your other agents. So the agent step is skipped, and Cua Spaces'' ''cua'' MCP server and skills (cua-spaces, cua-volume, cua-sandboxes, gui-automation) stay in your agents. To remove them later, build cua from a checkout (git clone https://github.com/chriswritescode-dev/cua.git, git checkout local-build, scripts\install\install.ps1) and run: cua agents remove'
 
 # Removes the Cua Spaces skills and MCP entries (the `cua` server, `cua-local`
 # for Local) from the agents. Cua Driver's `cua-driver` skill and server, and
@@ -599,7 +599,7 @@ function Invoke-CuaUninstall {
         Write-Info 'Cua Driver is separate and was kept; run this with -All to remove it too'
     }
     if ($script:Failed) { Write-Info 'finished, but some steps need your attention (see the warnings above)'; $global:LASTEXITCODE = 1; return }
-    Write-Info 'done. To install again: irm https://cua.ai/install.ps1 | iex'
+    Write-Info 'done. To install again: run scripts\install\install.ps1 in a checkout of https://github.com/chriswritescode-dev/cua.git (the local-build branch)'
 }
 
 # Dot-sourcing with CUA_UNINSTALL_NO_RUN=1 loads the functions for tests.

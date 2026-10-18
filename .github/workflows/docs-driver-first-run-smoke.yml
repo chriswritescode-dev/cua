@@ -10,7 +10,6 @@ on:
       - .github/workflows/docs-driver-first-run-smoke.yml
       - libs/cua-driver/scripts/install.sh
       - libs/cua-driver/scripts/_install-rust.sh
-      - libs/cua-driver/scripts/_install-common.sh
   workflow_dispatch:
 
 # Public PR code runs only on a disposable GitHub-hosted runner, without secrets.

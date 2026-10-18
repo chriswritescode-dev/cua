@@ -75,7 +75,10 @@ and open its desktop with `cua sb view desk` (see
 [Any registry image](#any-registry-image)).
 
 ```bash skip="host-install"
-curl -fsSL https://cua.ai/install.sh | sh
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+scripts/install/install.sh --cli-only
 ```
 
 ## Any registry image

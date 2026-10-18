@@ -12,8 +12,8 @@ never calls a model API.
 
 ## Register the MCP server
 
-To add the skill and MCP server to every agent on the machine in one step, use
-the cua installer: `curl -fsSL https://cua.ai/install.sh | sh -s -- --select cua-driver`.
+To add the skill and MCP server to every agent on the machine in one step, run
+`scripts/install/install.sh --select cua-driver` from a checkout of the repository.
 Add `--no-skills` to leave the skill out.
 
 `mcp-config` prints the exact command or JSON for your client, with your

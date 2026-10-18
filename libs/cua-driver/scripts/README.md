@@ -4,12 +4,11 @@ Install, uninstall, local-build, and VM sync helpers for cua-driver.
 
 | Script | Purpose |
 | --- | --- |
-| `install.sh` / `install.ps1` | Install released cua-driver binaries |
+| `install.sh` / `install.ps1` | Build this checkout through `install-local.sh` / `install-local.ps1` and expose it as `cua-driver` |
 | `install-local.sh` / `install-local.ps1` | Build this checkout as the separate `cua-driver-local` product |
 | `uninstall-local.sh` / `uninstall-local.ps1` | Remove only the source-built `cua-driver-local` product |
 | `uninstall.sh` / `uninstall.ps1` | Remove installed driver artifacts |
-| `_install-common.sh` / `_install-common.psm1` | Shared install helper logic |
-| `_install-rust.sh` / `_install-local-rust.sh` | Rust build/install internals |
+| `_install-rust.sh` / `_install-local-rust.sh` | Build/install internals (no release downloads) |
 | `sync-vm-worktree.sh` | Sync this checkout to verification VMs and pull artifacts back |
 | `post-install-hints.txt` | User-facing hints printed by install scripts |
 

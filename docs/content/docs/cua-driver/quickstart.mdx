@@ -38,8 +38,9 @@ platform.
   <Tab value="macOS">
 
 ```bash test="cli-shape" id="cua-driver-permissions-grant"
-git clone https://github.com/trycua/cua
+git clone https://github.com/chriswritescode-dev/cua.git
 cd cua
+git checkout local-build
 libs/cua-driver/scripts/install-local.sh
 open -n -g -a CuaDriver --args serve
 cua-driver permissions grant
@@ -81,8 +82,9 @@ If one is still missing, run `cua-driver permissions grant` again.
   <Tab value="Windows">
 
 ```powershell test="cli-shape" id="cua-driver-autostart-kick"
-git clone https://github.com/trycua/cua
+git clone https://github.com/chriswritescode-dev/cua.git
 cd cua
+git checkout local-build
 libs\cua-driver\scripts\install-local.ps1
 cua-driver autostart kick
 ```
@@ -97,8 +99,9 @@ a second terminal for the checks below. Over SSH, see
   <Tab value="Linux">
 
 ```bash test="cli-shape" id="cua-driver-serve"
-git clone https://github.com/trycua/cua
+git clone https://github.com/chriswritescode-dev/cua.git
 cd cua
+git checkout local-build
 libs/cua-driver/scripts/install-local.sh
 cua-driver serve
 ```
@@ -159,8 +162,8 @@ registration command, which you run, and installs the skill for that agent
 example paths below.
 
 To set up every agent on the machine at once (skill and MCP server), run
-`curl -fsSL https://cua.ai/install.sh | sh -s -- --select cua-driver` instead.
-It also installs the `cua` CLI.
+`scripts/install/install.sh --select cua-driver` from a checkout instead.
+It also builds and installs the `cua` CLI.
 
 <Tabs items={['Claude Code', 'Codex', 'Prime Agent', 'OpenClaw', 'Hermes', 'Other']}>
   <Tab value="Claude Code">

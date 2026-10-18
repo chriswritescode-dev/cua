@@ -17,24 +17,14 @@
 #   unregister_other_cua_driver_copies — make LaunchServices forget every other
 #                                       copy of the app (never deletes files)
 #
-# This script is sourced (not exec'd) by the Rust install helpers:
+# The uninstallers keep verbatim copies of the daemon-stop and LaunchServices
+# helpers (a test holds the copies identical), and the tests source this file
+# to run them. Nothing downloads it any more: every installer builds from a
+# checkout.
 #
-#   * _install-rust.sh           (production Rust delegate)
-#   * _install-local-rust.sh     (dev Rust installer)
-#
-# Loaders: on-disk first when run from a checked-out tree, else fetched
-# from GitHub raw via `curl` (mirrors the irm | iex path that
-# install.ps1 uses to import the .psm1 over the network). The inline
-# loader is duplicated in each consumer because `source` doesn't have a
-# bootstrap function the way PowerShell's `Import-Module` does — kept
-# minimal so the duplication cost stays low.
-#
-# Keep this file narrow on purpose: every byte gets curl'd on every
-# `curl ... | bash` install on non-macOS hosts (where install.sh
-# auto-delegates to the Rust path) AND on dev installs. Things that DO
-# belong here: kill / wait / probe helpers that multiple consumers
-# need. Things that DON'T: anything only one script uses (leave it
-# inline there).
+# Keep this file narrow on purpose: only kill / wait / probe helpers that more
+# than one script needs belong here; anything one script uses stays inline
+# there.
 #
 # Style:
 #   * No `set -e` — sourced helpers shouldn't change the caller's shell

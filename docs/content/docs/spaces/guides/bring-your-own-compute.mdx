@@ -57,7 +57,10 @@ a code instead. The first command installs. The second prints a web address and
 a short code. Open the address on any other device and enter the code.
 
 ```bash skip="no-runner"
-curl -fsSL https://cua.ai/install.sh | sh -s -- -y --select spaces,host --no-onboarding
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+scripts/install/install.sh -y --select spaces,host --no-onboarding
 ```
 
 ```bash test="cli-shape" id="byoc-mac-mini-remote"
@@ -96,7 +99,10 @@ Spaces. A Mac or Windows Space needs a Mac or a Windows computer.
 2. Install Cua Spaces without questions:
 
    ```bash skip="no-runner"
-   curl -fsSL https://cua.ai/install.sh | sh -s -- -y --select spaces,host --no-onboarding
+   git clone https://github.com/chriswritescode-dev/cua.git
+   cd cua
+   git checkout local-build
+   scripts/install/install.sh -y --select spaces,host --no-onboarding
    ```
 
    `-y` accepts the install without the checklist. `--select spaces,host`
