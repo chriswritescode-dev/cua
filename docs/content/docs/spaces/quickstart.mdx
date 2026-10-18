@@ -34,19 +34,21 @@ macOS Space needs an Apple silicon Mac and about 50 GB of free disk.
 <Tabs items={['macOS and Linux', 'Windows (preview)']}>
   <Tab value="macOS and Linux">
     ```bash skip="host-install"
-    curl -fsSL https://cua.ai/install.sh | sh
+    git clone https://github.com/chriswritescode-dev/cua.git
+    cd cua
+    git checkout local-build
+    scripts/install/install.sh
     ```
   </Tab>
   <Tab value="Windows (preview)">
     Recommended: run this in PowerShell.
 
     ```powershell skip="host-install"
-    irm https://cua.ai/install.ps1 | iex
+    git clone https://github.com/chriswritescode-dev/cua.git
+    cd cua
+    git checkout local-build
+    powershell -ExecutionPolicy Bypass -File scripts\install\install.ps1
     ```
-
-    If you download and run the installer from the [download page](https://cua.ai/download)
-    instead, Windows may show a SmartScreen prompt the first time: choose **More info**,
-    then **Run anyway**. The publisher shows as **Cua AI, Inc.**
 
     Windows 11 Home is supported; Hyper-V is not required. Local Spaces use
     Docker Desktop on WSL 2 (the app can install it for you) or QEMU with WHPX,
@@ -54,9 +56,16 @@ macOS Space needs an Apple silicon Mac and about 50 GB of free disk.
   </Tab>
 </Tabs>
 
-The command installs the `cua` command and the app. You can also download the
-app from the [download page](https://cua.ai/download). [Install](/spaces/guides/install)
-has the details for each system.
+The command installs the `cua` command and, on macOS, builds the app. In a
+terminal it first shows a checklist: the `cua` CLI and cua-spacesd, the
+Cua Spaces app (selected by default on macOS, where the source build exists),
+the cua-driver MCP and skill for your agents, and hosting this machine. Then it
+signs you in and offers to set up your AI coding agents.
+Flags: `--select ITEMS`, `--only ITEMS`, `--cli-only`, `--app-only`,
+`--mode host|client`, `--pair`, `--no-onboarding`, `--dry-run`, `--yes`
+(`-Select`, `-CliOnly`, ... on Windows). Updates are explicit: pull the
+repository and rebuild. See [Install](/spaces/guides/install) for per-platform
+steps.
 
 ## 2. Pick your agent
 

@@ -6,7 +6,7 @@ description: >-
   or perform end-to-end QA on any application. Works on cloud VMs, Docker
   containers, local machines, and sandboxes. Needs the `cua` CLI, built
   from the repository:
-  `git clone https://github.com/trycua/cua.git ~/.cua/cua 2>/dev/null; git -C ~/.cua/cua pull --ff-only; cargo build --release -p cua-cli --manifest-path ~/.cua/cua/libs/cua/Cargo.toml`.
+  `git clone https://github.com/chriswritescode-dev/cua.git ~/.cua/cua 2>/dev/null; git -C ~/.cua/cua pull --ff-only; git -C ~/.cua/cua checkout local-build; ~/.cua/cua/scripts/install/install.sh --cli-only`.
 ---
 
 # GUI Automation
@@ -20,8 +20,9 @@ Use this skill for **visual interaction** that can't be done via shell or API.
 
 ```bash
 cua --version          # check install; if missing, build it from the repository:
-                       # git clone https://github.com/trycua/cua.git ~/.cua/cua
-                       # cargo build --release -p cua-cli --manifest-path ~/.cua/cua/libs/cua/Cargo.toml
+                       # git clone https://github.com/chriswritescode-dev/cua.git ~/.cua/cua
+                       # git -C ~/.cua/cua checkout local-build
+                       # ~/.cua/cua/scripts/install/install.sh --cli-only
 
 # Connect to target (pick one)
 cua do switch my-sandbox                    # any sandbox from `cua sb ls`

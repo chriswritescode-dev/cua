@@ -14,7 +14,10 @@ SSH into it.
 ## Run
 
 ```bash test="cli-shape,lume" id="install"
-/bin/bash -c "$(curl -fsSL https://cua.ai/lume/install.sh)"
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+libs/lume/scripts/install.sh
 lume --version
 ```
 

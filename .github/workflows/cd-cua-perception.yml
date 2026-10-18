@@ -312,13 +312,12 @@ jobs:
             --expires-unix "$EXPIRES_UNIX"
           python .github/scripts/perception_release.py \
             verify-checksums perception-candidate/checksums.txt
-      - name: Install the published Cua Driver (macOS and Linux)
+      - name: Build and install Cua Driver from the checkout (macOS and Linux)
         if: needs.resolve.outputs.publish != 'true' && runner.os != 'Windows'
         shell: bash
         env:
-          CUA_DRIVER_RS_HOME: ${{ runner.temp }}/cua-driver-installer-home
-          CUA_DRIVER_RS_INSTALL_DIR: ${{ runner.temp }}/cua-driver-bin
-          CUA_DRIVER_RS_NO_MODIFY_PATH: "1"
+          CUA_DRIVER_LOCAL_HOME: ${{ runner.temp }}/cua-driver-installer-home
+          CUA_DRIVER_LOCAL_INSTALL_DIR: ${{ runner.temp }}/cua-driver-bin
         run: |
           set -euo pipefail
           if [[ "$RUNNER_OS" == Linux ]]; then
@@ -326,17 +325,17 @@ jobs:
             sudo apt-get install -y --no-install-recommends \
               libx11-6 libxi6 libxtst6 libxext6 libwayland-client0 libxkbcommon0
           fi
-          bash libs/cua-driver/scripts/install.sh --no-modify-path
-          echo "CUA_DRIVER_BINARY=$CUA_DRIVER_RS_INSTALL_DIR/cua-driver" >> "$GITHUB_ENV"
-      - name: Install the published Cua Driver (Windows)
+          bash libs/cua-driver/scripts/install.sh
+          echo "CUA_DRIVER_BINARY=$CUA_DRIVER_LOCAL_INSTALL_DIR/cua-driver" >> "$GITHUB_ENV"
+      - name: Build and install Cua Driver from the checkout (Windows)
         if: needs.resolve.outputs.publish != 'true' && runner.os == 'Windows'
         shell: pwsh
         run: |
           $root = Join-Path $env:RUNNER_TEMP "cua-driver-installer"
-          $env:CUA_DRIVER_RS_HOME = Join-Path $root "home"
-          $env:CUA_DRIVER_RS_INSTALL_DIR = Join-Path $root "bin"
+          $env:CUA_DRIVER_LOCAL_HOME = Join-Path $root "home"
+          $env:CUA_DRIVER_LOCAL_INSTALL_DIR = Join-Path $root "bin"
           & ./libs/cua-driver/scripts/install.ps1 -NoAutoStart -NoPathUpdate
-          $binary = Join-Path $env:CUA_DRIVER_RS_INSTALL_DIR "cua-driver.exe"
+          $binary = Join-Path $env:CUA_DRIVER_LOCAL_INSTALL_DIR "cua-driver.exe"
           if (-not (Test-Path -LiteralPath $binary)) { throw "installer did not create $binary" }
           # The installer can leave a nonzero $LASTEXITCODE from an optional
           # probe; the step result must reflect the installed binary instead.
@@ -478,13 +477,12 @@ jobs:
           }
           console.log(`verified ${payload.archive} for ${payload.target} (catalog ${payload.catalog_version})`);
           JS
-      - name: Install the published Cua Driver (macOS and Linux)
+      - name: Build and install Cua Driver from the checkout (macOS and Linux)
         if: runner.os != 'Windows'
         shell: bash
         env:
-          CUA_DRIVER_RS_HOME: ${{ runner.temp }}/cua-driver-installer-home
-          CUA_DRIVER_RS_INSTALL_DIR: ${{ runner.temp }}/cua-driver-bin
-          CUA_DRIVER_RS_NO_MODIFY_PATH: "1"
+          CUA_DRIVER_LOCAL_HOME: ${{ runner.temp }}/cua-driver-installer-home
+          CUA_DRIVER_LOCAL_INSTALL_DIR: ${{ runner.temp }}/cua-driver-bin
         run: |
           set -euo pipefail
           if [[ "$RUNNER_OS" == Linux ]]; then
@@ -492,17 +490,17 @@ jobs:
             sudo apt-get install -y --no-install-recommends \
               libx11-6 libxi6 libxtst6 libxext6 libwayland-client0 libxkbcommon0
           fi
-          bash libs/cua-driver/scripts/install.sh --no-modify-path
-          echo "CUA_DRIVER_BINARY=$CUA_DRIVER_RS_INSTALL_DIR/cua-driver" >> "$GITHUB_ENV"
-      - name: Install the published Cua Driver (Windows)
+          bash libs/cua-driver/scripts/install.sh
+          echo "CUA_DRIVER_BINARY=$CUA_DRIVER_LOCAL_INSTALL_DIR/cua-driver" >> "$GITHUB_ENV"
+      - name: Build and install Cua Driver from the checkout (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $root = Join-Path $env:RUNNER_TEMP "cua-driver-installer"
-          $env:CUA_DRIVER_RS_HOME = Join-Path $root "home"
-          $env:CUA_DRIVER_RS_INSTALL_DIR = Join-Path $root "bin"
+          $env:CUA_DRIVER_LOCAL_HOME = Join-Path $root "home"
+          $env:CUA_DRIVER_LOCAL_INSTALL_DIR = Join-Path $root "bin"
           & ./libs/cua-driver/scripts/install.ps1 -NoAutoStart -NoPathUpdate
-          $binary = Join-Path $env:CUA_DRIVER_RS_INSTALL_DIR "cua-driver.exe"
+          $binary = Join-Path $env:CUA_DRIVER_LOCAL_INSTALL_DIR "cua-driver.exe"
           if (-not (Test-Path -LiteralPath $binary)) { throw "installer did not create $binary" }
           # The installer can leave a nonzero $LASTEXITCODE from an optional
           # probe; the step result must reflect the installed binary instead.
@@ -510,7 +508,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "installed binary exited with $LASTEXITCODE" }
           "CUA_DRIVER_BINARY=$binary" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           exit 0
-      - name: Inspect, install, self-test, parse, and remove with the published Driver
+      - name: Inspect, install, self-test, parse, and remove with the checkout Driver
         shell: bash
         env:
           SOURCE_SHA: ${{ needs.resolve.outputs.source_sha }}

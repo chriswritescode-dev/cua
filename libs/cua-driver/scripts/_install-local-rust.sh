@@ -18,9 +18,8 @@
 #                ~/.local/bin. Takes precedence over
 #                CUA_DRIVER_LOCAL_INSTALL_DIR; must be absolute.
 #
-# Not for end-users — scripts/install.sh fetches a built release from
-# GitHub. This script is for the developer loop (rapid edit/build/test
-# on a Linux or macOS host).
+# Private helper for the developer loop (rapid edit/build/test on a Linux
+# or macOS host). scripts/install.sh delegates here; nothing is downloaded.
 #
 # Linux layout produced (matches install.sh):
 #
@@ -303,8 +302,7 @@ if [ "$OS" = "Darwin" ]; then
 fi
 
 # Skill pack — stage from the repo so the `current` symlink below
-# transparently exposes it to agents. Mirrors what install.sh does
-# from a release tarball.
+# transparently exposes it to agents.
 SOURCE_SKILLS="$REPO_ROOT/Skills/cua-driver"
 if [ -d "$SOURCE_SKILLS" ]; then
     STAGED_SKILLS="$VERSIONED_DIR/Skills/cua-driver"

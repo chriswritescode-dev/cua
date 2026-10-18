@@ -172,12 +172,3 @@ def test_publish_still_requires_every_gate():
     for result in ("verify-release", "staging-gate"):
         assert f"needs.{result}.result == 'success'" in job["if"]
     assert job["permissions"]["id-token"] == "write"
-
-
-def test_installers_accept_the_main_identity_of_a_rebuild_only_for_the_app():
-    sh = (ROOT / "scripts/install/install.sh").read_text()
-    ps1 = (ROOT / "scripts/install/install.ps1").read_text()
-    assert "cd-cua-spaces.yml@refs/heads/main" in sh
-    assert "cd-cua-spaces.yml@refs/heads/main" in ps1
-    assert "cd-cua-sdk.yml@refs/heads" not in sh + ps1
-    assert "identity-regexp" not in sh + ps1

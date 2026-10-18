@@ -16,8 +16,8 @@
 #   --experimental-rust    legacy alias for --backend=rust (no-op)
 #   --backend=swift        retired Swift backend (no-op; accepted for compat)
 #
-# Not for end-users — see install.sh for the curl-pipe-bash one-liner that
-# fetches the signed release tarball.
+# This is the single source of truth for the local build. install.sh (the
+# user-facing installer) delegates here.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"

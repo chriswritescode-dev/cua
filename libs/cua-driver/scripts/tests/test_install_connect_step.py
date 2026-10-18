@@ -28,8 +28,7 @@ requires_posix_bash = pytest.mark.skipif(
 def _post_install_block() -> str:
     source = INSTALLER.read_text(encoding="utf-8")
     start = source.index("driver_has_command() {")
-    end = source.index("# Unified post-install hints come from")
-    return source[start:end]
+    return source[start:]
 
 
 def _fake_driver(tmp_path: Path, subcommands: str, connect_out: str, connect_rc: int = 0) -> Path:
@@ -58,10 +57,8 @@ def _run(tmp_path: Path, fake: Path, flags: str = "", env: dict[str, str] | None
     script.write_text(
         "set -euo pipefail\n"
         f'BIN_LINK="{fake}"\n'
-        f"NO_CONNECT=\"${{CUA_DRIVER_NO_CONNECT:-0}}\"\nNO_TEST=\"${{CUA_DRIVER_NO_TEST:-0}}\"\n"
-        f"{flags}\n"
-        + _post_install_block()
-        + '\necho "FELL_THROUGH_TO_HINTS"\n',
+        f'NO_CONNECT="${{CUA_DRIVER_NO_CONNECT:-0}}"\nNO_TEST="${{CUA_DRIVER_NO_TEST:-0}}"\n'
+        f"{flags}\n" + _post_install_block() + '\necho "FELL_THROUGH_TO_HINTS"\n',
         encoding="utf-8",
     )
     full_env = {k: v for k, v in os.environ.items() if not k.startswith("CUA_DRIVER_NO_")}
@@ -75,7 +72,11 @@ def _run(tmp_path: Path, fake: Path, flags: str = "", env: dict[str, str] | None
         env=full_env,
         check=False,
     )
-    calls = (tmp_path / "calls.log").read_text().splitlines() if (tmp_path / "calls.log").exists() else []
+    calls = (
+        (tmp_path / "calls.log").read_text().splitlines()
+        if (tmp_path / "calls.log").exists()
+        else []
+    )
     return result, calls
 
 
@@ -89,7 +90,7 @@ def test_connects_tests_and_ends_with_one_done_line(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     assert "Claude Code: connected" in result.stdout
     assert "Cua Driver works." in result.stdout
-    assert 'Done. Ask Claude Code' in result.stdout
+    assert "Done. Ask Claude Code" in result.stdout
     assert "FELL_THROUGH_TO_HINTS" not in result.stdout
     assert "connect" in calls and "test" in calls
     # No terminal on stdin, so the permission guide must not run.
@@ -167,7 +168,9 @@ def test_flags_are_parsed_and_documented() -> None:
 
 def test_permission_guide_needs_a_macos_terminal_outside_ci() -> None:
     block = _post_install_block()
-    guard = next(line for line in block.splitlines() if "permissions grant" not in line and "Darwin" in line)
+    guard = next(
+        line for line in block.splitlines() if "permissions grant" not in line and "Darwin" in line
+    )
     for needle in ('"$(uname -s)" == "Darwin"', "-t 0", "-t 1", '-z "${CI:-}"'):
         assert needle in guard
 
@@ -188,8 +191,7 @@ def test_windows_installer_connects_and_tests_with_guards_and_no_permission_step
     assert "& $installedBinary test" in source
     assert "Test-CuaDriverCommand $installedBinary 'connect'" in source
     assert "Test-CuaDriverCommand $installedBinary 'test'" in source
-    assert "permissions grant" not in source.split("function Test-CuaDriverCommand")[1].split("Unified post-install hints")[0]
-    assert "if (-not $SkipHints)" in source
+    assert "permissions grant" not in source.split("function Test-CuaDriverCommand")[1]
 
 
 def test_post_install_hints_lead_with_connect() -> None:

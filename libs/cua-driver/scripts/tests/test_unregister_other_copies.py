@@ -221,32 +221,6 @@ def test_missing_lsregister_is_a_quiet_no_op(fx: Fixture) -> None:
     assert result.stdout == "" and result.stderr == ""
 
 
-def test_installer_runs_the_cleanup_after_the_swap_commits() -> None:
-    installer = (ROOT / "libs/cua-driver/scripts/_install-rust.sh").read_text()
-
-    commit = installer.index("MACOS_APP_INSTALL_COMMITTED=1")
-    cleanup = installer.index('unregister_other_cua_driver_copies "$APP_DEST"')
-    reset = installer.index("macos_reset_tcc_after_requirement_change", commit)
-    # After the new bundle is registered and committed, before any permission
-    # reset resolves the bundle id through LaunchServices.
-    assert commit < cleanup < reset
-    # A tarball loader failure must not abort the install either.
-    assert "unregister_other_cua_driver_copies() { :; }" in installer
-
-
-def test_installer_forgets_the_unpacked_app_before_deleting_its_temp_dir() -> None:
-    installer = (ROOT / "libs/cua-driver/scripts/_install-rust.sh").read_text()
-
-    cleanup = installer[installer.index("cleanup_on_exit() {"):]
-    cleanup = cleanup[: cleanup.index("\n}\n")]
-    forget = cleanup.index("forget_staged_macos_app")
-    delete = cleanup.index('rm -rf "$TMP_DIR"')
-    assert forget < delete
-    helper = installer[installer.index("forget_staged_macos_app() {"):]
-    helper = helper[: helper.index("\n}\n")]
-    assert '"$lsregister" -u "$SRC_APP"' in helper
-
-
 def test_registrations_whose_files_are_gone_get_no_left_in_place_note(fx: Fixture) -> None:
     gone = fx.root / "extracted-and-deleted/CuaDriver.app"  # never created on disk
     ls = fx.fake_lsregister(

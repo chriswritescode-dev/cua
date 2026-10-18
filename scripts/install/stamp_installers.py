@@ -3,18 +3,16 @@
 The uninstallers (uninstall.sh / uninstall.ps1) download nothing from a release,
 so they are copied as they are, to publish next to the installers.
 
-The installers default to trycua/cua: their download base and the Sigstore
-identity they verify (the release workflow at its tag) both derive from it.
-A release workflow publishes the installers from the repository that built
-the release, so it stamps that repository in (a staging repository's feed
-then installs, and verifies, its own releases):
+The installers tell users to clone the repository they came from. A release
+workflow publishes the installer text from the repository that built the
+release, so it stamps that repository into the clone instructions:
 
     python3 scripts/install/stamp_installers.py --repo "$GITHUB_REPOSITORY" --out stamped
 
 writes stamped/install.sh, stamped/install.ps1, stamped/uninstall.sh and
-stamped/uninstall.ps1. CUA_INSTALL_REPO still
-overrides the default at install time. Fails if a default is not found, so a
-changed installer cannot silently keep pointing somewhere else.
+stamped/uninstall.ps1. CUA_REPO_URL still overrides the default at install
+time. Fails if a default is not found, so a changed installer cannot silently
+keep pointing somewhere else.
 """
 
 from __future__ import annotations
@@ -30,10 +28,13 @@ REPO_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})/[A-Za-z0-9._-]{1,100}$
 
 # (file, the exact default line fragment, its replacement template)
 DEFAULTS = {
-    "install.sh": ('REPO="${CUA_INSTALL_REPO:-trycua/cua}"', 'REPO="${{CUA_INSTALL_REPO:-{repo}}}"'),
+    "install.sh": (
+        'CUA_REPO_URL="${CUA_REPO_URL:-https://github.com/chriswritescode-dev/cua.git}"',
+        'CUA_REPO_URL="${{CUA_REPO_URL:-https://github.com/{repo}.git}}"',
+    ),
     "install.ps1": (
-        "$Repo = if ($env:CUA_INSTALL_REPO) { $env:CUA_INSTALL_REPO } else { 'trycua/cua' }",
-        "$Repo = if ($env:CUA_INSTALL_REPO) {{ $env:CUA_INSTALL_REPO }} else {{ '{repo}' }}",
+        "$RepoUrl = if ($env:CUA_REPO_URL) { $env:CUA_REPO_URL } else { 'https://github.com/chriswritescode-dev/cua.git' }",
+        "$RepoUrl = if ($env:CUA_REPO_URL) {{ $env:CUA_REPO_URL }} else {{ 'https://github.com/{repo}.git' }}",
     ),
 }
 
@@ -52,7 +53,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--repo", required=True, help="owner/name, e.g. $GITHUB_REPOSITORY")
     parser.add_argument("--out", required=True, type=Path, help="directory for the stamped copies")
-    parser.add_argument("--src", type=Path, default=HERE, help="directory holding the installer and uninstaller scripts")
+    parser.add_argument(
+        "--src",
+        type=Path,
+        default=HERE,
+        help="directory holding the installer and uninstaller scripts",
+    )
     args = parser.parse_args(argv)
     if not REPO_RE.match(args.repo):
         print(f"invalid repository {args.repo!r} (want owner/name)", file=sys.stderr)

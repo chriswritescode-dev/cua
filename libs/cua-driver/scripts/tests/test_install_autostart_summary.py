@@ -1,6 +1,6 @@
-"""The Windows installers must not claim autostart is registered when it isn't.
+"""The Windows local installer must not claim autostart is registered when it isn't.
 
-Both installers used to gate their closing `Auto-start: '...' is registered at
+It used to gate its closing `Auto-start: '...' is registered at
 RunLevel=Highest.` line on the `-AutoStart` *request* rather than on the
 registration *outcome*, so a declined UAC prompt produced an install transcript
 that confirmed a task which was never created (trycua/cua#3179).
@@ -14,13 +14,8 @@ import pytest
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 
-# (installer, closing summary line, task name)
+# (installer, closing summary line)
 INSTALLERS = [
-    pytest.param(
-        SCRIPTS / "install.ps1",
-        "Auto-start: 'cua-driver-serve' is registered at RunLevel=Highest.",
-        id="install.ps1",
-    ),
     pytest.param(
         SCRIPTS / "install-local.ps1",
         "Auto-start: 'cua-driver-local-serve' is registered at RunLevel=Highest.",

@@ -73,8 +73,16 @@ def test_ordinary_installers_have_no_optional_perception_download_path() -> None
         source = installer.read_text(encoding="utf-8-sig").lower()
         assert all(token not in source for token in FORBIDDEN_DISTRIBUTION_TOKENS), installer
 
+
+def test_installers_build_from_the_checkout_and_download_nothing() -> None:
+    for installer in (UNIX_INSTALLER, WINDOWS_INSTALLER):
+        source = installer.read_text(encoding="utf-8-sig").lower()
+        assert "releases/download" not in source
+        assert "cua.ai" not in source
+
     unix = UNIX_INSTALLER.read_text()
     windows = WINDOWS_INSTALLER.read_text(encoding="utf-8-sig")
-    assert "releases/download/${TAG}/$tarball" in unix
-    assert '"cua-driver-rs-$version-$archLabel.zip"' in windows
-    assert "releases/download/$Script:CuaDriverRsReleaseTag/$zipName" in windows
+    assert "install-local.sh" in unix
+    assert "install-local.ps1" in windows
+    assert "CUA_DRIVER_RS_VERSION" not in unix
+    assert "CUA_DRIVER_RS_VERSION" not in windows

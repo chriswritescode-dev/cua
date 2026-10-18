@@ -1,9 +1,8 @@
 """KWin grants window capture only to an executable named by a desktop entry.
 
 `cua-driver kwin-capture on` writes that entry; the installer writes none. The
-uninstaller removes it only when it names this install. That the release
-installer prints the hint on a KWin host is proved in
-test_cua_driver_installer_integrity.py, which runs the whole installer.
+uninstaller removes it only when it names this install. The installer's
+post-install step in `_install-rust.sh` prints the hint on a KWin host.
 """
 
 from __future__ import annotations
