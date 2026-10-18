@@ -411,7 +411,6 @@ struct RelayAllowanceBanner: View {
                 Spacer(minLength: 8)
                 if let url = notice.upgradeUrl.flatMap(URL.init(string:)) {
                     Button(notice.upgrade) {
-                        devices.recordUpsell("upsell_meter_click")
                         openURL(url)
                     }
                         .controlSize(.small)
@@ -433,7 +432,6 @@ struct RelayAllowanceBanner: View {
             .background(.bar)
             .overlay(alignment: .bottom) { Divider() }
             .accessibilityIdentifier("relay-allowance")
-            .onAppear { devices.recordUpsell("upsell_meter_shown") }
         }
     }
 }

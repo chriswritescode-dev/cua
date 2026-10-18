@@ -423,11 +423,6 @@ impl Server {
         if let Ok(addr) = listener.local_addr() {
             self.ctx.set_local_addr(addr);
         }
-        // Aggregate health counts, only when the host enabled telemetry for
-        // this sandbox (`CUA_SPACESD_TELEMETRY=1`).
-        if crate::telemetry::spawn_reporter(&self.ctx.config().data_dir) {
-            tracing::info!("aggregate telemetry on (CUA_SPACESD_TELEMETRY)");
-        }
         // A mount left by a previous daemon that died without unmounting
         // answers nothing; clear it before anything touches the path.
         self.volume.clear_stale_mount().await;

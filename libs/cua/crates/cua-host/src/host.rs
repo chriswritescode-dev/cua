@@ -1,6 +1,6 @@
 //! [`Host`]: setup / status / stop / start / remove.
 
-use crate::driver::{self, DriverSource};
+use crate::driver;
 use crate::preflight::{self, SessionProbe};
 use crate::relay::{AccountTokens, ConnectedClient, MachinePatch, RegisterRequest, RelayClient};
 use crate::service::{self, RunnerKind, ServiceManager, ServiceSpec, ServiceState};
@@ -19,7 +19,8 @@ pub enum SetupStage {
     Token,
     /// Registering with the relay.
     Register,
-    /// Getting cua-spacesd (download or local copy).
+    /// Getting cua-spacesd (an explicit path, `CUA_SPACESD_BIN`, or a
+    /// binary next to this one).
     Download,
     /// Installing and starting the host service.
     Service,
@@ -87,8 +88,8 @@ pub struct SetupOptions {
     /// address (see [`crate::direct`]). Default off.
     pub allow_any_address: bool,
     /// Install the driver before registering (a single-use pairing code is
-    /// then spent only once the download worked). Default off.
-    pub download_first: bool,
+    /// then spent only once the binary was installed). Default off.
+    pub install_driver_first: bool,
 }
 
 impl SetupOptions {
@@ -105,7 +106,7 @@ impl SetupOptions {
             max_spaces: None,
             cua_bin: None,
             allow_any_address: false,
-            download_first: false,
+            install_driver_first: false,
         }
     }
 
@@ -128,7 +129,7 @@ impl SetupOptions {
             max_spaces: None,
             cua_bin: None,
             allow_any_address: false,
-            download_first: false,
+            install_driver_first: false,
         }
     }
 }
@@ -1009,7 +1010,7 @@ impl Host {
             mesh: mesh_env(),
             ..Default::default()
         };
-        if opts.download_first {
+        if opts.install_driver_first {
             *stage = SetupStage::Download;
             install_driver(opts.driver_bin.as_deref(), &config.driver_bin).await?;
         }
@@ -1085,7 +1086,7 @@ impl Host {
                 write_json(&self.paths.policy(), &policy)?;
             }
         }
-        if !opts.download_first {
+        if !opts.install_driver_first {
             *stage = SetupStage::Download;
             install_driver(opts.driver_bin.as_deref(), &config.driver_bin).await?;
         }
@@ -1738,17 +1739,11 @@ pub fn owned_by(policy: &HostPolicy, account: &str) -> bool {
             .is_some_and(|e| e.eq_ignore_ascii_case(account))
 }
 
-/// Locates (or downloads) cua-spacesd and installs it at `dest`.
+/// Locates cua-spacesd and installs it at `dest`.
 async fn install_driver(explicit: Option<&Path>, dest: &Path) -> Result<()> {
     let source = driver::locate(explicit)?;
-    match &source {
-        DriverSource::Download(url) => tracing::info!(%url, "downloading cua-spacesd"),
-        DriverSource::Release { version, url, .. } => {
-            tracing::info!(%version, %url, "downloading cua-spacesd")
-        }
-        DriverSource::Local(_) => {}
-    }
-    driver::install_to(&source, dest).await
+    tracing::info!(path = %source.display(), "installing cua-spacesd");
+    driver::install_to(&source, dest)
 }
 
 /// `remove_dir_all`, retried for up to 5 s: Windows releases a stopped

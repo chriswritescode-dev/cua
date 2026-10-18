@@ -13,7 +13,7 @@ description: "The agent skill pack, signed extensions and the perception parser.
 | Command | Description |
 | --- | --- |
 | [`cua-driver skills`](#cua-driver-skills) | Install, update, inspect, or remove the optional agent skill pack. |
-| [`cua-driver skills install`](#cua-driver-skills-install) | Fetch the versioned skill pack and link detected agents. |
+| [`cua-driver skills install`](#cua-driver-skills-install) | Stage the bundled skill pack and link detected agents. |
 | [`cua-driver skills update`](#cua-driver-skills-update) | Refresh the local skill pack and links. |
 | [`cua-driver skills uninstall`](#cua-driver-skills-uninstall) | Remove agent skill links. |
 | [`cua-driver skills status`](#cua-driver-skills-status) | Report local skill-pack and per-agent link state. |
@@ -53,7 +53,9 @@ cua-driver skills
 
 ### `cua-driver skills install`
 
-Fetch the versioned skill pack and link detected agents.
+Stage the bundled skill pack and link detected agents.
+
+Reads the pack built beside the executable.
 
 ```text output
 cua-driver skills install [OPTIONS]
@@ -61,25 +63,21 @@ cua-driver skills install [OPTIONS]
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
-| <span id="cua-driver-skills-install--from"></span>`--from` | string |  | Fetch from the main branch instead of the tagged release. Only `main` is accepted; write it as `--from=main`. |
 | <span id="cua-driver-skills-install--all-platforms"></span>`--all-platforms` | boolean | `false` | Keep platform-specific skill files for every platform. |
-| <span id="cua-driver-skills-install--force"></span>`--force` | boolean | `false` | Re-fetch the skill pack even when the local copy is current. |
+| <span id="cua-driver-skills-install--force"></span>`--force` | boolean | `false` | Re-stage the skill pack even when the local copy is current. |
 
 **Examples**
 
 ```bash test="cli-shape" id="ref-cua-driver-skills-install"
 # Install the skill pack and link detected agents
 cua-driver skills install
-
-# Install the latest skill pack from main
-cua-driver skills install --from=main
 ```
 
 ### `cua-driver skills update`
 
 Refresh the local skill pack and links.
 
-Always re-fetches; takes the same options as install.
+Always re-stages from the bundled copy; takes the same options as install.
 
 ```text output
 cua-driver skills update [OPTIONS]
@@ -87,7 +85,6 @@ cua-driver skills update [OPTIONS]
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
-| <span id="cua-driver-skills-update--from"></span>`--from` | string |  | Fetch from the main branch instead of the tagged release. Only `main` is accepted; write it as `--from=main`. |
 | <span id="cua-driver-skills-update--all-platforms"></span>`--all-platforms` | boolean | `false` | Keep platform-specific skill files for every platform. |
 
 **Examples**
@@ -396,6 +393,6 @@ cua-driver perception parse --image screen.png --capture capture.json --json
 | Code | Meaning |
 | --- | --- |
 | `0` | Success. |
-| `1` | Failure: the daemon is not running or is incompatible, a tool call returned an error, or the operation failed. `call` and direct tool invocations exit with the daemon's result code (1 on a tool error); `update --apply` passes through the installer's status. |
-| `2` | Invalid input: tool arguments that are not valid JSON, an unknown `mcp-config` client, or an `update --apply` refused on a local development install. |
+| `1` | Failure: the daemon is not running or is incompatible, a tool call returned an error, or the operation failed. `call` and direct tool invocations exit with the daemon's result code (1 on a tool error); `check-update` and `update` exit 1 when the release check itself fails. |
+| `2` | Invalid input: tool arguments that are not valid JSON, an unknown `mcp-config` client, or an `update` invocation with `--apply`, which is refused because installing release builds is disabled. |
 | `64` | Usage error: an unknown or missing subcommand or argument, or conflicting flags (for example `revoke` without exactly one of `--session` or `--all`, or an authorization flag passed to `mcp`). |

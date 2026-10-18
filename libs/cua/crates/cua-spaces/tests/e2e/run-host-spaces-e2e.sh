@@ -71,7 +71,7 @@ as() {
     local home="$1"
     shift
     env HOME="$WORK/home" CUA_HOME="$home" CUA_CREDENTIAL_STORE=file \
-        CUA_TELEMETRY_ENABLED=false CUA_RELAY_URL="$RELAY" CUA_DAEMON_AUTOSTART=0 "$@"
+        CUA_RELAY_URL="$RELAY" CUA_DAEMON_AUTOSTART=0 "$@"
 }
 
 cleanup() {

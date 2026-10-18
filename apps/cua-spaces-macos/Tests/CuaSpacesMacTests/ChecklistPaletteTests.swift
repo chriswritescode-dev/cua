@@ -11,16 +11,10 @@ import Testing
 /// command palette: the core's decisions, the React UI's keys.
 @MainActor
 struct ChecklistPaletteTests {
-    private func steps(_ t: FixtureTelemetry) -> [String] {
-        t.recorded.compactMap { if case let .step(step, _) = $0 { return step } else { return nil } }
-    }
-
     @Test func checklistStepsCountOnceAndAreKeptBetweenLaunches() throws {
         let path = FileManager.default.temporaryDirectory
             .appendingPathComponent("cua-checklist-\(UUID().uuidString)/checklist.json").path
-        let telemetry = FixtureTelemetry()
         let checklist = ChecklistModel(path: path)
-        checklist.telemetry = telemetry
         #expect(checklist.view.visible)
         #expect(checklist.view.progress == "0 of 5")
 
@@ -29,7 +23,6 @@ struct ChecklistPaletteTests {
         checklist.done(.share)
         checklist.done(.share)
         checklist.send(.observe(otherMachine: false, hasSpace: true, agentRan: false))
-        #expect(steps(telemetry) == ["checklist_shown", "checklist_share", "checklist_create_space"])
         #expect(checklist.view.progress == "2 of 5")
 
         let again = ChecklistModel(path: path)
@@ -42,11 +35,8 @@ struct ChecklistPaletteTests {
     }
 
     @Test func theLastStepCompletesIt() {
-        let telemetry = FixtureTelemetry()
         let checklist = ChecklistModel(path: nil)
-        checklist.telemetry = telemetry
         for step in [AppChecklistStep.addMachine, .createSpace, .teleport, .share, .runAgent] { checklist.done(step) }
-        #expect(steps(telemetry).last == "checklist_completed")
         #expect(checklist.view.complete)
         #expect(checklist.view.title == "You're set up")
     }
@@ -83,7 +73,7 @@ struct ChecklistPaletteTests {
         let m = AppModel(backend: FixtureSpacesBackend(), keyvault: KeyvaultModel(client: nil),
                          onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
                          settingsPath: dir.appendingPathComponent("settings.json").path,
-                         telemetry: FixtureTelemetry(), devices: FixtureDevices())
+                         devices: FixtureDevices())
         await m.refresh()
         m.devices.signedIn = true
         await m.devices.refresh()
@@ -158,15 +148,12 @@ struct ChecklistPaletteTests {
         #expect(m.checklist.state.done.contains(.teleport))
         #expect(m.checklist.view.progress == "\(words.count + 1) of 5")
         // What the page kept itself before is merged once, without events.
-        let telemetry = FixtureTelemetry()
-        m.checklist.telemetry = telemetry
         let merged = try await bridge.handle("checklist.send", ["action": [
             "type": "merge", "state": ["done": ["share", "nope"], "dismissed": false, "shown": true],
         ]]) as? [String: Any]
         let after = ((merged?["state"] as? [String: Any])?["done"] as? [String]) ?? []
         #expect(after.contains("share") && !after.contains("nope"))
         #expect(m.checklist.state.shown)
-        #expect(telemetry.recorded.isEmpty)
         // The page never sends what the app shows.
         await #expect(throws: WebUIBridge.Failure.self) {
             _ = try await bridge.handle("checklist.send", ["action": ["type": "observe", "otherMachine": true]])

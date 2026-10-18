@@ -19,15 +19,6 @@ import type { SpaceKind, SpaceOs } from "./spaces";
 /** A page (`OnboardingStep`), in the core's order. */
 export type OnboardingStep = "welcome" | "signin" | "agents" | "presentation" | "drive" | "mode" | "done";
 
-/** `TelemetryInput`: the machine's setting, and what decides it when not the user. */
-export interface OnboardingTelemetry {
-  enabled: boolean;
-  lockedBy?: string | null;
-  /** The usage notice was already shown on this machine (Welcome then
-   * counts the run as it shows, not when it is left). */
-  noticeShown?: boolean;
-}
-
 /**
  * `OnboardingState`. The UI never edits it: it sends actions through the
  * core's reducer and keeps the result (saved, so the flow resumes). The
@@ -39,9 +30,6 @@ export interface OnboardingFlowState {
   mode?: OnboardingMode | null;
   installerMode?: OnboardingMode | null;
   menuBar: boolean;
-  telemetry?: OnboardingTelemetry | null;
-  /** The run's start (`onboarding_shown`) was counted. */
-  runCounted?: boolean;
   [field: string]: unknown;
 }
 
@@ -55,12 +43,8 @@ export type OnboardingAction =
   | { type: "presentation-done" }
   | { type: "mode-chosen"; mode: OnboardingMode }
   | { type: "back" }
-  | { type: "telemetry-loaded"; telemetry: OnboardingTelemetry }
-  | { type: "usage-data-toggled"; on: boolean }
   /** Done's "Launch at login" checkbox. */
   | { type: "launch-at-login-toggled"; on: boolean }
-  /** Welcome is on screen (after `telemetry-loaded`). */
-  | { type: "welcome-shown" }
   // The Cua Volume page (`volume.ts` sends these for the host's answers).
   | { type: "experiments-loaded"; experiments: Experiments }
   | { type: "drive-checked"; os: SpaceOs; status: DriveMountInput | null }
@@ -104,16 +88,6 @@ export interface PresentationCard {
   selected: boolean;
 }
 
-/** Welcome's "Share anonymous usage data" switch. */
-export interface OnboardingUsage {
-  label: string;
-  on: boolean;
-  /** False while the environment decides (`DO_NOT_TRACK`, CI). */
-  enabled: boolean;
-  /** Why it cannot change ("Set by env DO_NOT_TRACK"). */
-  help?: string | null;
-}
-
 /** `OnboardingView`: the page as drawn. */
 export interface OnboardingView {
   step: OnboardingStep;
@@ -129,10 +103,6 @@ export interface OnboardingView {
   choices: OnboardingModeChoice[];
   /** The Menu bar page's cards (on its page only). */
   presentations?: PresentationCard[];
-  notice?: string | null;
-  noticeLinkLabel?: string | null;
-  noticeLinkUrl?: string | null;
-  usage?: OnboardingUsage | null;
   /** The Cua Volume page's card (on its page only). */
   drive?: DriveCard | null;
   /** Done's example prompts, one line each (on Done only). */

@@ -1022,7 +1022,7 @@ fn host_error(e: cua_host::Error, m: String) -> CuaError {
         E::Unauthenticated(_) => CuaError::Unauthenticated(m),
         E::PermissionDenied(_) => CuaError::PermissionDenied(m),
         E::NotFound(_) => CuaError::NotFound(m),
-        E::Relay(_) | E::Download(_) => CuaError::Http(m),
+        E::Relay(_) => CuaError::Http(m),
         E::Service(_) => CuaError::Runtime(m),
         E::Io(_) | E::Internal(_) => CuaError::Internal(m),
     }
@@ -1326,8 +1326,8 @@ pub async fn run_host(
                 None => SetupOptions::relay(relay.unwrap_or_else(cua_host::relay_url_from_env)),
             };
             // The code is single use: install the driver first, so a failed
-            // download does not spend it.
-            opts.download_first = pair.is_some();
+            // install does not spend it.
+            opts.install_driver_first = pair.is_some();
             opts.name = name;
             opts.allow = allow;
             opts.driver_bin = driver_bin;

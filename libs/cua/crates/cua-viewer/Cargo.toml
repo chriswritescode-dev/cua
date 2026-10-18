@@ -14,8 +14,6 @@ path = "src/main.rs"
 
 [dependencies]
 cua-logging = { path = "../cua-logging" }
-# Anonymous `cua_stream_stats` on window close (every opt-out applies).
-cua-telemetry = { path = "../cua-telemetry" }
 cua-media-protocol = { path = "../cua-media-protocol" }
 cua-media-transport = { path = "../cua-media-transport", features = ["quic"] }
 cua-media-codec = { path = "../cua-media-codec", default-features = false, features = ["opus"] }

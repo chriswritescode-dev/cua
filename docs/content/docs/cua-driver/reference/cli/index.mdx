@@ -93,7 +93,7 @@ The encrypted, metadata-only Computer History preview. [Reference](/cua-driver/r
 
 ### Configuration
 
-Driver configuration, telemetry, cursor themes and cursor motion. [Reference](/cua-driver/reference/cli/config).
+Driver configuration, cursor themes and cursor motion. [Reference](/cua-driver/reference/cli/config).
 
 | Command | Description |
 | --- | --- |
@@ -102,12 +102,6 @@ Driver configuration, telemetry, cursor themes and cursor motion. [Reference](/c
 | <span id="cua-driver-config-get"></span>[`cua-driver config get`](/cua-driver/reference/cli/config#cua-driver-config-get) | Print one config key. |
 | <span id="cua-driver-config-set"></span>[`cua-driver config set`](/cua-driver/reference/cli/config#cua-driver-config-set) | Set one config key. |
 | <span id="cua-driver-config-reset"></span>[`cua-driver config reset`](/cua-driver/reference/cli/config#cua-driver-config-reset) | Reset config to defaults. |
-| <span id="cua-driver-telemetry"></span>[`cua-driver telemetry`](/cua-driver/reference/cli/config#cua-driver-telemetry) | Inspect or change content-free product telemetry. |
-| <span id="cua-driver-telemetry-enable"></span>[`cua-driver telemetry enable`](/cua-driver/reference/cli/config#cua-driver-telemetry-enable) | Persistently enable telemetry. |
-| <span id="cua-driver-telemetry-disable"></span>[`cua-driver telemetry disable`](/cua-driver/reference/cli/config#cua-driver-telemetry-disable) | Persistently disable every telemetry request. |
-| <span id="cua-driver-telemetry-status"></span>[`cua-driver telemetry status`](/cua-driver/reference/cli/config#cua-driver-telemetry-status) | Show the effective setting and redacted identity state. |
-| <span id="cua-driver-telemetry-reset-id"></span>[`cua-driver telemetry reset-id`](/cua-driver/reference/cli/config#cua-driver-telemetry-reset-id) | Erase the installation ID and event markers. |
-| <span id="cua-driver-telemetry-inspect"></span>[`cua-driver telemetry inspect`](/cua-driver/reference/cli/config#cua-driver-telemetry-inspect) | Build a fixed event payload without sending it. |
 | <span id="cua-driver-cursor-theme"></span>[`cua-driver cursor-theme`](/cua-driver/reference/cli/config#cua-driver-cursor-theme) | Validate, compile, inspect, preview, install, or remove a local cursor theme. |
 | <span id="cua-driver-cursor-theme-validate"></span>[`cua-driver cursor-theme validate`](/cua-driver/reference/cli/config#cua-driver-cursor-theme-validate) | Validate a bounded dotLottie source archive. |
 | <span id="cua-driver-cursor-theme-build"></span>[`cua-driver cursor-theme build`](/cua-driver/reference/cli/config#cua-driver-cursor-theme-build) | Compile a validated dotLottie archive into a bounded .cua-theme artifact. |
@@ -126,7 +120,7 @@ The agent skill pack, signed extensions and the perception parser. [Reference](/
 | Command | Description |
 | --- | --- |
 | <span id="cua-driver-skills"></span>[`cua-driver skills`](/cua-driver/reference/cli/extensions#cua-driver-skills) | Install, update, inspect, or remove the optional agent skill pack. |
-| <span id="cua-driver-skills-install"></span>[`cua-driver skills install`](/cua-driver/reference/cli/extensions#cua-driver-skills-install) | Fetch the versioned skill pack and link detected agents. |
+| <span id="cua-driver-skills-install"></span>[`cua-driver skills install`](/cua-driver/reference/cli/extensions#cua-driver-skills-install) | Stage the bundled skill pack and link detected agents. |
 | <span id="cua-driver-skills-update"></span>[`cua-driver skills update`](/cua-driver/reference/cli/extensions#cua-driver-skills-update) | Refresh the local skill pack and links. |
 | <span id="cua-driver-skills-uninstall"></span>[`cua-driver skills uninstall`](/cua-driver/reference/cli/extensions#cua-driver-skills-uninstall) | Remove agent skill links. |
 | <span id="cua-driver-skills-status"></span>[`cua-driver skills status`](/cua-driver/reference/cli/extensions#cua-driver-skills-status) | Report local skill-pack and per-agent link state. |
@@ -145,12 +139,12 @@ The agent skill pack, signed extensions and the perception parser. [Reference](/
 
 ### Updates
 
-Check for and apply updates, and choose the release channel. [Reference](/cua-driver/reference/cli/updates).
+Check for newer releases and choose the release channel. [Reference](/cua-driver/reference/cli/updates).
 
 | Command | Description |
 | --- | --- |
 | <span id="cua-driver-check-update"></span>[`cua-driver check-update`](/cua-driver/reference/cli/updates#cua-driver-check-update) | Check whether a newer cua-driver release is available. |
-| <span id="cua-driver-update"></span>[`cua-driver update`](/cua-driver/reference/cli/updates#cua-driver-update) | Check for an update and optionally apply it. |
+| <span id="cua-driver-update"></span>[`cua-driver update`](/cua-driver/reference/cli/updates#cua-driver-update) | Check for an update and print the rebuild instruction. |
 | <span id="cua-driver-channel"></span>[`cua-driver channel`](/cua-driver/reference/cli/updates#cua-driver-channel) | Inspect or change the stable/nightly update channel. |
 | <span id="cua-driver-channel-status"></span>[`cua-driver channel status`](/cua-driver/reference/cli/updates#cua-driver-channel-status) | Show selected and current release channels. |
 | <span id="cua-driver-channel-set"></span>[`cua-driver channel set`](/cua-driver/reference/cli/updates#cua-driver-channel-set) | Save stable or nightly as the update channel. |
@@ -164,6 +158,6 @@ Check for and apply updates, and choose the release channel. [Reference](/cua-dr
 | Code | Meaning |
 | --- | --- |
 | `0` | Success. |
-| `1` | Failure: the daemon is not running or is incompatible, a tool call returned an error, or the operation failed. `call` and direct tool invocations exit with the daemon's result code (1 on a tool error); `update --apply` passes through the installer's status. |
-| `2` | Invalid input: tool arguments that are not valid JSON, an unknown `mcp-config` client, or an `update --apply` refused on a local development install. |
+| `1` | Failure: the daemon is not running or is incompatible, a tool call returned an error, or the operation failed. `call` and direct tool invocations exit with the daemon's result code (1 on a tool error); `check-update` and `update` exit 1 when the release check itself fails. |
+| `2` | Invalid input: tool arguments that are not valid JSON, an unknown `mcp-config` client, or an `update` invocation with `--apply`, which is refused because installing release builds is disabled. |
 | `64` | Usage error: an unknown or missing subcommand or argument, or conflicting flags (for example `revoke` without exactly one of `--session` or `--all`, or an authorization flag passed to `mcp`). |

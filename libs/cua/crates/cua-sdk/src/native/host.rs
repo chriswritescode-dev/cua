@@ -16,7 +16,7 @@ impl From<cua_host::Error> for CuaError {
             E::Unauthenticated(_) => CuaError::Unauthenticated(m),
             E::PermissionDenied(_) => CuaError::PermissionDenied(m),
             E::NotFound(_) => CuaError::NotFound(m),
-            E::Relay(_) | E::Download(_) => CuaError::Http(m),
+            E::Relay(_) => CuaError::Http(m),
             E::Service(_) => CuaError::Runtime(m),
             E::Io(_) | E::Internal(_) => CuaError::Internal(m),
         }
@@ -115,7 +115,8 @@ pub struct PairingCode {
     /// `https://cua.ai/add/<code>` (the link and the QR code): only
     /// when just made.
     pub url: Option<String>,
-    /// `curl … | sh -s -- --pair <code>` (macOS, Linux): only when just made.
+    /// The sh one-liner that builds `cua` from the repository and pairs
+    /// (macOS, Linux): only when just made.
     pub install_sh: Option<String>,
     /// The PowerShell one-liner (Windows): only when just made.
     pub install_powershell: Option<String>,
@@ -223,7 +224,7 @@ impl Relay {
             let o = cua_spacesd_client::ConnectOptions::parse(&url)?
                 .fleet_gateway(Arc::new(cua_spacesd_client::StaticBearer(token)), None);
             let client = cua_spacesd_client::SpacesdClient::connect(o).await?;
-            Ok(Arc::new(SpacesdClient::new(client, vec![]).at("relay")))
+            Ok(Arc::new(SpacesdClient::new(client, vec![])))
         })
         .await
     }
@@ -491,25 +492,6 @@ impl From<cua_host::HostStatus> for HostStatus {
     }
 }
 
-/// What host setup's usage data says about the account token: `provided`,
-/// `expired` (its `exp` is past: the app passed a stale token), `missing`
-/// (relay mode with none), `not_needed` (direct mode). Never the token.
-pub(crate) fn setup_token_state(mode: &str, token: Option<&str>) -> &'static str {
-    if mode.trim().eq_ignore_ascii_case("direct") {
-        return "not_needed";
-    }
-    let Some(token) = token.filter(|t| !t.trim().is_empty()) else {
-        return "missing";
-    };
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs());
-    match cua_auth::jwt_claims(token).and_then(|c| c["exp"].as_u64()) {
-        Some(exp) if exp <= now => "expired",
-        _ => "provided",
-    }
-}
-
 /// Converts binding options to cua-host options.
 pub(crate) fn setup_options(o: HostSetupOptions) -> Result<cua_host::SetupOptions> {
     let mut opts = match o.mode.as_deref().unwrap_or("relay") {
@@ -578,15 +560,9 @@ impl Host {
         account_token: Option<String>,
     ) -> Result<HostStatus> {
         let home = self.home.clone();
-        let mode = options.mode.clone().unwrap_or_else(|| "relay".into());
         let opts = setup_options(options);
-        let (desktop, provide) = opts
-            .as_ref()
-            .map(|o| (o.share_desktop, o.provide_spaces))
-            .unwrap_or((true, false));
         let account_token = account_token.filter(|t| !t.trim().is_empty());
-        let token_state = setup_token_state(&mode, account_token.as_deref());
-        let (r, failed_stage, http_status) = match opts {
+        match opts {
             Ok(opts) => {
                 let staged = run(async move {
                     let host = cua_host::Host::new(home);
@@ -598,39 +574,13 @@ impl Host {
                 })
                 .await;
                 match staged {
-                    Ok(Ok(status)) => (Ok(status.into()), None, None),
-                    Ok(Err((stage, e))) => {
-                        let status = e.http_status();
-                        (Err(e.into()), Some(stage.as_str()), status)
-                    }
-                    Err(e) => (Err(e), Some("preflight"), None),
+                    Ok(Ok(status)) => Ok(status.into()),
+                    Ok(Err((_stage, e))) => Err(e.into()),
+                    Err(e) => Err(e),
                 }
             }
-            Err(e) => (Err(e), Some("preflight"), None),
-        };
-        // Host Spaces adoption: the mode and what the machine is for,
-        // never its name, address or who it is shared with. A failure says
-        // where it stopped, whether an account token was there (never the
-        // token) and the HTTP status a server answered with.
-        cua_telemetry::capture(cua_telemetry::events::host_setup(
-            &mode,
-            desktop,
-            provide,
-            if r.is_ok() {
-                cua_telemetry::Outcome::Ok
-            } else {
-                cua_telemetry::Outcome::Error
-            },
-            super::telemetry::variant(&r),
-            &cua_telemetry::events::HostSetupDetail {
-                signed_in: token_state != "missing" && token_state != "not_needed"
-                    || cua_auth::may_have_session(),
-                token_state,
-                failed_stage,
-                http_status,
-            },
-        ));
-        r
+            Err(e) => Err(e),
+        }
     }
 
     /// Changes what this machine shares: its own desktop, and whether it
@@ -1066,26 +1016,6 @@ impl Devices {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn setup_reports_whether_it_had_a_token_never_the_token() {
-        use base64::Engine;
-        let jwt = |exp: u64| {
-            let claims = base64::engine::general_purpose::URL_SAFE_NO_PAD
-                .encode(format!(r#"{{"sub":"u","exp":{exp}}}"#));
-            format!("h.{claims}.s")
-        };
-        assert_eq!(setup_token_state("relay", None), "missing");
-        assert_eq!(setup_token_state("relay", Some("  ")), "missing");
-        assert_eq!(setup_token_state("relay", Some(&jwt(1))), "expired");
-        assert_eq!(
-            setup_token_state("relay", Some(&jwt(u64::MAX / 2))),
-            "provided"
-        );
-        // Opaque tokens are taken as given.
-        assert_eq!(setup_token_state("relay", Some("opaque")), "provided");
-        assert_eq!(setup_token_state("Direct", None), "not_needed");
-    }
 
     /// A relay setup with no account token stops before the relay with
     /// `Unauthenticated` (what 0.3.0/0.3.1 sent when the app's token read

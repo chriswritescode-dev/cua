@@ -12,8 +12,6 @@ import {
   type ShareSheetAction,
 } from '../model/share';
 import type { ShareBridge } from '../native/share';
-import { featureSignals, shareSignals } from '../model/telemetry';
-import { telemetryBridge } from '../native/telemetry';
 import { SmallSheet } from './Devices';
 
 function message(error: unknown): string {
@@ -40,8 +38,6 @@ export function ShareSheet({
   onClose: () => void;
 }) {
   const [shares, setShares] = useState<ShareEntryInput[]>([]);
-  // Sharing adoption: the sheet was opened.
-  useEffect(() => telemetryBridge().recordSignals(featureSignals('share_open')), []);
   const [state, setState] = useState(shareInitial);
   const input: ShareInput = { spaceId, spaceName, shares, signedIn, shareable };
   const v = shareView(input, state);
@@ -68,12 +64,9 @@ export function ShareSheet({
             ? await bridge.share(request.space, request.who, request.role)
             : await bridge.unshare(request.space, request.who);
         setShares(r.shares);
-        // Shared (view-only or not), unshared or a role changed: never who.
-        telemetryBridge().recordSignals(shareSignals(input, next, { type: 'done' }));
         setState((s) => reduceShare({ ...input, shares: r.shares }, s, { type: 'done' }));
       } catch (e) {
         const failed: ShareSheetAction = { type: 'failed', error: message(e) };
-        telemetryBridge().recordSignals(shareSignals(input, next, failed));
         setState((s) => reduceShare(input, s, failed));
       }
     },

@@ -1055,118 +1055,6 @@
    ]
   },
   {
-   "abstract": "Inspect or change content-free product telemetry.",
-   "arguments": [],
-   "discussion": "Telemetry is default-on. Disable retains the pseudonymous installation ID; reset-id erases the ID and event markers while preserving the preference.",
-   "examples": [
-    {
-     "command": "cua-driver telemetry status",
-     "description": "Show the effective telemetry setting"
-    }
-   ],
-   "flags": [],
-   "name": "telemetry",
-   "options": [],
-   "subcommands": [
-    {
-     "abstract": "Persistently enable telemetry.",
-     "arguments": [],
-     "discussion": "",
-     "examples": [
-      {
-       "command": "cua-driver telemetry enable",
-       "description": "Enable telemetry"
-      }
-     ],
-     "flags": [],
-     "name": "enable",
-     "options": [],
-     "subcommands": []
-    },
-    {
-     "abstract": "Persistently disable every telemetry request.",
-     "arguments": [],
-     "discussion": "Retains the local installation ID.",
-     "examples": [
-      {
-       "command": "cua-driver telemetry disable",
-       "description": "Disable every telemetry request"
-      }
-     ],
-     "flags": [],
-     "name": "disable",
-     "options": [],
-     "subcommands": []
-    },
-    {
-     "abstract": "Show the effective setting and redacted identity state.",
-     "arguments": [],
-     "discussion": "",
-     "examples": [
-      {
-       "command": "cua-driver telemetry status --json",
-       "description": "Show the setting as JSON"
-      }
-     ],
-     "flags": [
-      {
-       "default_value": false,
-       "help": "Emit JSON.",
-       "name": "json",
-       "short_name": null
-      }
-     ],
-     "name": "status",
-     "options": [],
-     "subcommands": []
-    },
-    {
-     "abstract": "Erase the installation ID and event markers.",
-     "arguments": [],
-     "discussion": "The persisted enabled/disabled preference is retained.",
-     "examples": [
-      {
-       "command": "cua-driver telemetry reset-id",
-       "description": "Erase the installation ID"
-      }
-     ],
-     "flags": [],
-     "name": "reset-id",
-     "options": [],
-     "subcommands": []
-    },
-    {
-     "abstract": "Build a fixed event payload without sending it.",
-     "arguments": [
-      {
-       "help": "Fixed telemetry event name.",
-       "is_optional": false,
-       "name": "event",
-       "type": "String"
-      }
-     ],
-     "discussion": "The distinct ID is replaced with a redacted placeholder.",
-     "examples": [
-      {
-       "command": "cua-driver telemetry inspect cua_driver_cli_completed --json",
-       "description": "Show the payload of one event without sending it"
-      }
-     ],
-     "flags": [
-      {
-       "default_value": false,
-       "help": "Emit JSON (the only output format; pass it for forward compatibility).",
-       "name": "json",
-       "short_name": null
-      }
-     ],
-     "name": "inspect",
-     "options": [],
-     "subcommands": []
-    }
-   ]
-  },
-  {
    "abstract": "Check whether a newer cua-driver release is available.",
    "arguments": [],
    "discussion": "Read-only. Uses the same update-state payload as the check_for_update MCP tool.",
@@ -1199,26 +1087,16 @@
    "subcommands": []
   },
   {
-   "abstract": "Check for an update and optionally apply it.",
+   "abstract": "Check for an update and print the rebuild instruction.",
    "arguments": [],
-   "discussion": "The apply path delegates to the canonical platform installer scripts.",
+   "discussion": "Installing release builds is disabled; update by pulling the repository and rebuilding.",
    "examples": [
     {
      "command": "cua-driver update",
-     "description": "Check and print the install command"
-    },
-    {
-     "command": "cua-driver update --apply",
-     "description": "Install the latest release"
+     "description": "Check and print the rebuild instruction"
     }
    ],
    "flags": [
-    {
-     "default_value": false,
-     "help": "Download and install the latest release when one is available.",
-     "name": "apply",
-     "short_name": null
-    },
     {
      "default_value": false,
      "help": "Emit the structured update-state payload.",
@@ -1234,7 +1112,7 @@
    "abstract": "Inspect or change the stable/nightly update channel.",
    "arguments": [],
    "default_subcommand": "status",
-   "discussion": "Selection is persistent but never installs by itself; use cua-driver update --apply after changing it.",
+   "discussion": "Selection is persistent and affects which releases are reported; rebuild from a repository checkout to switch binaries.",
    "examples": [
     {
      "command": "cua-driver channel",
@@ -1281,7 +1159,7 @@
      "examples": [
       {
        "command": "cua-driver channel set nightly",
-       "description": "Follow nightly builds (then run update --apply)"
+       "description": "Follow nightly builds (then rebuild from the repository)"
       }
      ],
      "flags": [
@@ -1431,17 +1309,13 @@
    "options": [],
    "subcommands": [
     {
-     "abstract": "Fetch the versioned skill pack and link detected agents.",
+     "abstract": "Stage the bundled skill pack and link detected agents.",
      "arguments": [],
-     "discussion": "",
+     "discussion": "Reads the pack built beside the executable.",
      "examples": [
       {
        "command": "cua-driver skills install",
        "description": "Install the skill pack and link detected agents"
-      },
-      {
-       "command": "cua-driver skills install --from=main",
-       "description": "Install the latest skill pack from main"
       }
      ],
      "flags": [
@@ -1453,28 +1327,19 @@
       },
       {
        "default_value": false,
-       "help": "Re-fetch the skill pack even when the local copy is current.",
+       "help": "Re-stage the skill pack even when the local copy is current.",
        "name": "force",
        "short_name": null
       }
      ],
      "name": "install",
-     "options": [
-      {
-       "default_value": null,
-       "help": "Fetch from the main branch instead of the tagged release. Only `main` is accepted; write it as `--from=main`.",
-       "is_optional": true,
-       "name": "from",
-       "short_name": null,
-       "type": "String"
-      }
-     ],
+     "options": [],
      "subcommands": []
     },
     {
      "abstract": "Refresh the local skill pack and links.",
      "arguments": [],
-     "discussion": "Always re-fetches; takes the same options as install.",
+     "discussion": "Always re-stages from the bundled copy; takes the same options as install.",
      "examples": [
       {
        "command": "cua-driver skills update",
@@ -1490,16 +1355,7 @@
       }
      ],
      "name": "update",
-     "options": [
-      {
-       "default_value": null,
-       "help": "Fetch from the main branch instead of the tagged release. Only `main` is accepted; write it as `--from=main`.",
-       "is_optional": true,
-       "name": "from",
-       "short_name": null,
-       "type": "String"
-      }
-     ],
+     "options": [],
      "subcommands": []
     },
     {
@@ -2260,11 +2116,11 @@
   },
   {
    "code": 1,
-   "meaning": "Failure: the daemon is not running or is incompatible, a tool call returned an error, or the operation failed. `call` and direct tool invocations exit with the daemon's result code (1 on a tool error); `update --apply` passes through the installer's status."
+   "meaning": "Failure: the daemon is not running or is incompatible, a tool call returned an error, or the operation failed. `call` and direct tool invocations exit with the daemon's result code (1 on a tool error); `check-update` and `update` exit 1 when the release check itself fails."
   },
   {
    "code": 2,
-   "meaning": "Invalid input: tool arguments that are not valid JSON, an unknown `mcp-config` client, or an `update --apply` refused on a local development install."
+   "meaning": "Invalid input: tool arguments that are not valid JSON, an unknown `mcp-config` client, or an `update` invocation with `--apply`, which is refused because installing release builds is disabled."
   },
   {
    "code": 64,

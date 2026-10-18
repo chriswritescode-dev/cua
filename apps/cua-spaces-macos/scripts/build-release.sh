@@ -17,9 +17,12 @@
 #   Contents/MacOS/cua                     com.trycua.cua, Support/cua.entitlements
 #   Cua Spaces.app                         com.trycua.spaces.macos, Support/CuaSpacesMac.entitlements
 #
-#   scripts/build-release.sh --version 0.2.0[-suffix] [--build-number N]
+#   scripts/build-release.sh [--version 0.2.0[-suffix]] [--build-number N]
 #       [--arch universal|arm64|x86_64] [--sign IDENTITY] [--out DIR]
 #       [--feed-url URL] [--channel stable|beta] [--skip-cargo]
+#
+# Without --version it builds the repository's VERSION, so a local rebuild is
+# just `scripts/build-release.sh`.
 #
 # --channel beta builds the beta channel: it talks to Cua staging by default
 # (Info.plist CuaEnv=staging, and the bundled cua is compiled with
@@ -79,6 +82,7 @@ done
 # CFBundleShortVersionString is X.Y.Z (numbers only); a prerelease suffix
 # (0.2.0-staging.4) goes in CuaVersion. CFBundleVersion is X.Y.Z plus the
 # build number when there is one (the release workflow's run number).
+version="${version:-$(tr -d '[:space:]' <"$here/VERSION")}"
 if [[ ! "$version" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z.-]+)?$ ]]; then
   echo "--version must look like 1.2.3 or 1.2.3-suffix" >&2
   exit 2

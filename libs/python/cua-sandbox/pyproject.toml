@@ -30,9 +30,6 @@ requires-python = ">=3.11,<3.14"
 dependencies = [
     # The cua SDK (Rust core, UniFFI): spacesd, Fleet sandboxes, local runtimes.
     "cua>=0.2.0",
-    # Telemetry only (imported optionally): 0.1.x is allowed so cua-sandbox
-    # co-installs with cua-computer 0.5 / cua-agent 0.7 based harnesses.
-    "cua-core>=0.1.18,<0.4.0",
     # Typed Fleet resource model (pool/template/claim builders) re-exported by
     # cua_sandbox; the cua SDK covers the data plane.
     "cua-fleet==0.1.17",

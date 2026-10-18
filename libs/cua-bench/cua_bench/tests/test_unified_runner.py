@@ -102,7 +102,6 @@ class FakeFleetSDK:
                 cpu=None,
                 memory_mb=None,
                 time_to_start=None,
-                telemetry_enabled=True,
                 warm=None,
                 max_pool_size=None,
                 claim_ttl=None,
@@ -224,7 +223,6 @@ class TestCloudAuth:
         monkeypatch.setattr(sandboxes, "cloud_auth_source", _raise_auth)
         monkeypatch.setattr(manager, "RUNS_FILE", tmp_path / "runs.json")
         monkeypatch.setenv("CUA_BENCH_NO_BANNER", "1")
-        monkeypatch.setenv("CUA_TELEMETRY_ENABLED", "false")
         task = tmp_path / "t"
         task.mkdir()
         (task / "main.py").write_text(TASK)

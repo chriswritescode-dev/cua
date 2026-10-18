@@ -1,6 +1,6 @@
 ---
 title: "Configuration"
-description: "Storage locations, the image cache and telemetry settings."
+description: "Storage locations and the image cache."
 ---
 
 {/*
@@ -23,11 +23,6 @@ description: "Storage locations, the image cache and telemetry settings."
 | [`lume config cache enable`](#lume-config-cache-enable) | Enable image caching. |
 | [`lume config cache disable`](#lume-config-cache-disable) | Disable image caching. |
 | [`lume config cache status`](#lume-config-cache-status) | Show cache status and directory. |
-| [`lume config telemetry`](#lume-config-telemetry) | Manage pseudonymous telemetry settings. |
-| [`lume config telemetry status`](#lume-config-telemetry-status) | Show current telemetry status. |
-| [`lume config telemetry enable`](#lume-config-telemetry-enable) | Enable pseudonymous telemetry. |
-| [`lume config telemetry disable`](#lume-config-telemetry-disable) | Disable pseudonymous telemetry. |
-| [`lume config telemetry reset-id`](#lume-config-telemetry-reset-id) | Delete the pseudonymous installation ID and registration markers. |
 | [`lume config registry`](#lume-config-registry) | Manage container registry settings. |
 | [`lume config registry status`](#lume-config-registry-status) | Show current registry configuration. |
 | [`lume config registry type`](#lume-config-registry-type) | Get or set registry type. |
@@ -206,70 +201,6 @@ lume config cache status
 
 ```bash test="cli-shape" id="ref-lume-config-cache-status"
 lume config cache status
-```
-
-## `lume config telemetry`
-
-Manage pseudonymous telemetry settings.
-
-```text output
-lume config telemetry <COMMAND>
-```
-
-### `lume config telemetry status`
-
-Show current telemetry status.
-
-```text output
-lume config telemetry status
-```
-
-**Examples**
-
-```bash test="cli-shape" id="ref-lume-config-telemetry-status"
-lume config telemetry status
-```
-
-### `lume config telemetry enable`
-
-Enable pseudonymous telemetry.
-
-```text output
-lume config telemetry enable
-```
-
-**Examples**
-
-```bash test="cli-shape" id="ref-lume-config-telemetry-enable"
-lume config telemetry enable
-```
-
-### `lume config telemetry disable`
-
-Disable pseudonymous telemetry.
-
-```text output
-lume config telemetry disable
-```
-
-**Examples**
-
-```bash test="cli-shape" id="ref-lume-config-telemetry-disable"
-lume config telemetry disable
-```
-
-### `lume config telemetry reset-id`
-
-Delete the pseudonymous installation ID and registration markers.
-
-```text output
-lume config telemetry reset-id
-```
-
-**Examples**
-
-```bash test="cli-shape" id="ref-lume-config-telemetry-reset-id"
-lume config telemetry reset-id
 ```
 
 ## `lume config registry`

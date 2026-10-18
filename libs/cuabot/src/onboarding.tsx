@@ -17,8 +17,6 @@ import {
   AgentId,
   getDefaultAgent,
   setDefaultAgent,
-  setTelemetryEnabled,
-  loadSettings,
   getAliasIgnored,
   setAliasIgnored,
 } from './settings.js';
@@ -238,52 +236,6 @@ function OptionSelector({
   );
 }
 
-function TelemetrySelector({ onSelect }: { onSelect: (enabled: boolean) => void }) {
-  // "No" is preselected: sharing is opt-in.
-  const [selectedIndex, setSelectedIndex] = useState(1);
-  const options = [
-    {
-      label: 'Yes, share my prompts and usage data with Cua',
-      description: 'Help improve computer-use technology',
-    },
-    { label: 'No, keep my prompts private', description: 'Nothing is sent' },
-  ];
-
-  useInput((input, key) => {
-    if (key.upArrow) {
-      setSelectedIndex((i) => (i > 0 ? i - 1 : options.length - 1));
-    } else if (key.downArrow) {
-      setSelectedIndex((i) => (i < options.length - 1 ? i + 1 : 0));
-    } else if (key.return) {
-      onSelect(selectedIndex === 0);
-    }
-  });
-
-  return (
-    <Box flexDirection="column" marginTop={1}>
-      <Text dimColor>Share prompts to help improve computer-use technology?</Text>
-      <Text dimColor>
-        If you choose Yes, cuabot sends to Cua (PostHog, EU) the full text of each prompt you type
-        into the Claude Code agent, plus anonymous usage events: which cuabot command or MCP tool
-        ran, click and scroll coordinates, timings and a random installation id. Prompts can contain
-        anything you type, including personal or confidential text. Text the agent types, key
-        presses, screenshots, file paths and session names are not sent. To choose again, run cuabot
-        --reset settings. CUABOT_TELEMETRY=false or DO_NOT_TRACK=1 also turns it off.
-      </Text>
-      <Box flexDirection="column" marginTop={1}>
-        {options.map((opt, index) => (
-          <Box key={index}>
-            <Text color={index === selectedIndex ? 'cyan' : undefined}>
-              {index === selectedIndex ? '❯ ' : '  '}
-              {opt.label}
-            </Text>
-          </Box>
-        ))}
-      </Box>
-    </Box>
-  );
-}
-
 function Onboarding() {
   const { exit } = useApp();
   const [checks, setChecks] = useState<Check[]>([
@@ -293,13 +245,11 @@ function Onboarding() {
     { label: 'Docker Image', status: 'loading', message: 'checking...' },
     { label: 'Xpra Client', status: 'loading', message: 'checking...' },
     { label: 'Playwright', status: 'loading', message: 'checking...' },
-    { label: 'Usage Telemetry', status: 'loading', message: 'checking...' },
   ]);
   const [pullingImage, setPullingImage] = useState(false);
   const [pullProgress, setPullProgress] = useState('');
   const [loading, setLoading] = useState(true);
   const [showAgentSelector, setShowAgentSelector] = useState(false);
-  const [showTelemetrySelector, setShowTelemetrySelector] = useState(false);
   const [firstError, setFirstError] = useState<string | null>(null);
   const [xpraQuarantined, setXpraQuarantined] = useState(false);
 
@@ -365,19 +315,6 @@ function Onboarding() {
       label: 'Playwright',
       status: playwright.ok ? 'ok' : 'error',
       message: playwright.message,
-    });
-
-    // Check telemetry
-    const settings = loadSettings();
-    const telemetryAsked = settings.telemetryEnabled !== undefined;
-    newChecks.push({
-      label: 'Usage Telemetry',
-      status: telemetryAsked ? 'ok' : 'error',
-      message: telemetryAsked
-        ? settings.telemetryEnabled
-          ? 'enabled'
-          : 'disabled'
-        : 'not configured',
     });
 
     setChecks(newChecks);
@@ -458,26 +395,6 @@ function Onboarding() {
     );
   }
 
-  if (showTelemetrySelector) {
-    return (
-      <Box flexDirection="column" padding={1}>
-        <Text dimColor>cuabot onboarding</Text>
-        <Box flexDirection="column" marginTop={1}>
-          {checks.map((check, i) => (
-            <StatusLine key={i} check={check} />
-          ))}
-        </Box>
-        <TelemetrySelector
-          onSelect={(enabled) => {
-            setTelemetryEnabled(enabled);
-            setShowTelemetrySelector(false);
-            runChecks();
-          }}
-        />
-      </Box>
-    );
-  }
-
   return (
     <Box flexDirection="column" padding={1}>
       <Text dimColor>cuabot onboarding</Text>
@@ -490,15 +407,6 @@ function Onboarding() {
       {firstError === 'Default Agent' && (
         <OptionSelector
           options={[{ label: 'Configure default agent', action: () => setShowAgentSelector(true) }]}
-          onSelect={() => {}}
-        />
-      )}
-
-      {firstError === 'Usage Telemetry' && (
-        <OptionSelector
-          options={[
-            { label: 'Configure usage telemetry', action: () => setShowTelemetrySelector(true) },
-          ]}
           onSelect={() => {}}
         />
       )}

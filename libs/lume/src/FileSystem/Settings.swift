@@ -7,7 +7,6 @@ struct LumeSettings: Codable, Sendable {
     var cacheDirectory: String
     var cachingEnabled: Bool
     var registry: RegistryConfig?
-    var telemetryEnabled: Bool
 
     var defaultLocation: VMLocation? {
         vmLocations.first { $0.name == defaultLocationName }
@@ -25,8 +24,7 @@ struct LumeSettings: Codable, Sendable {
         defaultLocationName: "home",
         cacheDirectory: "~/.lume/cache",
         cachingEnabled: false,
-        registry: .defaultConfig,
-        telemetryEnabled: true
+        registry: .defaultConfig
     )
 
     /// Gets all locations sorted by name
@@ -86,8 +84,7 @@ final class SettingsManager: @unchecked Sendable {
             defaultLocationName: "home",
             cacheDirectory: "~/.lume/cache",
             cachingEnabled: false,
-            registry: .defaultConfig,
-            telemetryEnabled: true
+            registry: .defaultConfig
         )
 
         // Try to save default settings
@@ -110,9 +107,6 @@ final class SettingsManager: @unchecked Sendable {
 
         // Caching enabled flag
         yamlContent += "cachingEnabled: \(settings.cachingEnabled)\n"
-
-        // Telemetry enabled flag
-        yamlContent += "telemetryEnabled: \(settings.telemetryEnabled)\n"
 
         // VM locations
         yamlContent += "\n# VM Locations\nvmLocations:\n"
@@ -274,18 +268,6 @@ final class SettingsManager: @unchecked Sendable {
         return getSettings().cachingEnabled
     }
 
-    // MARK: - Telemetry Management
-
-    func setTelemetryEnabled(_ enabled: Bool) throws {
-        var settings = getSettings()
-        settings.telemetryEnabled = enabled
-        try saveSettings(settings)
-    }
-
-    func isTelemetryEnabled() -> Bool {
-        return getSettings().telemetryEnabled
-    }
-
     // MARK: - Private Helpers
 
     private func ensureConfigDirectoryExists() {
@@ -316,7 +298,6 @@ final class SettingsManager: @unchecked Sendable {
         var defaultLocationName = "home"
         var cacheDirectory = "~/.lume/cache"
         var cachingEnabled = false  // default to false to save disk space
-        var telemetryEnabled = true  // default to true for anonymous usage tracking
         var vmLocations: [VMLocation] = []
 
         // Registry config parsing state
@@ -468,8 +449,6 @@ final class SettingsManager: @unchecked Sendable {
                         cacheDirectory = value
                     } else if key == "cachingEnabled" {
                         cachingEnabled = value.lowercased() == "true"
-                    } else if key == "telemetryEnabled" {
-                        telemetryEnabled = value.lowercased() == "true"
                     }
                 }
             }
@@ -498,8 +477,7 @@ final class SettingsManager: @unchecked Sendable {
             defaultLocationName: defaultLocationName,
             cacheDirectory: cacheDirectory,
             cachingEnabled: cachingEnabled,
-            registry: registryConfig,
-            telemetryEnabled: telemetryEnabled
+            registry: registryConfig
         )
     }
 

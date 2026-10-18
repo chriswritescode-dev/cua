@@ -52,7 +52,6 @@ def local_sdk(monkeypatch):
     monkeypatch.setattr(
         native_rt, "local_runtime", lambda: SimpleNamespace(sandboxes=lambda: _Sandboxes())
     )
-    monkeypatch.setattr(sandbox_module, "_TELEMETRY_AVAILABLE", False)
     # These tests check what reaches the SDK, not the host: a Linux VM's QEMU
     # preflight must not depend on whether this machine has QEMU installed.
     monkeypatch.setattr("cua_sandbox.runtime.compat._has_qemu", lambda: True)
@@ -97,7 +96,7 @@ def _temp_config():
 
 async def test_builtin_default_is_local_with_the_notice(local_sdk, cloud, notice):
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, telemetry_enabled=False)
+        await Sandbox.create(ROOTFS)
     assert local_sdk[0].on == "local" and not cloud
     [message] = notice()
     assert "cua config set default.on" in message and "local=False" in message
@@ -108,7 +107,7 @@ async def test_config_default_on_cloud_sends_create_to_the_cloud(local_sdk, clou
     with warnings.catch_warnings():
         warnings.simplefilter("error", DeprecationWarning)
         with pytest.raises(_Captured):
-            await Sandbox.create(Image.linux(), telemetry_enabled=False)
+            await Sandbox.create(Image.linux())
     assert cloud and not local_sdk
     assert "cua config set default.on local" in cloud[0]["hint"]
     assert not notice(), "no local notice when the default was chosen"
@@ -118,27 +117,27 @@ async def test_env_beats_config(monkeypatch, local_sdk, cloud, notice):
     cua.config_set("default.on", "cloud")
     monkeypatch.setenv("CUA_DEFAULT_ON", "local")
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, telemetry_enabled=False)
+        await Sandbox.create(ROOTFS)
     assert local_sdk and not cloud
     assert not notice(), "the notice is only for the built-in default"
     monkeypatch.setenv("CUA_DEFAULT_ON", "cloud")
     with pytest.raises(_Captured):
-        await Sandbox.create(Image.linux(), telemetry_enabled=False)
+        await Sandbox.create(Image.linux())
     assert "CUA_DEFAULT_ON" in cloud[0]["hint"]
 
 
 async def test_explicit_beats_env(monkeypatch, local_sdk, cloud):
     monkeypatch.setenv("CUA_DEFAULT_ON", "cloud")
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, local=True, telemetry_enabled=False)
+        await Sandbox.create(ROOTFS, local=True)
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, on="local", telemetry_enabled=False)
+        await Sandbox.create(ROOTFS, on="local")
     assert len(local_sdk) == 2 and not cloud
     monkeypatch.setenv("CUA_DEFAULT_ON", "local")
     with pytest.raises(_Captured):
-        await Sandbox.create(Image.linux(), on="cloud", telemetry_enabled=False)
+        await Sandbox.create(Image.linux(), on="cloud")
     with pytest.raises(_Captured):
-        await Sandbox.create(Image.linux(), local=False, telemetry_enabled=False)
+        await Sandbox.create(Image.linux(), local=False)
     assert len(cloud) == 2
     assert cloud[0]["hint"] is None, "an explicit cloud gets no default hint"
 
@@ -147,14 +146,14 @@ async def test_default_kind_and_runtime_come_from_config(local_sdk):
     cua.config_set("default.kind", "container")
     cua.config_set("default.runtime", "runc")
     with pytest.raises(_Captured):
-        await Sandbox.create(Image.from_registry("python:3.12-slim"), telemetry_enabled=False)
+        await Sandbox.create(Image.from_registry("python:3.12-slim"))
     assert (local_sdk[0].kind, local_sdk[0].runtime) == ("container", "runc")
 
 
 async def test_a_default_runtime_that_does_not_fit_is_skipped(monkeypatch, local_sdk):
     monkeypatch.setenv("CUA_DEFAULT_RUNTIME", "runc")
     with pytest.raises(_Captured):
-        await Sandbox.create(Image.linux(), on="local", kind="vm", telemetry_enabled=False)
+        await Sandbox.create(Image.linux(), on="local", kind="vm")
     [options] = local_sdk
     assert (options.kind, options.runtime) == ("vm", None), "runc does not run VMs"
     assert options.image.startswith("vm:")
@@ -174,7 +173,7 @@ async def test_on_and_a_contradicting_local_is_invalid(local_sdk, cloud):
         await Sandbox.create(ROOTFS, local=True, cloud=CloudOptions(warm=True))
     assert not local_sdk and not cloud
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, on="local", local=True, telemetry_enabled=False)
+        await Sandbox.create(ROOTFS, on="local", local=True)
 
 
 async def test_unknown_locations_list_the_valid_ones():
@@ -185,9 +184,9 @@ async def test_unknown_locations_list_the_valid_ones():
 async def test_cloud_only_arguments_imply_the_cloud(local_sdk, cloud):
     with pytest.warns(DeprecationWarning, match="local=False"):
         with pytest.raises(_Captured):
-            await Sandbox.create(Image.linux(), max_pool_size=3, telemetry_enabled=False)
+            await Sandbox.create(Image.linux(), max_pool_size=3)
     with pytest.raises(_Captured):
-        await Sandbox.create(Image.linux(), cloud=CloudOptions(warm=True), telemetry_enabled=False)
+        await Sandbox.create(Image.linux(), cloud=CloudOptions(warm=True))
     assert len(cloud) == 2 and not local_sdk
     assert cloud[0]["hint"] is None
 
@@ -197,11 +196,11 @@ async def test_cloud_only_arguments_imply_the_cloud(local_sdk, cloud):
 
 async def test_local_kind_and_runtime_reach_the_sdk(local_sdk):
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, on="local", runtime="runc", telemetry_enabled=False)
+        await Sandbox.create(ROOTFS, on="local", runtime="runc")
     with pytest.raises(_Captured):
-        await Sandbox.create(Image.linux(), on="local", runtime="qemu", telemetry_enabled=False)
+        await Sandbox.create(Image.linux(), on="local", runtime="qemu")
     with pytest.raises(_Captured):
-        await Sandbox.create(Image.linux(), on="local", kind="vm", telemetry_enabled=False)
+        await Sandbox.create(Image.linux(), on="local", kind="vm")
     runc, qemu, vm = local_sdk
     assert (runc.on, runc.kind, runc.runtime) == ("local", "container", "runc")
     assert runc.image.startswith("container:")
@@ -212,16 +211,16 @@ async def test_local_kind_and_runtime_reach_the_sdk(local_sdk):
 
 async def test_ephemeral_takes_the_same_placement(local_sdk):
     with pytest.raises(_Captured):
-        async with Sandbox.ephemeral(ROOTFS, on="local", runtime="gvisor", telemetry_enabled=False):
+        async with Sandbox.ephemeral(ROOTFS, on="local", runtime="gvisor"):
             pass
     assert (local_sdk[0].kind, local_sdk[0].runtime) == ("container", "gvisor")
 
 
 async def test_cloud_kind_and_runtime_reach_the_managed_pool(cloud):
     with pytest.raises(_Captured):
-        await Sandbox.create(Image.linux(), on="cloud", kind="vm", telemetry_enabled=False)
+        await Sandbox.create(Image.linux(), on="cloud", kind="vm")
     with pytest.raises(_Captured):
-        await Sandbox.create(Image.linux(), on="cloud", runtime="gvisor", telemetry_enabled=False)
+        await Sandbox.create(Image.linux(), on="cloud", runtime="gvisor")
     vm, gvisor = cloud
     assert vm["image"].kind == "vm" and vm["fleet_runtime"] is None
     assert gvisor["image"].kind == "container" and gvisor["fleet_runtime"] == "gvisor"
@@ -277,7 +276,7 @@ async def test_an_sdk_placement_error_surfaces_as_invalid_placement(monkeypatch)
         native_rt, "local_runtime", lambda: SimpleNamespace(sandboxes=lambda: _Sandboxes())
     )
     with pytest.raises(InvalidPlacement, match="valid runtime: auto"):
-        await Sandbox.create(ROOTFS, on="local", telemetry_enabled=False)
+        await Sandbox.create(ROOTFS, on="local")
 
 
 async def test_missing_cloud_credentials_from_a_default_say_how_to_switch_back(monkeypatch):
@@ -295,7 +294,7 @@ async def test_missing_cloud_credentials_from_a_default_say_how_to_switch_back(m
     monkeypatch.setattr(Sandbox, "_uses_fleet", staticmethod(lambda api_key: True))
     cua.config_set("default.on", "cloud")
     with pytest.raises(ValueError, match="credentials missing") as info:
-        await Sandbox.create(Image.linux(), telemetry_enabled=False)
+        await Sandbox.create(Image.linux())
     message = str(info.value)
     assert "cua auth login" in message
     assert "switch back with `cua config set default.on local`" in message
@@ -318,10 +317,10 @@ async def test_a_runtime_object_still_runs_locally(monkeypatch, cloud, notice):
     calls: list = []
     monkeypatch.setenv("CUA_DEFAULT_ON", "cloud")
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, runtime=_Recorder(calls), telemetry_enabled=False)
+        await Sandbox.create(ROOTFS, runtime=_Recorder(calls))
     # Shipped in 0.8.0: local=False with a Runtime object ran it locally.
     with pytest.raises(_Captured):
-        await Sandbox.create(ROOTFS, runtime=_Recorder(calls), local=False, telemetry_enabled=False)
+        await Sandbox.create(ROOTFS, runtime=_Recorder(calls), local=False)
     assert len(calls) == 2 and not cloud and not notice()
     for _, opts in calls:
         assert "kind" not in opts and "runtime" not in opts, "the adapter decides"

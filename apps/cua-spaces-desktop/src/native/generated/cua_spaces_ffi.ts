@@ -790,7 +790,7 @@ export function appChecklistObserveFrom(seen: AppChecklistSeen): AppChecklistAct
     }
 
 /**
- * The getting-started checklist after `action`, and its usage events.
+ * The getting-started checklist after `action`.
  */
 export function appChecklistReduce(state: AppChecklistState, action: AppChecklistAction): AppChecklistTransition {
     return ((__rb: Uint8Array) => {
@@ -4752,291 +4752,6 @@ export async function appTeams(accountToken: string, asyncOpts_?: { signal: Abor
     }
 
 /**
- * The events one step of the Spaces being created means, at `now_ms`
- * (call with the state before it).
- */
-export function appTelemetryCreates(state: AppCreatesState, action: AppCreateAction, nowMs: bigint): Array<AppTelemetrySignal> {
-    return ((__rb: Uint8Array) => {
-        try {
-            return FfiConverterSequenceTypeAppTelemetrySignal.lift(__rb);
-        } finally {
-            nativeModule().rustbuffer_free(__rb);
-        }
-    })(uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => {
-                return nativeModule().uniffi_cua_spaces_ffi_fn_func_app_telemetry_creates(
-        FfiConverterTypeAppCreatesState.lower(state, nativeModule().rustbuffer_alloc),
-        FfiConverterTypeAppCreateAction.lower(action, nativeModule().rustbuffer_alloc),
-        FfiConverterInt64.lower(nowMs, nativeModule().rustbuffer_alloc),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    ));
-    }
-
-/**
- * The events one step of the enroll sheet means.
- */
-export function appTelemetryEnroll(state: AppEnrollState, action: AppEnrollAction): Array<AppTelemetrySignal> {
-    return ((__rb: Uint8Array) => {
-        try {
-            return FfiConverterSequenceTypeAppTelemetrySignal.lift(__rb);
-        } finally {
-            nativeModule().rustbuffer_free(__rb);
-        }
-    })(uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => {
-                return nativeModule().uniffi_cua_spaces_ffi_fn_func_app_telemetry_enroll(
-        FfiConverterTypeAppEnrollState.lower(state, nativeModule().rustbuffer_alloc),
-        FfiConverterTypeAppEnrollAction.lower(action, nativeModule().rustbuffer_alloc),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    ));
-    }
-
-/**
- * The events of a change in Settings, Experiments (call with the switches
- * before and after it).
- */
-export function appTelemetryExperimentsChanged(before: AppExperiments, after: AppExperiments): Array<AppTelemetrySignal> {
-    return ((__rb: Uint8Array) => {
-        try {
-            return FfiConverterSequenceTypeAppTelemetrySignal.lift(__rb);
-        } finally {
-            nativeModule().rustbuffer_free(__rb);
-        }
-    })(uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => {
-                return nativeModule().uniffi_cua_spaces_ffi_fn_func_app_telemetry_experiments_changed(
-        FfiConverterTypeAppExperiments.lower(before, nativeModule().rustbuffer_alloc),
-        FfiConverterTypeAppExperiments.lower(after, nativeModule().rustbuffer_alloc),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    ));
-    }
-
-/**
- * Which experiments are on (at launch).
- */
-export function appTelemetryExperimentsOn(experiments: AppExperiments): Array<AppTelemetrySignal> {
-    return ((__rb: Uint8Array) => {
-        try {
-            return FfiConverterSequenceTypeAppTelemetrySignal.lift(__rb);
-        } finally {
-            nativeModule().rustbuffer_free(__rb);
-        }
-    })(uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => {
-                return nativeModule().uniffi_cua_spaces_ffi_fn_func_app_telemetry_experiments_on(
-        FfiConverterTypeAppExperiments.lower(experiments, nativeModule().rustbuffer_alloc),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    ));
-    }
-
-/**
- * A Spaces app feature (a fixed name).
- */
-export function appTelemetryFeature(feature: string): Array<AppTelemetrySignal> {
-    return ((__rb: Uint8Array) => {
-        try {
-            return FfiConverterSequenceTypeAppTelemetrySignal.lift(__rb);
-        } finally {
-            nativeModule().rustbuffer_free(__rb);
-        }
-    })(uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => {
-                return nativeModule().uniffi_cua_spaces_ffi_fn_func_app_telemetry_feature(
-        FfiConverterString.lower(feature, nativeModule().rustbuffer_alloc),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    ));
-    }
-
-/**
- * The app started (`app_launched`).
- */
-export function appTelemetryLaunched(onboardingEligible: boolean | undefined): Array<AppTelemetrySignal> {
-    return ((__rb: Uint8Array) => {
-        try {
-            return FfiConverterSequenceTypeAppTelemetrySignal.lift(__rb);
-        } finally {
-            nativeModule().rustbuffer_free(__rb);
-        }
-    })(uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => {
-                return nativeModule().uniffi_cua_spaces_ffi_fn_func_app_telemetry_launched(
-        FfiConverterOptionalBoolean.lower(onboardingEligible, nativeModule().rustbuffer_alloc),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    ));
-    }
-
-/**
- * The events one first-run step means (call with the state before it).
- */
-export function appTelemetryOnboarding(state: AppOnboardingState, action: AppOnboardingAction): Array<AppTelemetrySignal> {
-    return ((__rb: Uint8Array) => {
-        try {
-            return FfiConverterSequenceTypeAppTelemetrySignal.lift(__rb);
-        } finally {
-            nativeModule().rustbuffer_free(__rb);
-        }
-    })(uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => {
-                return nativeModule().uniffi_cua_spaces_ffi_fn_func_app_telemetry_onboarding(
-        FfiConverterTypeAppOnboardingState.lower(state, nativeModule().rustbuffer_alloc),
-        FfiConverterTypeAppOnboardingAction.lower(action, nativeModule().rustbuffer_alloc),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    ));
-    }
-
-/**
- * "Start using Cua Spaces".
- */
-export function appTelemetryOnboardingFinished(state: AppOnboardingState): Array<AppTelemetrySignal> {
-    return ((__rb: Uint8Array) => {
-        try {
-            return FfiConverterSequenceTypeAppTelemetrySignal.lift(__rb);
-        } finally {
-            nativeModule().rustbuffer_free(__rb);
-        }
-    })(uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => {
-                return nativeModule().uniffi_cua_spaces_ffi_fn_func_app_telemetry_onboarding_finished(
-        FfiConverterTypeAppOnboardingState.lower(state, nativeModule().rustbuffer_alloc),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    ));
-    }
-
-/**
- * Records `signals` on the SDK's telemetry client (the switch, the notice
- * and the schema apply) and marks the day active. Returns how many events
- * were queued.
- */
-export function appTelemetryRecord(signals: Array<AppTelemetrySignal>): number {
-    return FfiConverterUInt32.lift(uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => {
-                return nativeModule().uniffi_cua_spaces_ffi_fn_func_app_telemetry_record(
-        FfiConverterSequenceTypeAppTelemetrySignal.lower(signals, nativeModule().rustbuffer_alloc),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    ));
-    }
-
-/**
- * The events one step of the Share sheet means.
- */
-export function appTelemetryShare(input: AppShareInput, state: AppShareSheetState, action: AppShareSheetAction): Array<AppTelemetrySignal> {
-    return ((__rb: Uint8Array) => {
-        try {
-            return FfiConverterSequenceTypeAppTelemetrySignal.lift(__rb);
-        } finally {
-            nativeModule().rustbuffer_free(__rb);
-        }
-    })(uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => {
-                return nativeModule().uniffi_cua_spaces_ffi_fn_func_app_telemetry_share(
-        FfiConverterTypeAppShareInput.lower(input, nativeModule().rustbuffer_alloc),
-        FfiConverterTypeAppShareSheetState.lower(state, nativeModule().rustbuffer_alloc),
-        FfiConverterTypeAppShareSheetAction.lower(action, nativeModule().rustbuffer_alloc),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    ));
-    }
-
-/**
- * A sign-in failed (`message`, which never leaves: only its kind) or was
- * cancelled (none).
- */
-export function appTelemetrySignInFailed(message: string | undefined): Array<AppTelemetrySignal> {
-    return ((__rb: Uint8Array) => {
-        try {
-            return FfiConverterSequenceTypeAppTelemetrySignal.lift(__rb);
-        } finally {
-            nativeModule().rustbuffer_free(__rb);
-        }
-    })(uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => {
-                return nativeModule().uniffi_cua_spaces_ffi_fn_func_app_telemetry_sign_in_failed(
-        FfiConverterOptionalString.lower(message, nativeModule().rustbuffer_alloc),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    ));
-    }
-
-/**
- * The app started: attributes this process's events to `spaces_app` at
- * `version`, lets the app show the first-run notice itself (nothing is
- * sent before it has been shown once), and records `app_launched` (on a
- * first run, once the notice shows). Call once at launch, before the
- * first `Cua`. `onboarding_eligible`: the first run is still to finish
- * (`app_launched` carries it). Returns whether the notice was already
- * shown here.
- */
-export function appTelemetryStart(version: string, onboardingEligible: boolean | undefined): boolean {
-    return FfiConverterBool.lift(uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => {
-                return nativeModule().uniffi_cua_spaces_ffi_fn_func_app_telemetry_start(
-        FfiConverterString.lower(version, nativeModule().rustbuffer_alloc),
-        FfiConverterOptionalBoolean.lower(onboardingEligible, nativeModule().rustbuffer_alloc),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    ));
-    }
-
-/**
- * The events one step of Settings, Storage means.
- */
-export function appTelemetryStorage(input: AppStorageInput, state: AppStorageState, action: AppStorageAction): Array<AppTelemetrySignal> {
-    return ((__rb: Uint8Array) => {
-        try {
-            return FfiConverterSequenceTypeAppTelemetrySignal.lift(__rb);
-        } finally {
-            nativeModule().rustbuffer_free(__rb);
-        }
-    })(uniffiCaller.rustCall(
-            /*caller:*/ (callStatus) => {
-                return nativeModule().uniffi_cua_spaces_ffi_fn_func_app_telemetry_storage(
-        FfiConverterTypeAppStorageInput.lower(input, nativeModule().rustbuffer_alloc),
-        FfiConverterTypeAppStorageState.lower(state, nativeModule().rustbuffer_alloc),
-        FfiConverterTypeAppStorageAction.lower(action, nativeModule().rustbuffer_alloc),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    ));
-    }
-
-/**
- * The first run left Welcome with its usage-data switch at `on`: writes
- * the machine's setting when it changed (the same as Settings and `cua
- * telemetry off`), then records that the notice was shown. Nothing is
- * queued or sent before; with the switch off, nothing after either.
- */
-export function appTelemetryWelcomeLeft(on: boolean): void /*throws*/ {uniffiCaller.rustCallWithError(
-            /*liftError:*/ FfiConverterTypeCuaError.lift.bind(FfiConverterTypeCuaError),
-            /*caller:*/ (callStatus) => { nativeModule().uniffi_cua_spaces_ffi_fn_func_app_telemetry_welcome_left(
-        FfiConverterBool.lower(on, nativeModule().rustbuffer_alloc),
-                callStatus);
-            },
-            /*liftString:*/ FfiConverterString.lift.bind(FfiConverterString),
-    );
-    }
-
-/**
  * A plan from `Teleport.plan`, as the review's plan.
  */
 export function appTeleportPlan(plan: TeleportPlan): AppTeleportPlan {
@@ -6300,10 +6015,6 @@ export type AppAboutInput = {
      */
     autoCheck: boolean,
     /**
-     * The updater downloads and installs on its own.
-     */
-    autoInstall: boolean,
-    /**
      * The chosen channel.
      */
     channel: AppUpdateChannel,
@@ -6344,7 +6055,6 @@ const FfiConverterTypeAppAboutInput = (() => {
                 os: FfiConverterString.read(from),
                 updater: FfiConverterBool.read(from),
                 autoCheck: FfiConverterBool.read(from),
-                autoInstall: FfiConverterBool.read(from),
                 channel: FfiConverterTypeAppUpdateChannel.read(from),
                 lastCheck: FfiConverterOptionalString.read(from),
                 checking: FfiConverterBool.read(from)
@@ -6357,7 +6067,6 @@ const FfiConverterTypeAppAboutInput = (() => {
             FfiConverterString.write(value.os, into);
             FfiConverterBool.write(value.updater, into);
             FfiConverterBool.write(value.autoCheck, into);
-            FfiConverterBool.write(value.autoInstall, into);
             FfiConverterTypeAppUpdateChannel.write(value.channel, into);
             FfiConverterOptionalString.write(value.lastCheck, into);
             FfiConverterBool.write(value.checking, into);
@@ -6369,7 +6078,6 @@ const FfiConverterTypeAppAboutInput = (() => {
              FfiConverterString.allocationSize(value.os) +
              FfiConverterBool.allocationSize(value.updater) +
              FfiConverterBool.allocationSize(value.autoCheck) +
-             FfiConverterBool.allocationSize(value.autoInstall) +
              FfiConverterTypeAppUpdateChannel.allocationSize(value.channel) +
              FfiConverterOptionalString.allocationSize(value.lastCheck) +
              FfiConverterBool.allocationSize(value.checking);
@@ -6540,25 +6248,13 @@ const FfiConverterTypeAppSettingsOption = (() => {
 
 export type AppAboutUpdates = {
     /**
-     * "Check for and download updates automatically".
+     * "Check for updates automatically".
      */
     autoCheckLabel: string,
     /**
      * Checked.
      */
     autoCheck: boolean,
-    /**
-     * "Install a downloaded update when Cua Spaces quits".
-     */
-    autoInstallLabel: string,
-    /**
-     * Checked.
-     */
-    autoInstall: boolean,
-    /**
-     * It can be used (only with automatic checks).
-     */
-    autoInstallEnabled: boolean,
     /**
      * "Update to:".
      */
@@ -6608,9 +6304,6 @@ const FfiConverterTypeAppAboutUpdates = (() => {
             return {
                 autoCheckLabel: FfiConverterString.read(from),
                 autoCheck: FfiConverterBool.read(from),
-                autoInstallLabel: FfiConverterString.read(from),
-                autoInstall: FfiConverterBool.read(from),
-                autoInstallEnabled: FfiConverterBool.read(from),
                 channelLabel: FfiConverterString.read(from),
                 channels: FfiConverterSequenceTypeAppSettingsOption.read(from),
                 channelHelp: FfiConverterString.read(from),
@@ -6622,9 +6315,6 @@ const FfiConverterTypeAppAboutUpdates = (() => {
         write(value: TypeName, into: RustBuffer): void {
             FfiConverterString.write(value.autoCheckLabel, into);
             FfiConverterBool.write(value.autoCheck, into);
-            FfiConverterString.write(value.autoInstallLabel, into);
-            FfiConverterBool.write(value.autoInstall, into);
-            FfiConverterBool.write(value.autoInstallEnabled, into);
             FfiConverterString.write(value.channelLabel, into);
             FfiConverterSequenceTypeAppSettingsOption.write(value.channels, into);
             FfiConverterString.write(value.channelHelp, into);
@@ -6635,9 +6325,6 @@ const FfiConverterTypeAppAboutUpdates = (() => {
         allocationSize(value: TypeName): number {
             return FfiConverterString.allocationSize(value.autoCheckLabel) +
              FfiConverterBool.allocationSize(value.autoCheck) +
-             FfiConverterString.allocationSize(value.autoInstallLabel) +
-             FfiConverterBool.allocationSize(value.autoInstall) +
-             FfiConverterBool.allocationSize(value.autoInstallEnabled) +
              FfiConverterString.allocationSize(value.channelLabel) +
              FfiConverterSequenceTypeAppSettingsOption.allocationSize(value.channels) +
              FfiConverterString.allocationSize(value.channelHelp) +
@@ -11446,7 +11133,7 @@ export type AppChecklistState = {
      */
     dismissed: boolean,
     /**
-     * It was on screen once (`checklist_shown` was recorded).
+     * It was on screen once.
      */
     shown: boolean
 }
@@ -11492,799 +11179,11 @@ const FfiConverterTypeAppChecklistState = (() => {
     return new FFIConverter();
 })();
 
-
-// Enum: AppTelemetrySignal
-export enum AppTelemetrySignal_Tags {
-    Feature = "Feature",
-    Step = "Step",
-    Launched = "Launched",
-    SignInFailed = "SignInFailed",
-    OnboardingPage = "OnboardingPage",
-    SpaceWizard = "SpaceWizard",
-    SpaceCreate = "SpaceCreate",
-    SpaceCreateStarted = "SpaceCreateStarted",
-    VolumeSetup = "VolumeSetup",
-    Share = "Share",
-    AppUpdate = "AppUpdate",
-    DeviceEnroll = "DeviceEnroll",
-    Experiment = "Experiment",
-    ExperimentsOn = "ExperimentsOn"
-}
-export const AppTelemetrySignal = (() => {
-
-    type Feature__interface = {
-        tag: AppTelemetrySignal_Tags.Feature;
-        inner:
-Readonly<{feature: string}>
-    };
-    /**
-     * A Spaces app feature was used (`cua_spaces_feature_used`).
-     */
-    class Feature_ extends UniffiEnum implements Feature__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppTelemetrySignal";
-        readonly tag = AppTelemetrySignal_Tags.Feature;
-        readonly inner:
-Readonly<{feature: string}>;
-        constructor(
-inner: {feature: string }) {
-            super("AppTelemetrySignal", "Feature");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {feature: string }): Feature_ {
-            return new Feature_(inner);
-        }
-
-        static instanceOf(obj: any): obj is Feature_ {
-            return obj.tag === AppTelemetrySignal_Tags.Feature;
-        }
-
-    }
-
-    type Step__interface = {
-        tag: AppTelemetrySignal_Tags.Step;
-        inner:
-Readonly<{step: string; ok: boolean}>
-    };
-    /**
-     * An install or activation funnel step (`cua_onboarding_step`;
-     * `first_*` steps count once per install).
-     */
-    class Step_ extends UniffiEnum implements Step__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppTelemetrySignal";
-        readonly tag = AppTelemetrySignal_Tags.Step;
-        readonly inner:
-Readonly<{step: string; ok: boolean}>;
-        constructor(
-inner: {step: string; ok: boolean }) {
-            super("AppTelemetrySignal", "Step");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {step: string; ok: boolean }): Step_ {
-            return new Step_(inner);
-        }
-
-        static instanceOf(obj: any): obj is Step_ {
-            return obj.tag === AppTelemetrySignal_Tags.Step;
-        }
-
-    }
-
-    type Launched__interface = {
-        tag: AppTelemetrySignal_Tags.Launched;
-        inner:
-Readonly<{onboardingEligible?: boolean}>
-    };
-    /**
-     * The app started (`cua_onboarding_step`, step `app_launched`).
-     */
-    class Launched_ extends UniffiEnum implements Launched__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppTelemetrySignal";
-        readonly tag = AppTelemetrySignal_Tags.Launched;
-        readonly inner:
-Readonly<{onboardingEligible?: boolean}>;
-        constructor(
-inner: {onboardingEligible?: boolean }) {
-            super("AppTelemetrySignal", "Launched");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {onboardingEligible?: boolean }): Launched_ {
-            return new Launched_(inner);
-        }
-
-        static instanceOf(obj: any): obj is Launched_ {
-            return obj.tag === AppTelemetrySignal_Tags.Launched;
-        }
-
-    }
-
-    type SignInFailed__interface = {
-        tag: AppTelemetrySignal_Tags.SignInFailed;
-        inner:
-Readonly<{errorKind: string}>
-    };
-    /**
-     * A sign-in failed, timed out or was cancelled (`cua_onboarding_step`,
-     * step `signed_in`, outcome `error`).
-     */
-    class SignInFailed_ extends UniffiEnum implements SignInFailed__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppTelemetrySignal";
-        readonly tag = AppTelemetrySignal_Tags.SignInFailed;
-        readonly inner:
-Readonly<{errorKind: string}>;
-        constructor(
-inner: {errorKind: string }) {
-            super("AppTelemetrySignal", "SignInFailed");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {errorKind: string }): SignInFailed_ {
-            return new SignInFailed_(inner);
-        }
-
-        static instanceOf(obj: any): obj is SignInFailed_ {
-            return obj.tag === AppTelemetrySignal_Tags.SignInFailed;
-        }
-
-    }
-
-    type OnboardingPage__interface = {
-        tag: AppTelemetrySignal_Tags.OnboardingPage;
-        inner:
-Readonly<{page: string; action: string; choice: string}>
-    };
-    /**
-     * A first-run page was shown or left (`cua_onboarding_page`).
-     */
-    class OnboardingPage_ extends UniffiEnum implements OnboardingPage__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppTelemetrySignal";
-        readonly tag = AppTelemetrySignal_Tags.OnboardingPage;
-        readonly inner:
-Readonly<{page: string; action: string; choice: string}>;
-        constructor(
-inner: {page: string; action: string; choice: string }) {
-            super("AppTelemetrySignal", "OnboardingPage");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {page: string; action: string; choice: string }): OnboardingPage_ {
-            return new OnboardingPage_(inner);
-        }
-
-        static instanceOf(obj: any): obj is OnboardingPage_ {
-            return obj.tag === AppTelemetrySignal_Tags.OnboardingPage;
-        }
-
-    }
-
-    type SpaceWizard__interface = {
-        tag: AppTelemetrySignal_Tags.SpaceWizard;
-        inner:
-Readonly<{action: string}>
-    };
-    /**
-     * The New Space panel (`cua_space_wizard`).
-     */
-    class SpaceWizard_ extends UniffiEnum implements SpaceWizard__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppTelemetrySignal";
-        readonly tag = AppTelemetrySignal_Tags.SpaceWizard;
-        readonly inner:
-Readonly<{action: string}>;
-        constructor(
-inner: {action: string }) {
-            super("AppTelemetrySignal", "SpaceWizard");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {action: string }): SpaceWizard_ {
-            return new SpaceWizard_(inner);
-        }
-
-        static instanceOf(obj: any): obj is SpaceWizard_ {
-            return obj.tag === AppTelemetrySignal_Tags.SpaceWizard;
-        }
-
-    }
-
-    type SpaceCreate__interface = {
-        tag: AppTelemetrySignal_Tags.SpaceCreate;
-        inner:
-Readonly<{location: string; guestOs: string; kind: string; outcome: string; failedPhase: string; stalled: boolean; elapsedMs: bigint; gpu: boolean; errorVariant: string}>
-    };
-    /**
-     * A Space create reached ready or failed (`cua_space_create`).
-     */
-    class SpaceCreate_ extends UniffiEnum implements SpaceCreate__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppTelemetrySignal";
-        readonly tag = AppTelemetrySignal_Tags.SpaceCreate;
-        readonly inner:
-Readonly<{location: string; guestOs: string; kind: string; outcome: string; failedPhase: string; stalled: boolean; elapsedMs: bigint; gpu: boolean; errorVariant: string}>;
-        constructor(
-inner: {location: string; guestOs: string; kind: string; outcome: string; failedPhase: string; stalled: boolean; elapsedMs: bigint; gpu: boolean; errorVariant: string }) {
-            super("AppTelemetrySignal", "SpaceCreate");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {location: string; guestOs: string; kind: string; outcome: string; failedPhase: string; stalled: boolean; elapsedMs: bigint; gpu: boolean; errorVariant: string }): SpaceCreate_ {
-            return new SpaceCreate_(inner);
-        }
-
-        static instanceOf(obj: any): obj is SpaceCreate_ {
-            return obj.tag === AppTelemetrySignal_Tags.SpaceCreate;
-        }
-
-    }
-
-    type SpaceCreateStarted__interface = {
-        tag: AppTelemetrySignal_Tags.SpaceCreateStarted;
-        inner:
-Readonly<{location: string; guestOs: string; kind: string; gpu: boolean}>
-    };
-    /**
-     * A Space create started (`cua_space_create_started`).
-     */
-    class SpaceCreateStarted_ extends UniffiEnum implements SpaceCreateStarted__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppTelemetrySignal";
-        readonly tag = AppTelemetrySignal_Tags.SpaceCreateStarted;
-        readonly inner:
-Readonly<{location: string; guestOs: string; kind: string; gpu: boolean}>;
-        constructor(
-inner: {location: string; guestOs: string; kind: string; gpu: boolean }) {
-            super("AppTelemetrySignal", "SpaceCreateStarted");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {location: string; guestOs: string; kind: string; gpu: boolean }): SpaceCreateStarted_ {
-            return new SpaceCreateStarted_(inner);
-        }
-
-        static instanceOf(obj: any): obj is SpaceCreateStarted_ {
-            return obj.tag === AppTelemetrySignal_Tags.SpaceCreateStarted;
-        }
-
-    }
-
-    type VolumeSetup__interface = {
-        tag: AppTelemetrySignal_Tags.VolumeSetup;
-        inner:
-Readonly<{surface: string; storage: string; addToFinder: boolean; mountMethod: string; outcome: string}>
-    };
-    /**
-     * A Cua Volume setting was saved (`cua_volume_setup`).
-     */
-    class VolumeSetup_ extends UniffiEnum implements VolumeSetup__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppTelemetrySignal";
-        readonly tag = AppTelemetrySignal_Tags.VolumeSetup;
-        readonly inner:
-Readonly<{surface: string; storage: string; addToFinder: boolean; mountMethod: string; outcome: string}>;
-        constructor(
-inner: {surface: string; storage: string; addToFinder: boolean; mountMethod: string; outcome: string }) {
-            super("AppTelemetrySignal", "VolumeSetup");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {surface: string; storage: string; addToFinder: boolean; mountMethod: string; outcome: string }): VolumeSetup_ {
-            return new VolumeSetup_(inner);
-        }
-
-        static instanceOf(obj: any): obj is VolumeSetup_ {
-            return obj.tag === AppTelemetrySignal_Tags.VolumeSetup;
-        }
-
-    }
-
-    type Share__interface = {
-        tag: AppTelemetrySignal_Tags.Share;
-        inner:
-Readonly<{action: string; role: string; outcome: string}>
-    };
-    /**
-     * A Space was shared, unshared or its role changed (`cua_share`).
-     */
-    class Share_ extends UniffiEnum implements Share__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppTelemetrySignal";
-        readonly tag = AppTelemetrySignal_Tags.Share;
-        readonly inner:
-Readonly<{action: string; role: string; outcome: string}>;
-        constructor(
-inner: {action: string; role: string; outcome: string }) {
-            super("AppTelemetrySignal", "Share");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {action: string; role: string; outcome: string }): Share_ {
-            return new Share_(inner);
-        }
-
-        static instanceOf(obj: any): obj is Share_ {
-            return obj.tag === AppTelemetrySignal_Tags.Share;
-        }
-
-    }
-
-    type AppUpdate__interface = {
-        tag: AppTelemetrySignal_Tags.AppUpdate;
-        inner:
-Readonly<{action: string; channel: string; trigger: string}>
-    };
-    /**
-     * An updater step (`cua_app_update`).
-     */
-    class AppUpdate_ extends UniffiEnum implements AppUpdate__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppTelemetrySignal";
-        readonly tag = AppTelemetrySignal_Tags.AppUpdate;
-        readonly inner:
-Readonly<{action: string; channel: string; trigger: string}>;
-        constructor(
-inner: {action: string; channel: string; trigger: string }) {
-            super("AppTelemetrySignal", "AppUpdate");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {action: string; channel: string; trigger: string }): AppUpdate_ {
-            return new AppUpdate_(inner);
-        }
-
-        static instanceOf(obj: any): obj is AppUpdate_ {
-            return obj.tag === AppTelemetrySignal_Tags.AppUpdate;
-        }
-
-    }
-
-    type DeviceEnroll__interface = {
-        tag: AppTelemetrySignal_Tags.DeviceEnroll;
-        inner:
-Readonly<{method: string; outcome: string}>
-    };
-    /**
-     * This device enrolled with the relay, or failed to
-     * (`cua_device_enroll`).
-     */
-    class DeviceEnroll_ extends UniffiEnum implements DeviceEnroll__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppTelemetrySignal";
-        readonly tag = AppTelemetrySignal_Tags.DeviceEnroll;
-        readonly inner:
-Readonly<{method: string; outcome: string}>;
-        constructor(
-inner: {method: string; outcome: string }) {
-            super("AppTelemetrySignal", "DeviceEnroll");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {method: string; outcome: string }): DeviceEnroll_ {
-            return new DeviceEnroll_(inner);
-        }
-
-        static instanceOf(obj: any): obj is DeviceEnroll_ {
-            return obj.tag === AppTelemetrySignal_Tags.DeviceEnroll;
-        }
-
-    }
-
-    type Experiment__interface = {
-        tag: AppTelemetrySignal_Tags.Experiment;
-        inner:
-Readonly<{action: string; experiment: string}>
-    };
-    /**
-     * An experiment was turned on or off in Settings, Experiments
-     * (`cua_experiment`).
-     */
-    class Experiment_ extends UniffiEnum implements Experiment__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppTelemetrySignal";
-        readonly tag = AppTelemetrySignal_Tags.Experiment;
-        readonly inner:
-Readonly<{action: string; experiment: string}>;
-        constructor(
-inner: {action: string; experiment: string }) {
-            super("AppTelemetrySignal", "Experiment");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {action: string; experiment: string }): Experiment_ {
-            return new Experiment_(inner);
-        }
-
-        static instanceOf(obj: any): obj is Experiment_ {
-            return obj.tag === AppTelemetrySignal_Tags.Experiment;
-        }
-
-    }
-
-    type ExperimentsOn__interface = {
-        tag: AppTelemetrySignal_Tags.ExperimentsOn;
-        inner:
-Readonly<{experiments: Array<string>}>
-    };
-    /**
-     * Which experiments are on now (no event of its own: the daily
-     * `cua_app_active` carries them as `experiments_on`).
-     */
-    class ExperimentsOn_ extends UniffiEnum implements ExperimentsOn__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppTelemetrySignal";
-        readonly tag = AppTelemetrySignal_Tags.ExperimentsOn;
-        readonly inner:
-Readonly<{experiments: Array<string>}>;
-        constructor(
-inner: {experiments: Array<string> }) {
-            super("AppTelemetrySignal", "ExperimentsOn");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {experiments: Array<string> }): ExperimentsOn_ {
-            return new ExperimentsOn_(inner);
-        }
-
-        static instanceOf(obj: any): obj is ExperimentsOn_ {
-            return obj.tag === AppTelemetrySignal_Tags.ExperimentsOn;
-        }
-
-    }
-
-    function instanceOf(obj: any): obj is AppTelemetrySignal {
-        return obj[uniffiTypeNameSymbol] === "AppTelemetrySignal";
-    }
-
-    return Object.freeze({
-        instanceOf,
-  Feature: Feature_,
-  Step: Step_,
-  Launched: Launched_,
-  SignInFailed: SignInFailed_,
-  OnboardingPage: OnboardingPage_,
-  SpaceWizard: SpaceWizard_,
-  SpaceCreate: SpaceCreate_,
-  SpaceCreateStarted: SpaceCreateStarted_,
-  VolumeSetup: VolumeSetup_,
-  Share: Share_,
-  AppUpdate: AppUpdate_,
-  DeviceEnroll: DeviceEnroll_,
-  Experiment: Experiment_,
-  ExperimentsOn: ExperimentsOn_
-    });
-
-})();
-export type AppTelemetrySignal = InstanceType<
-    typeof AppTelemetrySignal['Feature' | 'Step' | 'Launched' | 'SignInFailed' | 'OnboardingPage' | 'SpaceWizard' | 'SpaceCreate' | 'SpaceCreateStarted' | 'VolumeSetup' | 'Share' | 'AppUpdate' | 'DeviceEnroll' | 'Experiment' | 'ExperimentsOn']
->;
-
-// FfiConverter for enum AppTelemetrySignal
-const FfiConverterTypeAppTelemetrySignal = (() => {
-    const ordinalConverter = FfiConverterInt32;
-    type TypeName = AppTelemetrySignal;
-    class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
-        read(from: RustBuffer): TypeName {
-            switch (ordinalConverter.read(from)) {
-                case 1: return new AppTelemetrySignal.Feature({feature: FfiConverterString.read(from) });
-                case 2: return new AppTelemetrySignal.Step({step: FfiConverterString.read(from), ok: FfiConverterBool.read(from) });
-                case 3: return new AppTelemetrySignal.Launched({onboardingEligible: FfiConverterOptionalBoolean.read(from) });
-                case 4: return new AppTelemetrySignal.SignInFailed({errorKind: FfiConverterString.read(from) });
-                case 5: return new AppTelemetrySignal.OnboardingPage({page: FfiConverterString.read(from), action: FfiConverterString.read(from), choice: FfiConverterString.read(from) });
-                case 6: return new AppTelemetrySignal.SpaceWizard({action: FfiConverterString.read(from) });
-                case 7: return new AppTelemetrySignal.SpaceCreate({location: FfiConverterString.read(from), guestOs: FfiConverterString.read(from), kind: FfiConverterString.read(from), outcome: FfiConverterString.read(from), failedPhase: FfiConverterString.read(from), stalled: FfiConverterBool.read(from), elapsedMs: FfiConverterUInt64.read(from), gpu: FfiConverterBool.read(from), errorVariant: FfiConverterString.read(from) });
-                case 8: return new AppTelemetrySignal.SpaceCreateStarted({location: FfiConverterString.read(from), guestOs: FfiConverterString.read(from), kind: FfiConverterString.read(from), gpu: FfiConverterBool.read(from) });
-                case 9: return new AppTelemetrySignal.VolumeSetup({surface: FfiConverterString.read(from), storage: FfiConverterString.read(from), addToFinder: FfiConverterBool.read(from), mountMethod: FfiConverterString.read(from), outcome: FfiConverterString.read(from) });
-                case 10: return new AppTelemetrySignal.Share({action: FfiConverterString.read(from), role: FfiConverterString.read(from), outcome: FfiConverterString.read(from) });
-                case 11: return new AppTelemetrySignal.AppUpdate({action: FfiConverterString.read(from), channel: FfiConverterString.read(from), trigger: FfiConverterString.read(from) });
-                case 12: return new AppTelemetrySignal.DeviceEnroll({method: FfiConverterString.read(from), outcome: FfiConverterString.read(from) });
-                case 13: return new AppTelemetrySignal.Experiment({action: FfiConverterString.read(from), experiment: FfiConverterString.read(from) });
-                case 14: return new AppTelemetrySignal.ExperimentsOn({experiments: FfiConverterSequenceString.read(from) });
-                default: throw new UniffiInternalError.UnexpectedEnumCase();
-            }
-        }
-        write(value: TypeName, into: RustBuffer): void {
-            switch (value.tag) {
-                case AppTelemetrySignal_Tags.Feature: {
-                    ordinalConverter.write(1, into);
-                    const inner = value.inner;
-                    FfiConverterString.write(inner.feature, into);
-                    return;
-                }
-                case AppTelemetrySignal_Tags.Step: {
-                    ordinalConverter.write(2, into);
-                    const inner = value.inner;
-                    FfiConverterString.write(inner.step, into);
-                    FfiConverterBool.write(inner.ok, into);
-                    return;
-                }
-                case AppTelemetrySignal_Tags.Launched: {
-                    ordinalConverter.write(3, into);
-                    const inner = value.inner;
-                    FfiConverterOptionalBoolean.write(inner.onboardingEligible, into);
-                    return;
-                }
-                case AppTelemetrySignal_Tags.SignInFailed: {
-                    ordinalConverter.write(4, into);
-                    const inner = value.inner;
-                    FfiConverterString.write(inner.errorKind, into);
-                    return;
-                }
-                case AppTelemetrySignal_Tags.OnboardingPage: {
-                    ordinalConverter.write(5, into);
-                    const inner = value.inner;
-                    FfiConverterString.write(inner.page, into);
-                    FfiConverterString.write(inner.action, into);
-                    FfiConverterString.write(inner.choice, into);
-                    return;
-                }
-                case AppTelemetrySignal_Tags.SpaceWizard: {
-                    ordinalConverter.write(6, into);
-                    const inner = value.inner;
-                    FfiConverterString.write(inner.action, into);
-                    return;
-                }
-                case AppTelemetrySignal_Tags.SpaceCreate: {
-                    ordinalConverter.write(7, into);
-                    const inner = value.inner;
-                    FfiConverterString.write(inner.location, into);
-                    FfiConverterString.write(inner.guestOs, into);
-                    FfiConverterString.write(inner.kind, into);
-                    FfiConverterString.write(inner.outcome, into);
-                    FfiConverterString.write(inner.failedPhase, into);
-                    FfiConverterBool.write(inner.stalled, into);
-                    FfiConverterUInt64.write(inner.elapsedMs, into);
-                    FfiConverterBool.write(inner.gpu, into);
-                    FfiConverterString.write(inner.errorVariant, into);
-                    return;
-                }
-                case AppTelemetrySignal_Tags.SpaceCreateStarted: {
-                    ordinalConverter.write(8, into);
-                    const inner = value.inner;
-                    FfiConverterString.write(inner.location, into);
-                    FfiConverterString.write(inner.guestOs, into);
-                    FfiConverterString.write(inner.kind, into);
-                    FfiConverterBool.write(inner.gpu, into);
-                    return;
-                }
-                case AppTelemetrySignal_Tags.VolumeSetup: {
-                    ordinalConverter.write(9, into);
-                    const inner = value.inner;
-                    FfiConverterString.write(inner.surface, into);
-                    FfiConverterString.write(inner.storage, into);
-                    FfiConverterBool.write(inner.addToFinder, into);
-                    FfiConverterString.write(inner.mountMethod, into);
-                    FfiConverterString.write(inner.outcome, into);
-                    return;
-                }
-                case AppTelemetrySignal_Tags.Share: {
-                    ordinalConverter.write(10, into);
-                    const inner = value.inner;
-                    FfiConverterString.write(inner.action, into);
-                    FfiConverterString.write(inner.role, into);
-                    FfiConverterString.write(inner.outcome, into);
-                    return;
-                }
-                case AppTelemetrySignal_Tags.AppUpdate: {
-                    ordinalConverter.write(11, into);
-                    const inner = value.inner;
-                    FfiConverterString.write(inner.action, into);
-                    FfiConverterString.write(inner.channel, into);
-                    FfiConverterString.write(inner.trigger, into);
-                    return;
-                }
-                case AppTelemetrySignal_Tags.DeviceEnroll: {
-                    ordinalConverter.write(12, into);
-                    const inner = value.inner;
-                    FfiConverterString.write(inner.method, into);
-                    FfiConverterString.write(inner.outcome, into);
-                    return;
-                }
-                case AppTelemetrySignal_Tags.Experiment: {
-                    ordinalConverter.write(13, into);
-                    const inner = value.inner;
-                    FfiConverterString.write(inner.action, into);
-                    FfiConverterString.write(inner.experiment, into);
-                    return;
-                }
-                case AppTelemetrySignal_Tags.ExperimentsOn: {
-                    ordinalConverter.write(14, into);
-                    const inner = value.inner;
-                    FfiConverterSequenceString.write(inner.experiments, into);
-                    return;
-                }
-                default:
-                    // Throwing from here means that AppTelemetrySignal_Tags hasn't matched an ordinal.
-                    throw new UniffiInternalError.UnexpectedEnumCase();
-            }
-        }
-        allocationSize(value: TypeName): number {
-            switch (value.tag) {
-                case AppTelemetrySignal_Tags.Feature: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(1);
-                    size += FfiConverterString.allocationSize(inner.feature);
-                    return size;
-                }
-                case AppTelemetrySignal_Tags.Step: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(2);
-                    size += FfiConverterString.allocationSize(inner.step);
-                    size += FfiConverterBool.allocationSize(inner.ok);
-                    return size;
-                }
-                case AppTelemetrySignal_Tags.Launched: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(3);
-                    size += FfiConverterOptionalBoolean.allocationSize(inner.onboardingEligible);
-                    return size;
-                }
-                case AppTelemetrySignal_Tags.SignInFailed: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(4);
-                    size += FfiConverterString.allocationSize(inner.errorKind);
-                    return size;
-                }
-                case AppTelemetrySignal_Tags.OnboardingPage: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(5);
-                    size += FfiConverterString.allocationSize(inner.page);
-                    size += FfiConverterString.allocationSize(inner.action);
-                    size += FfiConverterString.allocationSize(inner.choice);
-                    return size;
-                }
-                case AppTelemetrySignal_Tags.SpaceWizard: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(6);
-                    size += FfiConverterString.allocationSize(inner.action);
-                    return size;
-                }
-                case AppTelemetrySignal_Tags.SpaceCreate: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(7);
-                    size += FfiConverterString.allocationSize(inner.location);
-                    size += FfiConverterString.allocationSize(inner.guestOs);
-                    size += FfiConverterString.allocationSize(inner.kind);
-                    size += FfiConverterString.allocationSize(inner.outcome);
-                    size += FfiConverterString.allocationSize(inner.failedPhase);
-                    size += FfiConverterBool.allocationSize(inner.stalled);
-                    size += FfiConverterUInt64.allocationSize(inner.elapsedMs);
-                    size += FfiConverterBool.allocationSize(inner.gpu);
-                    size += FfiConverterString.allocationSize(inner.errorVariant);
-                    return size;
-                }
-                case AppTelemetrySignal_Tags.SpaceCreateStarted: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(8);
-                    size += FfiConverterString.allocationSize(inner.location);
-                    size += FfiConverterString.allocationSize(inner.guestOs);
-                    size += FfiConverterString.allocationSize(inner.kind);
-                    size += FfiConverterBool.allocationSize(inner.gpu);
-                    return size;
-                }
-                case AppTelemetrySignal_Tags.VolumeSetup: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(9);
-                    size += FfiConverterString.allocationSize(inner.surface);
-                    size += FfiConverterString.allocationSize(inner.storage);
-                    size += FfiConverterBool.allocationSize(inner.addToFinder);
-                    size += FfiConverterString.allocationSize(inner.mountMethod);
-                    size += FfiConverterString.allocationSize(inner.outcome);
-                    return size;
-                }
-                case AppTelemetrySignal_Tags.Share: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(10);
-                    size += FfiConverterString.allocationSize(inner.action);
-                    size += FfiConverterString.allocationSize(inner.role);
-                    size += FfiConverterString.allocationSize(inner.outcome);
-                    return size;
-                }
-                case AppTelemetrySignal_Tags.AppUpdate: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(11);
-                    size += FfiConverterString.allocationSize(inner.action);
-                    size += FfiConverterString.allocationSize(inner.channel);
-                    size += FfiConverterString.allocationSize(inner.trigger);
-                    return size;
-                }
-                case AppTelemetrySignal_Tags.DeviceEnroll: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(12);
-                    size += FfiConverterString.allocationSize(inner.method);
-                    size += FfiConverterString.allocationSize(inner.outcome);
-                    return size;
-                }
-                case AppTelemetrySignal_Tags.Experiment: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(13);
-                    size += FfiConverterString.allocationSize(inner.action);
-                    size += FfiConverterString.allocationSize(inner.experiment);
-                    return size;
-                }
-                case AppTelemetrySignal_Tags.ExperimentsOn: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(14);
-                    size += FfiConverterSequenceString.allocationSize(inner.experiments);
-                    return size;
-                }
-                default: throw new UniffiInternalError.UnexpectedEnumCase();
-            }
-        }
-    }
-    return new FFIConverter();
-})();
-
 export type AppChecklistTransition = {
     /**
      * The new state (save it when it changed).
      */
-    state: AppChecklistState,
-    /**
-     * `cua_onboarding_step` events to record (`checklist_<event>`).
-     */
-    signals: Array<AppTelemetrySignal>
+    state: AppChecklistState
 }
 
 /**
@@ -12308,17 +11207,14 @@ const FfiConverterTypeAppChecklistTransition = (() => {
     class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
         read(from: RustBuffer): TypeName {
             return {
-                state: FfiConverterTypeAppChecklistState.read(from),
-                signals: FfiConverterSequenceTypeAppTelemetrySignal.read(from)
+                state: FfiConverterTypeAppChecklistState.read(from)
             };
         }
         write(value: TypeName, into: RustBuffer): void {
             FfiConverterTypeAppChecklistState.write(value.state, into);
-            FfiConverterSequenceTypeAppTelemetrySignal.write(value.signals, into);
         }
         allocationSize(value: TypeName): number {
-            return FfiConverterTypeAppChecklistState.allocationSize(value.state) +
-             FfiConverterSequenceTypeAppTelemetrySignal.allocationSize(value.signals);
+            return FfiConverterTypeAppChecklistState.allocationSize(value.state);
 
         }
     };
@@ -28031,64 +26927,6 @@ const FfiConverterTypeAppStorageState = (() => {
     return new FFIConverter();
 })();
 
-export type AppTelemetryInput = {
-    /**
-     * Usage data is shared.
-     */
-    enabled: boolean,
-    /**
-     * The environment decides (`DO_NOT_TRACK`, `CUA_TELEMETRY`, CI): who.
-     */
-    lockedBy?: string,
-    /**
-     * The first-run usage notice was already shown on this machine (by
-     * `cua`, or an earlier run of the app): events may be sent before
-     * Welcome is left.
-     */
-    noticeShown: boolean
-}
-
-/**
- * Generated factory for {@link AppTelemetryInput} record objects.
- */
-export const AppTelemetryInput = (() => {
-    const defaults = () => ({
-    });
-    const create = (() => {
-        return uniffiCreateRecord<AppTelemetryInput, ReturnType<typeof defaults>>(defaults);
-    })();
-    return Object.freeze({
-        create,
-        new: create,
-        defaults: () => Object.freeze(defaults()) as Partial<AppTelemetryInput>,
-    });
-})();
-
-const FfiConverterTypeAppTelemetryInput = (() => {
-    type TypeName = AppTelemetryInput;
-    class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
-        read(from: RustBuffer): TypeName {
-            return {
-                enabled: FfiConverterBool.read(from),
-                lockedBy: FfiConverterOptionalString.read(from),
-                noticeShown: FfiConverterBool.read(from)
-            };
-        }
-        write(value: TypeName, into: RustBuffer): void {
-            FfiConverterBool.write(value.enabled, into);
-            FfiConverterOptionalString.write(value.lockedBy, into);
-            FfiConverterBool.write(value.noticeShown, into);
-        }
-        allocationSize(value: TypeName): number {
-            return FfiConverterBool.allocationSize(value.enabled) +
-             FfiConverterOptionalString.allocationSize(value.lockedBy) +
-             FfiConverterBool.allocationSize(value.noticeShown);
-
-        }
-    };
-    return new FFIConverter();
-})();
-
 export type AppOnboardingState = {
     /**
      * Page.
@@ -28177,28 +27015,15 @@ export type AppOnboardingState = {
      */
     storage: AppStorageState,
     /**
-     * Done's "Launch at login" checkbox (ticked unless unticked). The
+     * The launch-at-login checkbox (ticked unless unticked). The
      * shell applies it when the first run finishes.
      */
     launchAtLogin: boolean,
     /**
-     * The usage-data switch on Welcome: the machine's telemetry setting
-     * (Settings' "Share anonymous usage data", `cua telemetry off`), none
-     * until the shell read it (then it shows on).
-     */
-    telemetry?: AppTelemetryInput,
-    /**
      * Settings, Experiments: the Cua Volume page (and its Done line) only
      * while Cua Volume is on. Off until the shell says otherwise.
      */
-    experiments: AppExperiments,
-    /**
-     * The run's start was counted (`onboarding_shown`, Welcome shown):
-     * when Welcome showed on a machine whose usage notice was already
-     * shown, else when Welcome was left. Once per run, however often
-     * Welcome shows again (Back).
-     */
-    runCounted: boolean
+    experiments: AppExperiments
 }
 
 /**
@@ -28244,9 +27069,7 @@ const FfiConverterTypeAppOnboardingState = (() => {
                 storagePicked: FfiConverterBool.read(from),
                 storage: FfiConverterTypeAppStorageState.read(from),
                 launchAtLogin: FfiConverterBool.read(from),
-                telemetry: FfiConverterOptionalTypeAppTelemetryInput.read(from),
-                experiments: FfiConverterTypeAppExperiments.read(from),
-                runCounted: FfiConverterBool.read(from)
+                experiments: FfiConverterTypeAppExperiments.read(from)
             };
         }
         write(value: TypeName, into: RustBuffer): void {
@@ -28272,9 +27095,7 @@ const FfiConverterTypeAppOnboardingState = (() => {
             FfiConverterBool.write(value.storagePicked, into);
             FfiConverterTypeAppStorageState.write(value.storage, into);
             FfiConverterBool.write(value.launchAtLogin, into);
-            FfiConverterOptionalTypeAppTelemetryInput.write(value.telemetry, into);
             FfiConverterTypeAppExperiments.write(value.experiments, into);
-            FfiConverterBool.write(value.runCounted, into);
         }
         allocationSize(value: TypeName): number {
             return FfiConverterTypeAppOnboardingStep.allocationSize(value.step) +
@@ -28299,9 +27120,7 @@ const FfiConverterTypeAppOnboardingState = (() => {
              FfiConverterBool.allocationSize(value.storagePicked) +
              FfiConverterTypeAppStorageState.allocationSize(value.storage) +
              FfiConverterBool.allocationSize(value.launchAtLogin) +
-             FfiConverterOptionalTypeAppTelemetryInput.allocationSize(value.telemetry) +
-             FfiConverterTypeAppExperiments.allocationSize(value.experiments) +
-             FfiConverterBool.allocationSize(value.runCounted);
+             FfiConverterTypeAppExperiments.allocationSize(value.experiments);
 
         }
     };
@@ -28435,69 +27254,6 @@ const FfiConverterTypeAppPresentationCard = (() => {
     return new FFIConverter();
 })();
 
-export type AppUsageToggle = {
-    /**
-     * "Share anonymous usage data".
-     */
-    label: string,
-    /**
-     * On.
-     */
-    on: boolean,
-    /**
-     * It can be changed (the environment does not decide).
-     */
-    enabled: boolean,
-    /**
-     * Why it cannot ("Set by env DO_NOT_TRACK").
-     */
-    help?: string
-}
-
-/**
- * Generated factory for {@link AppUsageToggle} record objects.
- */
-export const AppUsageToggle = (() => {
-    const defaults = () => ({
-    });
-    const create = (() => {
-        return uniffiCreateRecord<AppUsageToggle, ReturnType<typeof defaults>>(defaults);
-    })();
-    return Object.freeze({
-        create,
-        new: create,
-        defaults: () => Object.freeze(defaults()) as Partial<AppUsageToggle>,
-    });
-})();
-
-const FfiConverterTypeAppUsageToggle = (() => {
-    type TypeName = AppUsageToggle;
-    class FFIConverter extends AbstractFfiConverterByteArray<TypeName> {
-        read(from: RustBuffer): TypeName {
-            return {
-                label: FfiConverterString.read(from),
-                on: FfiConverterBool.read(from),
-                enabled: FfiConverterBool.read(from),
-                help: FfiConverterOptionalString.read(from)
-            };
-        }
-        write(value: TypeName, into: RustBuffer): void {
-            FfiConverterString.write(value.label, into);
-            FfiConverterBool.write(value.on, into);
-            FfiConverterBool.write(value.enabled, into);
-            FfiConverterOptionalString.write(value.help, into);
-        }
-        allocationSize(value: TypeName): number {
-            return FfiConverterString.allocationSize(value.label) +
-             FfiConverterBool.allocationSize(value.on) +
-             FfiConverterBool.allocationSize(value.enabled) +
-             FfiConverterOptionalString.allocationSize(value.help);
-
-        }
-    };
-    return new FFIConverter();
-})();
-
 export type AppOnboardingView = {
     /**
      * Page.
@@ -28555,25 +27311,6 @@ export type AppOnboardingView = {
      */
     prompts: Array<string>,
     /**
-     * The first-run telemetry notice (the Welcome page, so the first run
-     * itself can be measured): nothing is sent before it has been shown
-     * once.
-     */
-    notice?: string,
-    /**
-     * Its link: label.
-     */
-    noticeLinkLabel?: string,
-    /**
-     * Its link: URL.
-     */
-    noticeLinkUrl?: string,
-    /**
-     * Welcome's usage-data switch, next to the notice: nothing is sent
-     * before the user leaves Welcome, and nothing at all while it is off.
-     */
-    usage?: AppUsageToggle,
-    /**
      * The Cua Volume page's card.
      */
     drive?: AppDriveCard,
@@ -28617,10 +27354,6 @@ const FfiConverterTypeAppOnboardingView = (() => {
                 choices: FfiConverterSequenceTypeAppModeChoice.read(from),
                 presentations: FfiConverterSequenceTypeAppPresentationCard.read(from),
                 prompts: FfiConverterSequenceString.read(from),
-                notice: FfiConverterOptionalString.read(from),
-                noticeLinkLabel: FfiConverterOptionalString.read(from),
-                noticeLinkUrl: FfiConverterOptionalString.read(from),
-                usage: FfiConverterOptionalTypeAppUsageToggle.read(from),
                 drive: FfiConverterOptionalTypeAppDriveCard.read(from),
                 launchAtLogin: FfiConverterOptionalTypeAppOnboardingCheckbox.read(from)
             };
@@ -28639,10 +27372,6 @@ const FfiConverterTypeAppOnboardingView = (() => {
             FfiConverterSequenceTypeAppModeChoice.write(value.choices, into);
             FfiConverterSequenceTypeAppPresentationCard.write(value.presentations, into);
             FfiConverterSequenceString.write(value.prompts, into);
-            FfiConverterOptionalString.write(value.notice, into);
-            FfiConverterOptionalString.write(value.noticeLinkLabel, into);
-            FfiConverterOptionalString.write(value.noticeLinkUrl, into);
-            FfiConverterOptionalTypeAppUsageToggle.write(value.usage, into);
             FfiConverterOptionalTypeAppDriveCard.write(value.drive, into);
             FfiConverterOptionalTypeAppOnboardingCheckbox.write(value.launchAtLogin, into);
         }
@@ -28660,10 +27389,6 @@ const FfiConverterTypeAppOnboardingView = (() => {
              FfiConverterSequenceTypeAppModeChoice.allocationSize(value.choices) +
              FfiConverterSequenceTypeAppPresentationCard.allocationSize(value.presentations) +
              FfiConverterSequenceString.allocationSize(value.prompts) +
-             FfiConverterOptionalString.allocationSize(value.notice) +
-             FfiConverterOptionalString.allocationSize(value.noticeLinkLabel) +
-             FfiConverterOptionalString.allocationSize(value.noticeLinkUrl) +
-             FfiConverterOptionalTypeAppUsageToggle.allocationSize(value.usage) +
              FfiConverterOptionalTypeAppDriveCard.allocationSize(value.drive) +
              FfiConverterOptionalTypeAppOnboardingCheckbox.allocationSize(value.launchAtLogin);
 
@@ -32871,12 +31596,6 @@ export type AppSettings = {
      */
     dismissedAccess: Array<string>,
     /**
-     * Keyvault rows may load a site's icon from Google's favicon service
-     * when the source browser had none (Settings, Keyvault; on by default).
-     * Off, only icons read locally are shown.
-     */
-    keyvaultSiteIcons: boolean,
-    /**
      * The sites the user sent to each Space last time, per app
      * ([`crate::teleport::review::remember`]): the review starts from them.
      */
@@ -32928,7 +31647,6 @@ const FfiConverterTypeAppSettings = (() => {
                 experiments: FfiConverterTypeAppExperiments.read(from),
                 newUi: FfiConverterOptionalBoolean.read(from),
                 dismissedAccess: FfiConverterSequenceString.read(from),
-                keyvaultSiteIcons: FfiConverterBool.read(from),
                 teleportChoices: FfiConverterSequenceTypeAppRememberedChoice.read(from),
                 autoConnect: FfiConverterBool.read(from),
                 currentTeamId: FfiConverterOptionalString.read(from)
@@ -32947,7 +31665,6 @@ const FfiConverterTypeAppSettings = (() => {
             FfiConverterTypeAppExperiments.write(value.experiments, into);
             FfiConverterOptionalBoolean.write(value.newUi, into);
             FfiConverterSequenceString.write(value.dismissedAccess, into);
-            FfiConverterBool.write(value.keyvaultSiteIcons, into);
             FfiConverterSequenceTypeAppRememberedChoice.write(value.teleportChoices, into);
             FfiConverterBool.write(value.autoConnect, into);
             FfiConverterOptionalString.write(value.currentTeamId, into);
@@ -32965,7 +31682,6 @@ const FfiConverterTypeAppSettings = (() => {
              FfiConverterTypeAppExperiments.allocationSize(value.experiments) +
              FfiConverterOptionalBoolean.allocationSize(value.newUi) +
              FfiConverterSequenceString.allocationSize(value.dismissedAccess) +
-             FfiConverterBool.allocationSize(value.keyvaultSiteIcons) +
              FfiConverterSequenceTypeAppRememberedChoice.allocationSize(value.teleportChoices) +
              FfiConverterBool.allocationSize(value.autoConnect) +
              FfiConverterOptionalString.allocationSize(value.currentTeamId);
@@ -33662,10 +32378,6 @@ export type AppSettingsInput = {
      */
     locationLockedBy?: string,
     /**
-     * The telemetry switch (none until read).
-     */
-    telemetry?: AppTelemetryInput,
-    /**
      * Coding agents (none while detecting).
      */
     agents?: Array<AppAgentSettingsRow>,
@@ -33705,11 +32417,6 @@ export type AppSettingsInput = {
      * again"); none until the broker told it.
      */
     keyvaultUnlockPrompt?: boolean,
-    /**
-     * Load site icons from Google when the browser had none
-     * ([`AppSettings::keyvault_site_icons`]).
-     */
-    keyvaultSiteIcons: boolean,
     /**
      * The Keyvault's protection facts (Touch ID, the daemon's signature),
      * shown in the section.
@@ -33760,7 +32467,6 @@ const FfiConverterTypeAppSettingsInput = (() => {
                 menuBar: FfiConverterBool.read(from),
                 defaultLocation: FfiConverterTypeAppLocation.read(from),
                 locationLockedBy: FfiConverterOptionalString.read(from),
-                telemetry: FfiConverterOptionalTypeAppTelemetryInput.read(from),
                 agents: FfiConverterOptionalSequenceTypeAppAgentSettingsRow.read(from),
                 agentsBusy: FfiConverterBool.read(from),
                 agentsPending: FfiConverterSequenceString.read(from),
@@ -33770,7 +32476,6 @@ const FfiConverterTypeAppSettingsInput = (() => {
                 experiments: FfiConverterTypeAppExperiments.read(from),
                 keyvaultAutoWipe: FfiConverterOptionalBoolean.read(from),
                 keyvaultUnlockPrompt: FfiConverterOptionalBoolean.read(from),
-                keyvaultSiteIcons: FfiConverterBool.read(from),
                 keyvaultProtection: FfiConverterSequenceTypeAppFact.read(from),
                 autoConnect: FfiConverterOptionalBoolean.read(from),
                 lumeSource: FfiConverterOptionalString.read(from),
@@ -33785,7 +32490,6 @@ const FfiConverterTypeAppSettingsInput = (() => {
             FfiConverterBool.write(value.menuBar, into);
             FfiConverterTypeAppLocation.write(value.defaultLocation, into);
             FfiConverterOptionalString.write(value.locationLockedBy, into);
-            FfiConverterOptionalTypeAppTelemetryInput.write(value.telemetry, into);
             FfiConverterOptionalSequenceTypeAppAgentSettingsRow.write(value.agents, into);
             FfiConverterBool.write(value.agentsBusy, into);
             FfiConverterSequenceString.write(value.agentsPending, into);
@@ -33795,7 +32499,6 @@ const FfiConverterTypeAppSettingsInput = (() => {
             FfiConverterTypeAppExperiments.write(value.experiments, into);
             FfiConverterOptionalBoolean.write(value.keyvaultAutoWipe, into);
             FfiConverterOptionalBoolean.write(value.keyvaultUnlockPrompt, into);
-            FfiConverterBool.write(value.keyvaultSiteIcons, into);
             FfiConverterSequenceTypeAppFact.write(value.keyvaultProtection, into);
             FfiConverterOptionalBoolean.write(value.autoConnect, into);
             FfiConverterOptionalString.write(value.lumeSource, into);
@@ -33809,7 +32512,6 @@ const FfiConverterTypeAppSettingsInput = (() => {
              FfiConverterBool.allocationSize(value.menuBar) +
              FfiConverterTypeAppLocation.allocationSize(value.defaultLocation) +
              FfiConverterOptionalString.allocationSize(value.locationLockedBy) +
-             FfiConverterOptionalTypeAppTelemetryInput.allocationSize(value.telemetry) +
              FfiConverterOptionalSequenceTypeAppAgentSettingsRow.allocationSize(value.agents) +
              FfiConverterBool.allocationSize(value.agentsBusy) +
              FfiConverterSequenceString.allocationSize(value.agentsPending) +
@@ -33819,7 +32521,6 @@ const FfiConverterTypeAppSettingsInput = (() => {
              FfiConverterTypeAppExperiments.allocationSize(value.experiments) +
              FfiConverterOptionalBoolean.allocationSize(value.keyvaultAutoWipe) +
              FfiConverterOptionalBoolean.allocationSize(value.keyvaultUnlockPrompt) +
-             FfiConverterBool.allocationSize(value.keyvaultSiteIcons) +
              FfiConverterSequenceTypeAppFact.allocationSize(value.keyvaultProtection) +
              FfiConverterOptionalBoolean.allocationSize(value.autoConnect) +
              FfiConverterOptionalString.allocationSize(value.lumeSource) +
@@ -33832,11 +32533,11 @@ const FfiConverterTypeAppSettingsInput = (() => {
 
 export type AppSettingsSection = {
     /**
-     * `account`, `general`, `privacy`, `agents`.
+     * `account`, `general`, `agents`.
      */
     id: string,
     /**
-     * "Account", "General", "Privacy", "AI agents".
+     * "Account", "General", "AI agents".
      */
     title: string,
     /**
@@ -33913,7 +32614,7 @@ export type AppSettingsPage = {
      */
     title: string,
     /**
-     * Account, General, Privacy (once read), AI agents.
+     * Account, General, AI agents.
      */
     sections: Array<AppSettingsSection>
 }
@@ -45894,10 +44595,8 @@ inner: {otherMachine: boolean; hasSpace: boolean; agentRan: boolean }): Observe_
 Readonly<{state: AppChecklistState}>
     };
     /**
-     * Progress kept elsewhere before (the web UI's own storage, another
-     * copy of the file): its steps are ticked, and it stays closed or
-     * shown if it was. Its events were recorded where it was ticked, so
-     * none are recorded again.
+     * Another copy of the file: its steps are ticked, and it stays closed or
+     * shown if it was.
      */
     class Merge_ extends UniffiEnum implements Merge__interface {
         /**
@@ -50435,9 +49134,6 @@ export enum AppOnboardingAction_Tags {
     DriveStorageSaved = "DriveStorageSaved",
     LaunchAtLoginToggled = "LaunchAtLoginToggled",
     Back = "Back",
-    TelemetryLoaded = "TelemetryLoaded",
-    WelcomeShown = "WelcomeShown",
-    UsageDataToggled = "UsageDataToggled",
     ExperimentsLoaded = "ExperimentsLoaded"
 }
 export const AppOnboardingAction = (() => {
@@ -51158,104 +49854,6 @@ inner: {on: boolean }): LaunchAtLoginToggled_ {
 
     }
 
-    type TelemetryLoaded__interface = {
-        tag: AppOnboardingAction_Tags.TelemetryLoaded;
-        inner:
-Readonly<{telemetry: AppTelemetryInput}>
-    };
-    /**
-     * The machine's telemetry setting, as the shell read it. Any page.
-     */
-    class TelemetryLoaded_ extends UniffiEnum implements TelemetryLoaded__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppOnboardingAction";
-        readonly tag = AppOnboardingAction_Tags.TelemetryLoaded;
-        readonly inner:
-Readonly<{telemetry: AppTelemetryInput}>;
-        constructor(
-inner: {telemetry: AppTelemetryInput }) {
-            super("AppOnboardingAction", "TelemetryLoaded");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {telemetry: AppTelemetryInput }): TelemetryLoaded_ {
-            return new TelemetryLoaded_(inner);
-        }
-
-        static instanceOf(obj: any): obj is TelemetryLoaded_ {
-            return obj.tag === AppOnboardingAction_Tags.TelemetryLoaded;
-        }
-
-    }
-
-    type WelcomeShown__interface = {
-        tag: AppOnboardingAction_Tags.WelcomeShown
-    };
-    /**
-     * Welcome is on screen (each time it shows; after `telemetry-loaded`).
-     * On a machine that already showed the usage notice, with usage data
-     * on, the run's start counts now rather than when Welcome is left.
-     */
-    class WelcomeShown_ extends UniffiEnum implements WelcomeShown__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppOnboardingAction";
-        readonly tag = AppOnboardingAction_Tags.WelcomeShown;
-        constructor() {
-            super("AppOnboardingAction", "WelcomeShown");
-        }
-
-        static new(): WelcomeShown_ {
-            return new WelcomeShown_();
-        }
-
-        static instanceOf(obj: any): obj is WelcomeShown_ {
-            return obj.tag === AppOnboardingAction_Tags.WelcomeShown;
-        }
-
-    }
-
-    type UsageDataToggled__interface = {
-        tag: AppOnboardingAction_Tags.UsageDataToggled;
-        inner:
-Readonly<{on: boolean}>
-    };
-    /**
-     * Welcome's "Share anonymous usage data" switch (not while the
-     * environment decides). The shell writes the setting.
-     */
-    class UsageDataToggled_ extends UniffiEnum implements UsageDataToggled__interface {
-        /**
-         * @private
-         * This field is private and should not be used, use `tag` instead.
-         */
-        readonly [uniffiTypeNameSymbol] = "AppOnboardingAction";
-        readonly tag = AppOnboardingAction_Tags.UsageDataToggled;
-        readonly inner:
-Readonly<{on: boolean}>;
-        constructor(
-inner: {on: boolean }) {
-            super("AppOnboardingAction", "UsageDataToggled");
-
-            this.inner = Object.freeze(inner);
-        }
-        static new(
-inner: {on: boolean }): UsageDataToggled_ {
-            return new UsageDataToggled_(inner);
-        }
-
-        static instanceOf(obj: any): obj is UsageDataToggled_ {
-            return obj.tag === AppOnboardingAction_Tags.UsageDataToggled;
-        }
-
-    }
-
     type ExperimentsLoaded__interface = {
         tag: AppOnboardingAction_Tags.ExperimentsLoaded;
         inner:
@@ -51320,15 +49918,12 @@ inner: {experiments: AppExperiments }): ExperimentsLoaded_ {
   DriveStorageSaved: DriveStorageSaved_,
   LaunchAtLoginToggled: LaunchAtLoginToggled_,
   Back: Back_,
-  TelemetryLoaded: TelemetryLoaded_,
-  WelcomeShown: WelcomeShown_,
-  UsageDataToggled: UsageDataToggled_,
   ExperimentsLoaded: ExperimentsLoaded_
     });
 
 })();
 export type AppOnboardingAction = InstanceType<
-    typeof AppOnboardingAction['Start' | 'CliInstalled' | 'CliPlanned' | 'CliDone' | 'CliInstallFailed' | 'PresentationPicked' | 'PresentationDone' | 'SignedIn' | 'SigninDone' | 'AgentsDone' | 'ModeChosen' | 'DriveChecked' | 'DriveToggled' | 'DriveContinue' | 'DriveMounted' | 'DriveFailed' | 'DriveStorageLoaded' | 'StorageChosen' | 'DriveStorage' | 'DriveStorageSaved' | 'LaunchAtLoginToggled' | 'Back' | 'TelemetryLoaded' | 'WelcomeShown' | 'UsageDataToggled' | 'ExperimentsLoaded']
+    typeof AppOnboardingAction['Start' | 'CliInstalled' | 'CliPlanned' | 'CliDone' | 'CliInstallFailed' | 'PresentationPicked' | 'PresentationDone' | 'SignedIn' | 'SigninDone' | 'AgentsDone' | 'ModeChosen' | 'DriveChecked' | 'DriveToggled' | 'DriveContinue' | 'DriveMounted' | 'DriveFailed' | 'DriveStorageLoaded' | 'StorageChosen' | 'DriveStorage' | 'DriveStorageSaved' | 'LaunchAtLoginToggled' | 'Back' | 'ExperimentsLoaded']
 >;
 
 // FfiConverter for enum AppOnboardingAction
@@ -51360,10 +49955,7 @@ const FfiConverterTypeAppOnboardingAction = (() => {
                 case 20: return new AppOnboardingAction.DriveStorageSaved({check: FfiConverterTypeAppDriveCheckInput.read(from) });
                 case 21: return new AppOnboardingAction.LaunchAtLoginToggled({on: FfiConverterBool.read(from) });
                 case 22: return new AppOnboardingAction.Back();
-                case 23: return new AppOnboardingAction.TelemetryLoaded({telemetry: FfiConverterTypeAppTelemetryInput.read(from) });
-                case 24: return new AppOnboardingAction.WelcomeShown();
-                case 25: return new AppOnboardingAction.UsageDataToggled({on: FfiConverterBool.read(from) });
-                case 26: return new AppOnboardingAction.ExperimentsLoaded({experiments: FfiConverterTypeAppExperiments.read(from) });
+                case 23: return new AppOnboardingAction.ExperimentsLoaded({experiments: FfiConverterTypeAppExperiments.read(from) });
                 default: throw new UniffiInternalError.UnexpectedEnumCase();
             }
         }
@@ -51493,24 +50085,8 @@ const FfiConverterTypeAppOnboardingAction = (() => {
                     ordinalConverter.write(22, into);
                     return;
                 }
-                case AppOnboardingAction_Tags.TelemetryLoaded: {
-                    ordinalConverter.write(23, into);
-                    const inner = value.inner;
-                    FfiConverterTypeAppTelemetryInput.write(inner.telemetry, into);
-                    return;
-                }
-                case AppOnboardingAction_Tags.WelcomeShown: {
-                    ordinalConverter.write(24, into);
-                    return;
-                }
-                case AppOnboardingAction_Tags.UsageDataToggled: {
-                    ordinalConverter.write(25, into);
-                    const inner = value.inner;
-                    FfiConverterBool.write(inner.on, into);
-                    return;
-                }
                 case AppOnboardingAction_Tags.ExperimentsLoaded: {
-                    ordinalConverter.write(26, into);
+                    ordinalConverter.write(23, into);
                     const inner = value.inner;
                     FfiConverterTypeAppExperiments.write(inner.experiments, into);
                     return;
@@ -51641,24 +50217,9 @@ const FfiConverterTypeAppOnboardingAction = (() => {
                 case AppOnboardingAction_Tags.Back: {
                     return ordinalConverter.allocationSize(22);
                 }
-                case AppOnboardingAction_Tags.TelemetryLoaded: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(23);
-                    size += FfiConverterTypeAppTelemetryInput.allocationSize(inner.telemetry);
-                    return size;
-                }
-                case AppOnboardingAction_Tags.WelcomeShown: {
-                    return ordinalConverter.allocationSize(24);
-                }
-                case AppOnboardingAction_Tags.UsageDataToggled: {
-                    const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(25);
-                    size += FfiConverterBool.allocationSize(inner.on);
-                    return size;
-                }
                 case AppOnboardingAction_Tags.ExperimentsLoaded: {
                     const inner = value.inner;
-                    let size = ordinalConverter.allocationSize(26);
+                    let size = ordinalConverter.allocationSize(23);
                     size += FfiConverterTypeAppExperiments.allocationSize(inner.experiments);
                     return size;
                 }
@@ -59732,9 +58293,6 @@ const FfiConverterSequenceTypeAppSpace = new FfiConverterArray(FfiConverterTypeA
 // FfiConverter for Array<AppChecklistStep>
 const FfiConverterSequenceTypeAppChecklistStep = new FfiConverterArray(FfiConverterTypeAppChecklistStep);
 
-// FfiConverter for Array<AppTelemetrySignal>
-const FfiConverterSequenceTypeAppTelemetrySignal = new FfiConverterArray(FfiConverterTypeAppTelemetrySignal);
-
 // FfiConverter for Array<AppChecklistRow>
 const FfiConverterSequenceTypeAppChecklistRow = new FfiConverterArray(FfiConverterTypeAppChecklistRow);
 
@@ -60029,9 +58587,6 @@ const FfiConverterOptionalTypeAppStorageRequest = new FfiConverterOptional(FfiCo
 // FfiConverter for AppDriveCheckInput | undefined
 const FfiConverterOptionalTypeAppDriveCheckInput = new FfiConverterOptional(FfiConverterTypeAppDriveCheckInput);
 
-// FfiConverter for AppTelemetryInput | undefined
-const FfiConverterOptionalTypeAppTelemetryInput = new FfiConverterOptional(FfiConverterTypeAppTelemetryInput);
-
 // FfiConverter for Array<AppStepDot>
 const FfiConverterSequenceTypeAppStepDot = new FfiConverterArray(FfiConverterTypeAppStepDot);
 
@@ -60040,9 +58595,6 @@ const FfiConverterSequenceTypeAppModeChoice = new FfiConverterArray(FfiConverter
 
 // FfiConverter for Array<AppPresentationCard>
 const FfiConverterSequenceTypeAppPresentationCard = new FfiConverterArray(FfiConverterTypeAppPresentationCard);
-
-// FfiConverter for AppUsageToggle | undefined
-const FfiConverterOptionalTypeAppUsageToggle = new FfiConverterOptional(FfiConverterTypeAppUsageToggle);
 
 // FfiConverter for AppDriveCard | undefined
 const FfiConverterOptionalTypeAppDriveCard = new FfiConverterOptional(FfiConverterTypeAppDriveCard);
@@ -60594,7 +59146,7 @@ function uniffiEnsureInitialized() {
     if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_checklist_observe_from() !== 5363) {
         throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_checklist_observe_from");
     }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_checklist_reduce() !== 46431) {
+    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_checklist_reduce() !== 56142) {
         throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_checklist_reduce");
     }
     if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_checklist_state_from_json() !== 52352) {
@@ -61163,48 +59715,6 @@ function uniffiEnsureInitialized() {
     }
     if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_teams() !== 64616) {
         throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_teams");
-    }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_telemetry_creates() !== 25911) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_telemetry_creates");
-    }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_telemetry_enroll() !== 55601) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_telemetry_enroll");
-    }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_telemetry_experiments_changed() !== 28606) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_telemetry_experiments_changed");
-    }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_telemetry_experiments_on() !== 48676) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_telemetry_experiments_on");
-    }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_telemetry_feature() !== 57127) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_telemetry_feature");
-    }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_telemetry_launched() !== 17300) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_telemetry_launched");
-    }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_telemetry_onboarding() !== 25405) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_telemetry_onboarding");
-    }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_telemetry_onboarding_finished() !== 62975) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_telemetry_onboarding_finished");
-    }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_telemetry_record() !== 54106) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_telemetry_record");
-    }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_telemetry_share() !== 42479) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_telemetry_share");
-    }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_telemetry_sign_in_failed() !== 34262) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_telemetry_sign_in_failed");
-    }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_telemetry_start() !== 189) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_telemetry_start");
-    }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_telemetry_storage() !== 21459) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_telemetry_storage");
-    }
-    if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_telemetry_welcome_left() !== 26839) {
-        throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_telemetry_welcome_left");
     }
     if (nativeModule().uniffi_cua_spaces_ffi_checksum_func_app_teleport_plan() !== 33184) {
         throw new UniffiInternalError.ApiChecksumMismatch("uniffi_cua_spaces_ffi_checksum_func_app_teleport_plan");
@@ -61870,8 +60380,6 @@ export default Object.freeze({
     FfiConverterTypeAppTeamPersonInput,
     FfiConverterTypeAppTeamsInput,
     FfiConverterTypeAppTeamsState,
-    FfiConverterTypeAppTelemetryInput,
-    FfiConverterTypeAppTelemetrySignal,
     FfiConverterTypeAppTeleportCapability,
     FfiConverterTypeAppTeleportConsent,
     FfiConverterTypeAppTeleportMove,
@@ -61890,7 +60398,6 @@ export default Object.freeze({
     FfiConverterTypeAppTriggerPhase,
     FfiConverterTypeAppUnconfirmedMachine,
     FfiConverterTypeAppUpdateChannel,
-    FfiConverterTypeAppUsageToggle,
     FfiConverterTypeAppVaultPassword,
     FfiConverterTypeAppVaultSource,
     FfiConverterTypeAppWindowMode,

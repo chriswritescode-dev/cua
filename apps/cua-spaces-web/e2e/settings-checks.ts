@@ -112,9 +112,6 @@ async function checkAbout(page: Page, checkpoints: ParityCheckpoint[]): Promise<
     else await expect(page.locator("[data-about-check]"), step).toBeDisabled();
     await expect(page.locator("[data-about-last-check]"), step).toHaveText(u.lastCheck);
     await expect(page.locator("[data-about-auto-check]"), step).toHaveAttribute("aria-checked", String(u.autoCheck));
-    await expect(page.locator("[data-about-auto-install]"), step).toHaveAttribute("aria-checked", String(u.autoInstall));
-    if (u.autoInstallEnabled) await expect(page.locator("[data-about-auto-install]"), step).not.toHaveAttribute("data-disabled");
-    else await expect(page.locator("[data-about-auto-install]"), step).toHaveAttribute("data-disabled");
     await expect(updates.getByRole("combobox"), step).toHaveText(u.channels.find((c) => c.active)!.label);
   }
   return states.length;

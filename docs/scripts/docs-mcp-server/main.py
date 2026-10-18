@@ -18,7 +18,6 @@ Usage:
 
 import os
 import sqlite3
-import time
 from pathlib import Path
 from typing import Optional
 
@@ -28,89 +27,9 @@ from lancedb.embeddings import get_registry
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 
-# Configuration from environment variables
-OTEL_ENDPOINT = os.environ.get("OTEL_ENDPOINT", "https://otel.cua.ai")
-OTEL_SERVICE_NAME = os.environ.get("OTEL_SERVICE_NAME", "cua-docs-mcp")
-
 # Database paths (configurable via environment)
 DOCS_DB_PATH = os.environ.get("DOCS_DB_PATH", "/data/docs_db")
 CODE_DB_PATH = os.environ.get("CODE_DB_PATH", "/data/code_db")
-
-# Initialize OpenTelemetry for metrics and tracing
-_tracer = None
-_meter = None
-_request_counter = None
-_request_duration = None
-
-
-def init_telemetry():
-    """Initialize OpenTelemetry for metrics and tracing."""
-    global _tracer, _meter, _request_counter, _request_duration
-
-    try:
-        from opentelemetry import metrics, trace
-        from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
-            OTLPMetricExporter,
-        )
-        from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-            OTLPSpanExporter,
-        )
-        from opentelemetry.sdk.metrics import MeterProvider
-        from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-        from opentelemetry.sdk.resources import Resource
-        from opentelemetry.sdk.trace import TracerProvider
-        from opentelemetry.sdk.trace.export import BatchSpanProcessor
-
-        resource = Resource.create(
-            {
-                "service.name": OTEL_SERVICE_NAME,
-                "service.version": "1.0.0",
-            }
-        )
-
-        # Set up tracing
-        trace_exporter = OTLPSpanExporter(endpoint=f"{OTEL_ENDPOINT}/v1/traces")
-        tracer_provider = TracerProvider(resource=resource)
-        tracer_provider.add_span_processor(BatchSpanProcessor(trace_exporter))
-        trace.set_tracer_provider(tracer_provider)
-        _tracer = trace.get_tracer(OTEL_SERVICE_NAME)
-
-        # Set up metrics
-        metric_exporter = OTLPMetricExporter(endpoint=f"{OTEL_ENDPOINT}/v1/metrics")
-        metric_reader = PeriodicExportingMetricReader(metric_exporter, export_interval_millis=60000)
-        meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
-        metrics.set_meter_provider(meter_provider)
-        _meter = metrics.get_meter(OTEL_SERVICE_NAME)
-
-        # Create metrics instruments
-        _request_counter = _meter.create_counter(
-            name="mcp_requests_total",
-            description="Total number of MCP tool requests",
-            unit="1",
-        )
-        _request_duration = _meter.create_histogram(
-            name="mcp_request_duration_seconds",
-            description="Duration of MCP tool requests in seconds",
-            unit="s",
-        )
-
-        print(f"OpenTelemetry initialized with endpoint: {OTEL_ENDPOINT}")
-    except ImportError as e:
-        print(f"OpenTelemetry packages not available: {e}")
-    except Exception as e:
-        print(f"Failed to initialize OpenTelemetry: {e}")
-
-
-def record_request(tool_name: str, duration: float, status: str = "success"):
-    """Record metrics for a tool request."""
-    if _request_counter is not None:
-        _request_counter.add(1, {"tool": tool_name, "status": status})
-    if _request_duration is not None:
-        _request_duration.record(duration, {"tool": tool_name, "status": status})
-
-
-# Initialize telemetry
-init_telemetry()
 
 # Initialize the MCP server
 mcp = FastMCP(
@@ -268,18 +187,10 @@ def query_docs_db(sql: str) -> list[dict]:
     Returns:
         List of dictionaries, one per row, with column names as keys
     """
-    start_time = time.perf_counter()
-    status = "success"
-    try:
-        conn = get_sqlite_conn()
-        cursor = conn.cursor()
-        cursor.execute(sql)
-        return [dict(row) for row in cursor.fetchall()]
-    except Exception:
-        status = "error"
-        raise
-    finally:
-        record_request("query_docs_db", time.perf_counter() - start_time, status)
+    conn = get_sqlite_conn()
+    cursor = conn.cursor()
+    cursor.execute(sql)
+    return [dict(row) for row in cursor.fetchall()]
 
 
 @mcp.tool()
@@ -310,36 +221,28 @@ def query_docs_vectors(
     Returns:
         List of matching documents with similarity scores (_distance field)
     """
-    start_time = time.perf_counter()
-    status = "success"
-    try:
-        limit = min(max(1, limit), 100)
-        table = get_lance_table()
+    limit = min(max(1, limit), 100)
+    table = get_lance_table()
 
-        search = table.search(query).limit(limit)
+    search = table.search(query).limit(limit)
 
-        if where:
-            search = search.where(where)
-        if select:
-            search = search.select(select)
+    if where:
+        search = search.where(where)
+    if select:
+        search = search.select(select)
 
-        results = search.to_list()
+    results = search.to_list()
 
-        formatted = []
-        for r in results:
-            result = {}
-            for key, value in r.items():
-                if key == "vector":
-                    continue
-                result[key] = value
-            formatted.append(result)
+    formatted = []
+    for r in results:
+        result = {}
+        for key, value in r.items():
+            if key == "vector":
+                continue
+            result[key] = value
+        formatted.append(result)
 
-        return formatted
-    except Exception:
-        status = "error"
-        raise
-    finally:
-        record_request("query_docs_vectors", time.perf_counter() - start_time, status)
+    return formatted
 
 
 # =================== CODE QUERY TOOLS (READ-ONLY) ===================
@@ -391,18 +294,10 @@ def query_code_db(sql: str) -> list[dict]:
     Returns:
         List of dictionaries, one per row, with column names as keys
     """
-    start_time = time.perf_counter()
-    status = "success"
-    try:
-        conn = get_code_sqlite_conn()
-        cursor = conn.cursor()
-        cursor.execute(sql)
-        return [dict(row) for row in cursor.fetchall()]
-    except Exception:
-        status = "error"
-        raise
-    finally:
-        record_request("query_code_db", time.perf_counter() - start_time, status)
+    conn = get_code_sqlite_conn()
+    cursor = conn.cursor()
+    cursor.execute(sql)
+    return [dict(row) for row in cursor.fetchall()]
 
 
 @mcp.tool()
@@ -434,43 +329,35 @@ def query_code_vectors(
     Returns:
         List of matching code files with similarity scores (_distance field)
     """
-    start_time = time.perf_counter()
-    status = "success"
-    try:
-        limit = min(max(1, limit), 100)
-        table = get_code_lance_table()
+    limit = min(max(1, limit), 100)
+    table = get_code_lance_table()
 
-        search = table.search(query).limit(limit)
+    search = table.search(query).limit(limit)
 
-        # Build where clause, adding component filter if specified
-        where_clauses = []
-        if component:
-            where_clauses.append(f"component = '{component}'")
-        if where:
-            where_clauses.append(where)
+    # Build where clause, adding component filter if specified
+    where_clauses = []
+    if component:
+        where_clauses.append(f"component = '{component}'")
+    if where:
+        where_clauses.append(where)
 
-        if where_clauses:
-            search = search.where(" AND ".join(where_clauses))
-        if select:
-            search = search.select(select)
+    if where_clauses:
+        search = search.where(" AND ".join(where_clauses))
+    if select:
+        search = search.select(select)
 
-        results = search.to_list()
+    results = search.to_list()
 
-        formatted = []
-        for r in results:
-            result = {}
-            for key, value in r.items():
-                if key == "vector":
-                    continue
-                result[key] = value
-            formatted.append(result)
+    formatted = []
+    for r in results:
+        result = {}
+        for key, value in r.items():
+            if key == "vector":
+                continue
+            result[key] = value
+        formatted.append(result)
 
-        return formatted
-    except Exception:
-        status = "error"
-        raise
-    finally:
-        record_request("query_code_vectors", time.perf_counter() - start_time, status)
+    return formatted
 
 
 # Create the ASGI app

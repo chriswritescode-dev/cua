@@ -3,24 +3,24 @@
 
 // electron-updater against the feed electron-builder bakes into
 // app-update.yml: the rolling `cua-spaces-latest` release of the repository
-// the build came from (electron-builder.config.cjs). It stands where Sparkle
-// does in the Swift app (Settings → About, `model/updates.ts`): automatic
-// checks, the channel, Check Now, and the last check.
+// the build came from (electron-builder.config.cjs). It only checks: an
+// update is a newer release this build did not come from, and installing it
+// means pulling the repository and rebuilding (update-state.ts). It stands
+// where Sparkle does in the Swift app (Settings → About, `model/updates.ts`):
+// automatic checks, the channel, Check Now, and the last check.
 //
-// The update UX is T3 Code's: a check on launch (after a short delay) and
-// every few hours, ON by default (update-prefs.ts: only an explicit off in
-// Settings → About, `"autoUpdate": false` in settings.json, or an off carried
-// over from Sparkle stops it). A found update downloads in the background,
-// with no window; the page's quiet in-app indicator (`update.get`) shows
-// "Update ready" with "Restart to update" and a link to the release notes.
-// Nothing restarts without that click (`installNow`); a downloaded update is
-// also applied when the app next quits unless "install automatically" is
-// off. The state machine is update-state.ts. The beta channel (prereleases, `beta*.yml`) is
-// served everywhere. The stable channel (`latest*.yml`) is served on Windows
-// and Linux, where stable releases ship the Electron app. On macOS stable
-// releases still ship the Swift app, updated by Sparkle; Check Now on Stable
-// says so until the Sparkle cutover (docs/sparkle-cutover.md) publishes
-// `latest-mac.yml` and STABLE_FEED turns on.
+// A check runs on launch (after a short delay) and every few hours, ON by
+// default (update-prefs.ts: only an explicit off in Settings → About,
+// `"autoUpdate": false` in settings.json, or an off carried over from
+// Sparkle stops it). Nothing downloads or installs: electron-updater is
+// told not to, and the page reads the found version and the rebuild command
+// (`update.get`). The state machine is update-state.ts. The beta channel
+// (prereleases, `beta*.yml`) is served everywhere. The stable channel
+// (`latest*.yml`) is served on Windows and Linux, where stable releases ship
+// the Electron app. On macOS stable releases still ship the Swift app,
+// updated by Sparkle; Check Now on Stable says so until the Sparkle cutover
+// (docs/sparkle-cutover.md) publishes `latest-mac.yml` and STABLE_FEED turns
+// on.
 import { app, BrowserWindow, dialog } from "electron";
 import { existsSync } from "node:fs";
 import * as path from "node:path";
@@ -28,8 +28,8 @@ import { electronUpdater } from "./electron-updater";
 import { recordUpdateChannel } from "./mesh-channel";
 import type { UpdaterDriving } from "./model/updates";
 import { readSettings, writeSettings } from "./settings";
-import { autoCheckPref, autoInstallPref, channelPref, type UpdateChannel } from "./update-prefs";
-import { initialUpdateState, reduceUpdate, UPDATE_POLL_MS, UPDATE_STARTUP_DELAY_MS, type UpdateEvent, type UpdateStateValue } from "./update-state";
+import { autoCheckPref, channelPref, type UpdateChannel } from "./update-prefs";
+import { initialUpdateState, reduceUpdate, rebuildDetail, updateHeadline, UPDATE_POLL_MS, UPDATE_STARTUP_DELAY_MS, type UpdateEvent, type UpdateStateValue } from "./update-state";
 
 export type { UpdateChannel } from "./update-prefs";
 
@@ -70,17 +70,15 @@ async function message(options: Electron.MessageBoxOptions): Promise<number> {
   return r.response;
 }
 
-/** Settings → About's updater: electron-updater with Sparkle's choices and windows. */
+/** Settings → About's updater: electron-updater checking the feed, and the rebuild advice. */
 export class ElectronUpdater implements UpdaterDriving {
   onChange: (() => void) | null = null;
-  onUpdateEvent: ((event: string) => void) | null = null;
   private checking = false;
   /** The check the user started shows "up to date" and errors; a background one only what it found. */
   private userCheck = false;
   private poll: NodeJS.Timeout | null = null;
   private startup: NodeJS.Timeout | null = null;
   state: UpdateStateValue = initialUpdateState(app.getVersion());
-  private installing = false;
   private loaded: Promise<AutoUpdater> | null = null;
   private listening = false;
   /** This check's failure was reported (electron-updater both emits and rejects). */
@@ -102,15 +100,6 @@ export class ElectronUpdater implements UpdaterDriving {
   set automaticallyChecks(on: boolean) {
     writeSettings({ autoUpdate: on });
     this.schedule();
-    this.onChange?.();
-  }
-
-  get automaticallyInstalls(): boolean {
-    return autoInstallPref(readSettings());
-  }
-  set automaticallyInstalls(on: boolean) {
-    writeSettings({ autoInstall: on });
-    void this.updater().then((u) => (u.autoInstallOnAppQuit = on));
     this.onChange?.();
   }
 
@@ -157,19 +146,6 @@ export class ElectronUpdater implements UpdaterDriving {
     this.onChange?.();
   }
 
-  /** "Restart to update": the only way an update restarts the app. */
-  installNow(): void {
-    if (this.installing || this.state.status !== "downloaded") return;
-    this.installing = true;
-    this.onUpdateEvent?.("installed");
-    void this.updater()
-      .then((u) => u.quitAndInstall())
-      .catch((e: unknown) => {
-        this.installing = false;
-        this.failed(e instanceof Error ? e : new Error(String(e)), true);
-      });
-  }
-
   /** A check shortly after launch, then every few hours, while automatic checks are on and the channel is served. */
   private schedule(): void {
     if (this.poll) clearInterval(this.poll);
@@ -191,16 +167,14 @@ export class ElectronUpdater implements UpdaterDriving {
       // so betas move on to the next stable); stable never sees a beta.
       autoUpdater.allowPrerelease = channel === "beta";
       autoUpdater.allowDowngrade = false;
-      // Found updates download in the background; they install on a click, or on quit when allowed.
-      autoUpdater.autoDownload = true;
-      autoUpdater.autoInstallOnAppQuit = this.automaticallyInstalls;
+      // Only a check: the release is rebuilt from the repository, never downloaded or installed here.
+      autoUpdater.autoDownload = false;
+      autoUpdater.autoInstallOnAppQuit = false;
       if (!this.listening) {
         this.listening = true;
         autoUpdater.on("checking-for-update", () => this.report({ type: "checking" }));
         autoUpdater.on("update-available", (i) => this.found(i.version));
         autoUpdater.on("update-not-available", () => this.notFound());
-        autoUpdater.on("download-progress", (p) => this.report({ type: "progress", percent: p.percent }));
-        autoUpdater.on("update-downloaded", (i) => this.downloaded(i.version));
         autoUpdater.on("error", (e) => this.failed(e));
       }
       return autoUpdater;
@@ -228,32 +202,31 @@ export class ElectronUpdater implements UpdaterDriving {
   }
 
   private found(version: string): void {
-    this.onUpdateEvent?.("found");
+    const user = this.userCheck;
     this.userCheck = false;
     this.report({ type: "available", version });
+    if (!user) return;
+    void message({
+      type: "info",
+      message: updateHeadline(version),
+      detail: rebuildDetail(),
+      buttons: ["OK"],
+    });
   }
 
   private notFound(): void {
-    this.onUpdateEvent?.("not_found");
-    // Silent: Settings → About shows the check's time, and an update shows in the indicator.
+    // Silent: Settings → About shows the check's time.
     this.userCheck = false;
     this.report({ type: "none" });
   }
 
-  private downloaded(version: string): void {
-    this.onUpdateEvent?.("downloaded");
-    this.report({ type: "downloaded", version });
-  }
-
-  /** `install`: the click's own failure, which gets a window like a failed Check Now. */
-  private failed(error: Error, install = false): void {
+  private failed(error: Error): void {
     this.reported = true;
-    this.onUpdateEvent?.("failed");
-    const user = this.userCheck || install;
+    const user = this.userCheck;
     this.userCheck = false;
     console.warn(`[cua-spaces] update: ${error.message}`);
     this.report({ type: "error", message: error.message });
     if (!user) return;
-    void message({ type: "warning", message: "Update Error!", detail: `An error occurred while updating: ${error.message}`, buttons: ["OK"] });
+    void message({ type: "warning", message: "Update Error!", detail: `An error occurred while checking for updates: ${error.message}`, buttons: ["OK"] });
   }
 }

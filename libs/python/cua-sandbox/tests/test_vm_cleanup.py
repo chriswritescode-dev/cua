@@ -55,7 +55,6 @@ def _make_sandbox(transport: FleetCloudTransport, **kwargs) -> Sandbox:
         transport,
         name=transport._name,
         _ephemeral=kwargs.get("ephemeral", True),
-        _telemetry_enabled=False,
     )
 
 
@@ -95,7 +94,6 @@ class TestCreateCleansUpOnConnectFailure:
     async def _create(self):
         return await Sandbox._create(
             image=Image.from_registry("registry.example/workspace@sha256:0123"),
-            telemetry_enabled=False,
         )
 
     async def test_delete_vm_called_on_timeout(self, monkeypatch):
@@ -218,7 +216,7 @@ class TestDestroyResilience:
     async def test_non_cloud_transport_skips_delete_vm(self):
         """Non-FleetCloudTransport sandboxes should not call delete_vm."""
         transport = AsyncMock()  # generic mock, not a FleetCloudTransport instance
-        sb = Sandbox(transport, name="local-vm", _ephemeral=True, _telemetry_enabled=False)
+        sb = Sandbox(transport, name="local-vm", _ephemeral=True)
 
         await sb.destroy()
 
@@ -252,7 +250,6 @@ class TestFleetServerPortForwarding:
             await Sandbox.create(
                 Image.from_registry("registry.example/workspace:latest"),
                 server_port=5000,
-                telemetry_enabled=False,
                 local=False,
             )
 
@@ -267,7 +264,6 @@ class TestFleetServerPortForwarding:
             async with Sandbox.ephemeral(
                 Image.from_registry("registry.example/workspace:latest"),
                 server_port=5000,
-                telemetry_enabled=False,
                 local=False,
             ):
                 pass
@@ -287,7 +283,6 @@ class TestFleetServerPortForwarding:
             await Sandbox._create(
                 image=Image.from_registry("registry.example/workspace:latest"),
                 server_port=5000,
-                telemetry_enabled=False,
             )
 
         assert acquire.await_args.kwargs["server_port"] == 5000
@@ -306,7 +301,6 @@ class TestFleetServerPortForwarding:
             await Sandbox._create(
                 name="existing-pool",
                 server_port=5000,
-                telemetry_enabled=False,
             )
 
         assert "server_port" not in fleet_transport.call_args.kwargs
@@ -321,7 +315,6 @@ class TestFleetServerPortForwarding:
                 local=True,
                 runtime=runtime,
                 server_port=server_port,
-                telemetry_enabled=False,
             )
 
         runtime.start.assert_not_awaited()
@@ -336,7 +329,6 @@ class TestFleetServerPortForwarding:
                     image=Image.from_registry("registry.example/workspace:latest"),
                     api_key="sk-legacy",
                     server_port=server_port,
-                    telemetry_enabled=False,
                 )
 
         make_transport.assert_not_called()
@@ -350,7 +342,6 @@ class TestFleetServerPortForwarding:
                 await Sandbox._create(
                     image=Image.from_registry("registry.example/workspace:latest"),
                     server_port=server_port,
-                    telemetry_enabled=False,
                 )
 
         fleet_transport.assert_not_called()
@@ -373,7 +364,6 @@ class TestEphemeralCleanup:
         with patch("cua_sandbox._autopool.acquire", new=AsyncMock(return_value=claimed)):
             async with Sandbox.ephemeral(
                 Image.from_registry("registry.example/workspace:latest"),
-                telemetry_enabled=False,
                 local=False,
             ):
                 pass
@@ -386,7 +376,6 @@ class TestEphemeralCleanup:
             with pytest.raises(AssertionError):
                 async with Sandbox.ephemeral(
                     Image.from_registry("registry.example/workspace:latest"),
-                    telemetry_enabled=False,
                     local=False,
                 ):
                     raise AssertionError("test failed")
@@ -399,7 +388,6 @@ class TestEphemeralCleanup:
             with pytest.raises(httpx.ReadTimeout):
                 async with Sandbox.ephemeral(
                     Image.from_registry("registry.example/workspace:latest"),
-                    telemetry_enabled=False,
                     local=False,
                 ):
                     pass

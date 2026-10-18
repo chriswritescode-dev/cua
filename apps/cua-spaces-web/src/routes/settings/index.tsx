@@ -10,7 +10,6 @@ import {
   useLoginItem,
   useMachines,
   useRelayUsageView,
-  useTrackPlanClick,
   useSession,
   useSettings,
   useStorageSettings,
@@ -31,7 +30,6 @@ import { Switch } from "@/components/ui/switch";
 import { lazy, Suspense } from "react";
 import { toastError } from "@/components/ui/toast";
 import { globalShortcutLine, showsMacShellSettings, thisComputerLabel } from "@/lib/host-labels";
-import { keyvaultRows } from "@/lib/keyvault";
 import { DEFAULT_KEYBINDINGS, type KeybindingCommand } from "@/lib/keybindings";
 import { useTheme, type ThemePreference } from "@/lib/theme";
 
@@ -79,10 +77,8 @@ function CoreGeneralPage({ page }: { page: CorePage }) {
   const teams = section("teams");
   const general = section("general");
   const runtimes = section("runtimes");
-  const privacy = section("privacy");
   const keyvault = section("keyvault");
   const agents = section("agents");
-  const keyvaultShown = keyvault && { ...keyvault, rows: keyvaultRows(keyvault.rows, settings?.hostSettings) };
   const mac = showsMacShellSettings();
 
   // What a row's choice changes: the settings every host has by key, the
@@ -92,8 +88,6 @@ function CoreGeneralPage({ page }: { page: CorePage }) {
     switch (row.id) {
       case "notch":
         return void updateSetting("menuBar", option === "hide").catch(done);
-      case "telemetry":
-        return void updateSetting("telemetry", option === "on").catch(done);
       case "default-location":
         return void updateSetting("defaultLocation", option).catch(done);
       default:
@@ -151,8 +145,7 @@ function CoreGeneralPage({ page }: { page: CorePage }) {
       <StorageSection />
 
       {runtimes?.rows.length ? <CoreSettingsSection section={runtimes} foldNotes onChoose={choose} /> : null}
-      {privacy ? <CoreSettingsSection section={privacy} onChoose={choose} onPress={press} /> : null}
-      {keyvaultShown?.rows.length ? <CoreSettingsSection section={keyvaultShown} foldNotes onChoose={choose} /> : null}
+      {keyvault?.rows.length ? <CoreSettingsSection section={keyvault} foldNotes onChoose={choose} /> : null}
 
       {agents ? <AgentsSettingsSection section={agents} /> : null}
 
@@ -190,11 +183,9 @@ function GlobalShortcutRow({ shortcut }: { shortcut: GlobalShortcut | null | und
 function RelayUsageRow() {
   const view = useRelayUsageView();
   const { openExternal } = useSession();
-  const trackClick = useTrackPlanClick();
   if (!view) return null;
   const { planCard: card } = view;
   const open = (url: string) => {
-    trackClick("plan_card");
     void openExternal(url).catch(() => {});
   };
   return (
@@ -302,22 +293,6 @@ function FallbackSettingsPage() {
           }
         />
         <RelayUsageRow />
-      </SettingsGroup>
-
-      <SettingsGroup title="Privacy">
-        <SettingsRow
-          label="Share anonymous usage data"
-          description="Features used, sandbox types, durations and error categories. Never paths, names, prompts, screen content or Keyvault items."
-          htmlFor="telemetry"
-          control={
-            <Switch
-              id="telemetry"
-              checked={values?.telemetry ?? false}
-              disabled={!values}
-              onCheckedChange={(on) => void updateSetting("telemetry", on).catch(fail("Couldn't change telemetry"))}
-            />
-          }
-        />
       </SettingsGroup>
 
       <SettingsGroup title="Keyboard shortcuts">

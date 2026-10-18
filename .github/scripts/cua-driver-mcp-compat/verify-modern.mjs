@@ -87,7 +87,6 @@ Object.assign(env, {
   CUA_DRIVER_HOME: join(state, 'driver'),
   CUA_DRIVER_RS_HOME: join(state, 'driver'),
   CUA_DRIVER_PERMISSION_MODE: 'standard',
-  CUA_DRIVER_RS_TELEMETRY_ENABLED: 'false',
   NO_COLOR: '1',
 });
 for (const subdir of ['config', 'local', 'data', 'state', 'cache', 'driver']) {

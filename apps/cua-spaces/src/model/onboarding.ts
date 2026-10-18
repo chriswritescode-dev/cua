@@ -49,8 +49,6 @@ export interface OnboardingState {
   storage?: StorageState;
   /** Done's "Launch at login" checkbox (ticked unless unticked). */
   launchAtLogin?: boolean;
-  /** The machine's telemetry setting, as read (Welcome's usage-data switch). */
-  telemetry?: { enabled: boolean; lockedBy: string | null } | null;
   /** Settings, Experiments: the Cua Volume page only with Cua Volume on. */
   experiments?: import("./experiments").Experiments;
 }
@@ -64,8 +62,6 @@ export type OnboardingAction =
   | { type: "signin-done" }
   | { type: "agents-done"; configured: string[] }
   | { type: "mode-chosen"; mode: OnboardingModeWord }
-  | { type: "telemetry-loaded"; telemetry: { enabled: boolean; lockedBy: string | null } }
-  | { type: "usage-data-toggled"; on: boolean }
   | { type: "drive-checked"; os: SpaceOs; status: DriveMountInput | null }
   | { type: "drive-toggled"; on: boolean }
   | { type: "drive-continue" }
@@ -95,11 +91,6 @@ export interface OnboardingView {
   presentations: PresentationCard[];
   /** Done's example prompts, scrolling slowly under both columns. */
   prompts: string[];
-  notice: string | null;
-  noticeLinkLabel: string | null;
-  noticeLinkUrl: string | null;
-  /** Welcome's "Share anonymous usage data" switch (Welcome only). */
-  usage: { label: string; on: boolean; enabled: boolean; help: string | null } | null;
   /** The Cua Volume page's card. */
   drive: DriveCard | null;
   /** Done's "Launch at login" checkbox. */

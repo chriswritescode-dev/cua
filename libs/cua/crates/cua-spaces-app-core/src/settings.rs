@@ -6,13 +6,13 @@
 //! default location for new Spaces. The Tauri webview keeps them in
 //! localStorage; native shells use [`load`] / [`save`] on a JSON file.
 //!
-//! [`page`] is the Settings page both shells draw: Account, General,
-//! Privacy and AI agents, each row one line.
+//! [`page`] is the Settings page both shells draw: Account, General and
+//! AI agents, each row one line.
 
-use crate::CoreError;
 use crate::about::UpdateChannel;
 use crate::experiments::{Experiment, Experiments};
 use crate::model::Location;
+use crate::CoreError;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -69,10 +69,6 @@ pub struct AppSettings {
     /// longer shows them, nothing is revoked or wiped
     /// ([`crate::keyvault::view::prune_dismissed`] forgets the gone ones).
     pub dismissed_access: Vec<String>,
-    /// Keyvault rows may load a site's icon from Google's favicon service
-    /// when the source browser had none (Settings, Keyvault; on by default).
-    /// Off, only icons read locally are shown.
-    pub keyvault_site_icons: bool,
     /// The sites the user sent to each Space last time, per app
     /// ([`crate::teleport::review::remember`]): the review starts from them.
     pub teleport_choices: Vec<crate::teleport::review::RememberedChoice>,
@@ -101,7 +97,6 @@ impl Default for AppSettings {
             experiments: Experiments::default(),
             new_ui: None,
             dismissed_access: vec![],
-            keyvault_site_icons: true,
             teleport_choices: vec![],
             auto_connect: true,
             current_team_id: None,
@@ -266,7 +261,6 @@ pub fn format_hotkey(c: &KeyCombo) -> Option<String> {
     Some(out)
 }
 
-/// What telemetry's docs say is collected.
 /// Where the Sign in page's Teams line links: the account app, which
 /// administers teams (Settings shows the real Teams section, [`crate::teams`]).
 pub const TEAMS_URL: &str = "https://app.cua.ai/welcome";
@@ -279,8 +273,6 @@ pub const TEAMS_VALUE: &str = "manage them at app.cua.ai";
 
 /// Its link.
 pub const TEAMS_BUTTON: &str = "Open the account app";
-
-pub const TELEMETRY_DOCS_URL: &str = "https://cua.ai/docs/cua-sdk/concepts/telemetry";
 
 /// Where the Account section's sign-in stands.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -308,20 +300,6 @@ pub enum SignInPhase {
     },
 }
 
-/// The usage-telemetry switch's state.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct TelemetryInput {
-    /// Usage data is shared.
-    pub enabled: bool,
-    /// The environment decides (`DO_NOT_TRACK`, `CUA_TELEMETRY`, CI): who.
-    pub locked_by: Option<String>,
-    /// The first-run usage notice was already shown on this machine (by
-    /// `cua`, or an earlier run of the app): events may be sent before
-    /// Welcome is left.
-    pub notice_shown: bool,
-}
-
 /// What the Settings page shows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -341,8 +319,6 @@ pub struct SettingsInput {
     pub default_location: Location,
     /// The environment sets the default location: which variable.
     pub location_locked_by: Option<String>,
-    /// The telemetry switch (none until read).
-    pub telemetry: Option<TelemetryInput>,
     /// Coding agents (none while detecting).
     pub agents: Option<Vec<crate::agents::AgentSettingsRow>>,
     /// "Configure all" is running.
@@ -366,10 +342,6 @@ pub struct SettingsInput {
     /// The unlock prompt shows (false once the user chose "Never ask
     /// again"); none until the broker told it.
     pub keyvault_unlock_prompt: Option<bool>,
-    /// Load site icons from Google when the browser had none
-    /// ([`AppSettings::keyvault_site_icons`]).
-    #[serde(default = "default_true")]
-    pub keyvault_site_icons: bool,
     /// The Keyvault's protection facts (Touch ID, the daemon's signature),
     /// shown in the section.
     #[serde(default)]
@@ -397,7 +369,6 @@ impl Default for SettingsInput {
             menu_bar: false,
             default_location: Location::Local,
             location_locked_by: None,
-            telemetry: None,
             agents: None,
             agents_busy: false,
             agents_pending: vec![],
@@ -407,7 +378,6 @@ impl Default for SettingsInput {
             experiments: Experiments::default(),
             keyvault_auto_wipe: None,
             keyvault_unlock_prompt: None,
-            keyvault_site_icons: true,
             keyvault_protection: vec![],
             auto_connect: None,
             lume_source: None,
@@ -415,17 +385,6 @@ impl Default for SettingsInput {
         }
     }
 }
-
-fn default_true() -> bool {
-    true
-}
-
-/// The site icons switch's label.
-pub const SITE_ICONS_LABEL: &str = "Load site icons from Google";
-
-/// The line under it.
-pub const SITE_ICONS_NOTE: &str =
-    "Sends only the site's domain. Off uses your browser's own icons.";
 
 /// The auto-connect switch's label.
 pub const AUTO_CONNECT_LABEL: &str = "Connect to the desktop automatically";
@@ -462,7 +421,6 @@ pub const UNLOCK_PROMPT_NOTE: &str = "Unlocking an item always asks for Touch ID
 pub fn keyvault_section(
     auto_wipe: bool,
     unlock_prompt: Option<bool>,
-    site_icons: bool,
     protection: &[crate::spaces::sidebar::Fact],
 ) -> SettingsSection {
     let mut toggle = row(
@@ -503,18 +461,6 @@ pub fn keyvault_section(
             UNLOCK_PROMPT_NOTE,
         ));
     }
-    let mut icons = row(
-        "keyvault-site-icons",
-        SettingsRowKind::Toggle,
-        SITE_ICONS_LABEL,
-    );
-    icons.options = vec![opt("on", "On", site_icons), opt("off", "Off", !site_icons)];
-    rows.push(icons);
-    rows.push(row(
-        "keyvault-site-icons-note",
-        SettingsRowKind::Note,
-        SITE_ICONS_NOTE,
-    ));
     for f in protection {
         let mut r = row(
             &format!("keyvault-protection:{}", f.label),
@@ -602,9 +548,9 @@ pub struct SettingsRow {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SettingsSection {
-    /// `account`, `general`, `privacy`, `agents`.
+    /// `account`, `general`, `agents`.
     pub id: String,
-    /// "Account", "General", "Privacy", "AI agents".
+    /// "Account", "General", "AI agents".
     pub title: String,
     /// A button in the header.
     pub button: Option<String>,
@@ -621,7 +567,7 @@ pub struct SettingsSection {
 pub struct SettingsPage {
     /// "Settings".
     pub title: String,
-    /// Account, General, Privacy (once read), AI agents.
+    /// Account, General, AI agents.
     pub sections: Vec<SettingsSection>,
 }
 
@@ -795,35 +741,10 @@ pub fn page(input: &SettingsInput) -> SettingsPage {
         ));
     }
 
-    if let Some(t) = &input.telemetry {
-        let mut share = row("telemetry", Choice, "Share anonymous usage data");
-        share.options = vec![opt("on", "On", t.enabled), opt("off", "Off", !t.enabled)];
-        if let Some(by) = t.locked_by.clone().filter(|b| !b.is_empty()) {
-            share.enabled = false;
-            share.help = Some(format!("Set by {by}"));
-        }
-        let mut note = row(
-            "telemetry-note",
-            Note,
-            "Features used, sandbox types, durations and error categories. Never paths, names, prompts, screen content or Keyvault items.",
-        );
-        note.link_label = Some("What is collected".into());
-        note.link_url = Some(TELEMETRY_DOCS_URL.into());
-        sections.push(SettingsSection {
-            id: "privacy".into(),
-            title: "Privacy".into(),
-            button: None,
-            button_enabled: false,
-            button_help: None,
-            rows: vec![share, note],
-        });
-    }
-
     if let Some(on) = input.keyvault_auto_wipe {
         sections.push(keyvault_section(
             on,
             input.keyvault_unlock_prompt,
-            input.keyvault_site_icons,
             &input.keyvault_protection,
         ));
     }
@@ -1061,18 +982,17 @@ mod tests {
     }
 
     #[test]
-    fn the_page_lists_account_general_privacy_agents() {
+    fn the_page_lists_account_general_agents() {
         let p = page(&SettingsInput::default());
         let ids: Vec<_> = p.sections.iter().map(|s| s.id.as_str()).collect();
         assert_eq!(ids, ["account", "teams", "general", "agents"]);
         let p = page(&SettingsInput {
             identity: Some("ada@example.com".into()),
             can_sign_out: true,
-            telemetry: Some(TelemetryInput::default()),
             ..Default::default()
         });
         let ids: Vec<_> = p.sections.iter().map(|s| s.id.as_str()).collect();
-        assert_eq!(ids, ["account", "teams", "general", "privacy", "agents"]);
+        assert_eq!(ids, ["account", "teams", "general", "agents"]);
         assert_eq!(p.sections[0].rows[0].button.as_deref(), Some("Sign out"));
         let sign_in: SignInPhase =
             serde_json::from_str(r#"{"kind":"waiting","userCode":"AB-CD"}"#).unwrap();
@@ -1091,17 +1011,14 @@ mod tests {
         // Not told yet (no broker): no section.
         assert!(!ids(&page(&SettingsInput::default())).contains(&"keyvault".to_string()));
         let p = page(&SettingsInput {
-            telemetry: Some(TelemetryInput::default()),
             keyvault_auto_wipe: Some(false),
             ..Default::default()
         });
         assert_eq!(
             ids(&p),
-            [
-                "account", "teams", "general", "privacy", "keyvault", "agents"
-            ]
+            ["account", "teams", "general", "keyvault", "agents"]
         );
-        let kv = &p.sections[4];
+        let kv = &p.sections[3];
         assert_eq!(kv.title, "Keyvault");
         let toggle = &kv.rows[0];
         assert_eq!(
@@ -1114,7 +1031,7 @@ mod tests {
         );
         let on = |r: &SettingsRow| r.options.iter().find(|o| o.id == "on").unwrap().active;
         assert!(!on(toggle), "off by default");
-        assert!(on(&keyvault_section(true, None, true, &[]).rows[0]));
+        assert!(on(&keyvault_section(true, None, &[]).rows[0]));
         assert_eq!(kv.rows[1].kind, SettingsRowKind::Note);
         assert!(!AUTO_WIPE_NOTE.contains('\u{2014}'), "no em dashes in copy");
         assert!(
@@ -1134,7 +1051,6 @@ mod tests {
         let with = keyvault_section(
             false,
             Some(false),
-            true,
             &[fact("Touch ID", "Asked by the Cua daemon")],
         );
         let prompt = with
@@ -1143,26 +1059,18 @@ mod tests {
             .find(|r| r.id == "keyvault-unlock-prompt")
             .unwrap();
         assert!(!on(prompt), "Never ask again turned it off");
-        assert!(on(&keyvault_section(false, Some(true), true, &[]).rows[2]));
+        assert!(on(&keyvault_section(false, Some(true), &[]).rows[2]));
         let last = with.rows.last().unwrap();
         assert_eq!(last.id, "keyvault-protection:Touch ID");
         assert_eq!(last.value.as_deref(), Some("Asked by the Cua daemon"));
-        // The site icons switch is on by default and named for Google.
-        let icons = with
+        assert!(!with
             .rows
             .iter()
-            .find(|r| r.id == "keyvault-site-icons")
-            .unwrap();
-        assert!(on(icons));
-        assert_eq!(icons.label, "Load site icons from Google");
-        assert!(!on(keyvault_section(false, None, false, &[])
-            .rows
-            .iter()
-            .find(|r| r.id == "keyvault-site-icons")
-            .unwrap()));
-        assert!(AppSettings::default().keyvault_site_icons);
-        let old: AppSettings = serde_json::from_str(r#"{"menuBar":true}"#).unwrap();
-        assert!(old.keyvault_site_icons, "a missing field is on");
+            .any(|r| r.id.starts_with("keyvault-site-icons")));
+        // A file from a build with the site icons switch still loads.
+        let old: AppSettings =
+            serde_json::from_str(r#"{"menuBar":true,"keyvaultSiteIcons":false}"#).unwrap();
+        assert!(old.menu_bar);
         // A settings file from before dismissals: none dismissed.
         let old: AppSettings = serde_json::from_str(r#"{"menuBar":true}"#).unwrap();
         assert!(old.dismissed_access.is_empty());
@@ -1170,7 +1078,7 @@ mod tests {
 
     #[test]
     fn launch_at_login_leads_general_once_read() {
-        use crate::login_item::{LABEL, LoginItemInput, LoginItemStatus};
+        use crate::login_item::{LoginItemInput, LoginItemStatus, LABEL};
         let general = |input: &SettingsInput| {
             page(input)
                 .sections
@@ -1212,11 +1120,9 @@ mod tests {
                 .rows
         };
         // Not passed (a shell without the cover): no row.
-        assert!(
-            !general(&SettingsInput::default())
-                .iter()
-                .any(|r| r.id == "auto-connect")
-        );
+        assert!(!general(&SettingsInput::default())
+            .iter()
+            .any(|r| r.id == "auto-connect"));
         let rows = general(&SettingsInput {
             auto_connect: Some(true),
             ..Default::default()

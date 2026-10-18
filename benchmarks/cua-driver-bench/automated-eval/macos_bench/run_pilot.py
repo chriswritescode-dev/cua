@@ -741,7 +741,7 @@ def run_trial(
 
 
 def start_cua_daemon(binary: Path, socket: str, state_dir: Path) -> subprocess.Popen[bytes]:
-    """Private Cua Driver daemon for the release under test (own HOME, no telemetry)."""
+    """Private Cua Driver daemon for the release under test (own HOME)."""
     home = state_dir / "home"
     home.mkdir(parents=True, exist_ok=True)
     try:
@@ -751,7 +751,6 @@ def start_cua_daemon(binary: Path, socket: str, state_dir: Path) -> subprocess.P
     env = {
         "HOME": str(home),
         "PATH": f"/opt/homebrew/bin:{arms.CLOSED_PATH}",
-        "CUA_DRIVER_RS_TELEMETRY_ENABLED": "false",
     }
     log = (state_dir / "daemon.log").open("wb")
     proc = subprocess.Popen(

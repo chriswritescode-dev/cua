@@ -1,4 +1,3 @@
-import Darwin
 import Foundation
 import Testing
 @testable import lume
@@ -11,44 +10,12 @@ struct VersionCheckTests {
         #expect(!LumeVersionCheck.isNewer("0.3.9", than: "0.3.10"))
     }
 
-    @Test func installScriptURLOverride() {
-        setenv("LUME_INSTALL_SCRIPT_URL", "file:///tmp/lume-install.sh", 1)
-        defer { unsetenv("LUME_INSTALL_SCRIPT_URL") }
-
-        #expect(LumeVersionCheck.installScriptURL() == "file:///tmp/lume-install.sh")
+    @Test func updateInstructionRebuildsFromSource() {
         #expect(
-            LumeVersionCheck.manualInstallCommand(version: "0.3.10")
-                == "curl -fsSL file:///tmp/lume-install.sh | LUME_VERSION=0.3.10 bash"
+            LumeVersionCheck.rebuildInstruction
+                .contains("libs/lume/scripts/build/build-release.sh")
         )
-    }
-
-    @Test func updateInstallerPreservesBackgroundServiceChoice() throws {
-        let home = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString, isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: home) }
-
-        #expect(
-            LumeVersionCheck.installScriptArguments(
-                homeDirectory: home,
-                installCommand: "install-lume"
-            ) == ["-c", "install-lume -s -- --no-background-service"]
-        )
-
-        let servicePlist = home.appendingPathComponent(
-            "Library/LaunchAgents/com.trycua.lume_daemon.plist"
-        )
-        try FileManager.default.createDirectory(
-            at: servicePlist.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-        try Data().write(to: servicePlist)
-
-        #expect(
-            LumeVersionCheck.installScriptArguments(
-                homeDirectory: home,
-                installCommand: "install-lume"
-            ) == ["-c", "install-lume"]
-        )
+        #expect(!LumeVersionCheck.rebuildInstruction.contains("curl"))
     }
 
     @Test func stableDiscoveryRejectsDraftAndNightlyTags() {

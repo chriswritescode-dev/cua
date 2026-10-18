@@ -46,7 +46,7 @@ Returned by [`app_checklist_state_from_json`](#app_checklist_state_from_json).
 | --- | --- | --- | --- |
 | `done` | [`Vec<AppChecklistStep>`](#appcheckliststep-enum) |  | Steps done, each once, in checklist order. |
 | `dismissed` | `bool` |  | Closed with ×; Getting Started opens it again. |
-| `shown` | `bool` |  | It was on screen once (`checklist_shown` was recorded). |
+| `shown` | `bool` |  | It was on screen once. |
 
 ## `AppChecklistTransition` record
 
@@ -55,7 +55,6 @@ Returned by [`app_checklist_reduce`](#app_checklist_reduce).
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `state` | [`AppChecklistState`](#appcheckliststate-record) |  | The new state (save it when it changed). |
-| `signals` | [`Vec<AppTelemetrySignal>`](/cua-sdk/reference/spaces/app-core/telemetry#apptelemetrysignal-enum) |  | `cua_onboarding_step` events to record (`checklist_<event>`). |
 
 ## `AppChecklistView` record
 
@@ -125,7 +124,7 @@ AppChecklistAction::Merge { state: AppChecklistState }
 | `Dismiss` | Closed with ×. |
 | `Reopen` | Getting Started (the palette, the Help menu): open it again. |
 | `Observe` | What the app shows now: each `true` ticks its step off. Fields: `other_machine: bool`, `has_space: bool`, `agent_ran: bool` |
-| `Merge` | Progress kept elsewhere before (the web UI's own storage, another copy of the file): its steps are ticked, and it stays closed or shown if it was. Its events were recorded where it was ticked, so none are recorded again. Fields: `state: AppChecklistState` |
+| `Merge` | Another copy of the file: its steps are ticked, and it stays closed or shown if it was. Fields: `state: AppChecklistState` |
 
 ## `AppChecklistStep` enum
 
@@ -191,7 +190,7 @@ pub fn app_checklist_observe_from(seen: AppChecklistSeen) -> AppChecklistAction
 
 ## `app_checklist_reduce`
 
-The getting-started checklist after `action`, and its usage events.
+The getting-started checklist after `action`.
 
 <Tabs items={['Swift', 'Rust']} groupId="sdk-lang" persist>
 <Tab value="Swift">

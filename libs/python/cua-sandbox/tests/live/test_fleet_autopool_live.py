@@ -69,7 +69,7 @@ CHILD = textwrap.dedent("""
             server_port=int(sys.argv[2]),
             claim_ttl=int(sys.argv[3]),
             time_to_start=1200,
-            telemetry_enabled=False, local=False,
+            local=False,
         ) as sb:
             print(f"CLAIM {sb.pool_name} {sb.claim_name}", flush=True)
             for _ in range(3600):  # bounded: killed long before this ends
@@ -162,7 +162,6 @@ async def test_managed_pool_reuse_list_and_sigkill_reap(live_env):
             image,
             server_port=SERVER_PORT,
             time_to_start=BIND_TIMEOUT,
-            telemetry_enabled=False,
             progress=lambda event: events.append(f"{event.stage}: {event.message}"),
             local=False,
         )
@@ -177,7 +176,6 @@ async def test_managed_pool_reuse_list_and_sigkill_reap(live_env):
             image,
             server_port=SERVER_PORT,
             time_to_start=BIND_TIMEOUT,
-            telemetry_enabled=False,
             local=False,
         )
         held.append(second)
@@ -280,7 +278,6 @@ async def test_gvisor_managed_pool(live_env):
             image,
             server_port=SERVER_PORT,
             time_to_start=BIND_TIMEOUT,
-            telemetry_enabled=False,
             local=False,
         ) as sb:
             log(

@@ -788,76 +788,6 @@ const DEFINITIONS = {
       ret: FfiType.RustBuffer,
       hasRustCallStatus: true,
     },
-    "uniffi_cua_sdk_fn_func_telemetry_acknowledge_notice": {
-      args: [],
-      ret: FfiType.Void,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_sdk_fn_func_telemetry_flush": {
-      args: [FfiType.UInt32],
-      ret: FfiType.Void,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_sdk_fn_func_telemetry_notice_text": {
-      args: [],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_sdk_fn_func_telemetry_record_bench_run": {
-      args: [FfiType.RustBuffer, FfiType.RustBuffer, FfiType.UInt64, FfiType.RustBuffer],
-      ret: FfiType.Int8,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_sdk_fn_func_telemetry_record_feature": {
-      args: [FfiType.RustBuffer],
-      ret: FfiType.Int8,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_sdk_fn_func_telemetry_record_onboarding_step": {
-      args: [FfiType.RustBuffer, FfiType.Int8],
-      ret: FfiType.Int8,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_sdk_fn_func_telemetry_record_stream_stats": {
-      args: [FfiType.RustBuffer],
-      ret: FfiType.Int8,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_sdk_fn_func_telemetry_reset_id": {
-      args: [],
-      ret: FfiType.Void,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_sdk_fn_func_telemetry_schema_json": {
-      args: [],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_sdk_fn_func_telemetry_set_enabled": {
-      args: [FfiType.Int8],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_sdk_fn_func_telemetry_set_surface": {
-      args: [FfiType.RustBuffer, FfiType.RustBuffer],
-      ret: FfiType.Void,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_sdk_fn_func_telemetry_show_last": {
-      args: [FfiType.UInt32],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_sdk_fn_func_telemetry_status": {
-      args: [],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_sdk_fn_func_telemetry_use_app_notice": {
-      args: [],
-      ret: FfiType.Void,
-      hasRustCallStatus: true,
-    },
     "uniffi_cua_sdk_fn_method_agentrun_artifacts": {
       args: [FfiType.Handle],
       ret: FfiType.Handle,
@@ -3014,76 +2944,6 @@ const DEFINITIONS = {
       hasRustCallStatus: false,
     },
     "uniffi_cua_sdk_checksum_func_spaces_tool_methods": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_sdk_checksum_func_telemetry_acknowledge_notice": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_sdk_checksum_func_telemetry_flush": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_sdk_checksum_func_telemetry_notice_text": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_sdk_checksum_func_telemetry_record_bench_run": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_sdk_checksum_func_telemetry_record_feature": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_sdk_checksum_func_telemetry_record_onboarding_step": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_sdk_checksum_func_telemetry_record_stream_stats": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_sdk_checksum_func_telemetry_reset_id": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_sdk_checksum_func_telemetry_schema_json": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_sdk_checksum_func_telemetry_set_enabled": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_sdk_checksum_func_telemetry_set_surface": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_sdk_checksum_func_telemetry_show_last": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_sdk_checksum_func_telemetry_status": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_sdk_checksum_func_telemetry_use_app_notice": {
       args: [],
       ret: FfiType.UInt16,
       hasRustCallStatus: false,
@@ -5314,20 +5174,6 @@ interface NativeModuleInterface {
     uniffi_cua_sdk_fn_func_resolve_image_with_secret(reference: Uint8Array, backend: Uint8Array, arch: Uint8Array, secret: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
     uniffi_cua_sdk_fn_func_sandbox_locations(uniffi_out_err: UniffiRustCallStatus): Uint8Array;
     uniffi_cua_sdk_fn_func_spaces_tool_methods(uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_sdk_fn_func_telemetry_acknowledge_notice(uniffi_out_err: UniffiRustCallStatus): void;
-    uniffi_cua_sdk_fn_func_telemetry_flush(timeoutMs: number, uniffi_out_err: UniffiRustCallStatus): void;
-    uniffi_cua_sdk_fn_func_telemetry_notice_text(uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_sdk_fn_func_telemetry_record_bench_run(taskset: Uint8Array, successRate: Uint8Array, taskCount: bigint, outcome: Uint8Array, uniffi_out_err: UniffiRustCallStatus): number;
-    uniffi_cua_sdk_fn_func_telemetry_record_feature(feature: Uint8Array, uniffi_out_err: UniffiRustCallStatus): number;
-    uniffi_cua_sdk_fn_func_telemetry_record_onboarding_step(step: Uint8Array, ok: number, uniffi_out_err: UniffiRustCallStatus): number;
-    uniffi_cua_sdk_fn_func_telemetry_record_stream_stats(stats: Uint8Array, uniffi_out_err: UniffiRustCallStatus): number;
-    uniffi_cua_sdk_fn_func_telemetry_reset_id(uniffi_out_err: UniffiRustCallStatus): void;
-    uniffi_cua_sdk_fn_func_telemetry_schema_json(uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_sdk_fn_func_telemetry_set_enabled(enabled: number, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_sdk_fn_func_telemetry_set_surface(surface: Uint8Array, version: Uint8Array, uniffi_out_err: UniffiRustCallStatus): void;
-    uniffi_cua_sdk_fn_func_telemetry_show_last(limit: number, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_sdk_fn_func_telemetry_status(uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_sdk_fn_func_telemetry_use_app_notice(uniffi_out_err: UniffiRustCallStatus): void;
     uniffi_cua_sdk_fn_method_agentrun_artifacts(uniffiSelf: bigint): bigint;
     uniffi_cua_sdk_fn_method_agentrun_events(uniffiSelf: bigint, cursor: bigint, max: Uint8Array): bigint;
     uniffi_cua_sdk_fn_method_agentrun_harness(uniffiSelf: bigint, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
@@ -5760,20 +5606,6 @@ interface NativeModuleInterface {
     uniffi_cua_sdk_checksum_func_resolve_image_with_secret(): number;
     uniffi_cua_sdk_checksum_func_sandbox_locations(): number;
     uniffi_cua_sdk_checksum_func_spaces_tool_methods(): number;
-    uniffi_cua_sdk_checksum_func_telemetry_acknowledge_notice(): number;
-    uniffi_cua_sdk_checksum_func_telemetry_flush(): number;
-    uniffi_cua_sdk_checksum_func_telemetry_notice_text(): number;
-    uniffi_cua_sdk_checksum_func_telemetry_record_bench_run(): number;
-    uniffi_cua_sdk_checksum_func_telemetry_record_feature(): number;
-    uniffi_cua_sdk_checksum_func_telemetry_record_onboarding_step(): number;
-    uniffi_cua_sdk_checksum_func_telemetry_record_stream_stats(): number;
-    uniffi_cua_sdk_checksum_func_telemetry_reset_id(): number;
-    uniffi_cua_sdk_checksum_func_telemetry_schema_json(): number;
-    uniffi_cua_sdk_checksum_func_telemetry_set_enabled(): number;
-    uniffi_cua_sdk_checksum_func_telemetry_set_surface(): number;
-    uniffi_cua_sdk_checksum_func_telemetry_show_last(): number;
-    uniffi_cua_sdk_checksum_func_telemetry_status(): number;
-    uniffi_cua_sdk_checksum_func_telemetry_use_app_notice(): number;
     uniffi_cua_sdk_checksum_method_agentrun_artifacts(): number;
     uniffi_cua_sdk_checksum_method_agentrun_events(): number;
     uniffi_cua_sdk_checksum_method_agentrun_harness(): number;

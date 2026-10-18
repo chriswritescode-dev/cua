@@ -39,18 +39,12 @@ public enum AppEnvironment {
         // Fixtures skip it (`CUA_SPACES_REFRESH=1` runs it anyway, for
         // end-to-end runs with a throwaway HOME).
         let info = AboutBundleInfo(bundle: .main)
-        // Before the first `Cua`: this process's usage events are the app's
-        // (`spaces_app`), wait for the notice the first run shows (never a
-        // terminal notice), and start with `app_launched` (saying whether
-        // the first run is still to finish).
         if !fixtures {
             // No keychain prompt from this process or the daemon it starts
             // (they inherit it): a read that would need one fails fast as
             // "needs access", and the window asks (`StartupModel`). The one
             // interactive read is the clicked `cua auth keychain --prompt`.
             setenv(keychainNonInteractiveEnv, "1", 1)
-            let due = !(OnboardingModel.readCompleted(onboardingPath) ?? false)
-            _ = appTelemetryStart(version: info.version, onboardingEligible: due)
         }
         var refresh: UpdateRefresh?
         if !fixtures || env["CUA_SPACES_REFRESH"] == "1",
@@ -80,19 +74,15 @@ public enum AppEnvironment {
         }
         let keyvault = KeyvaultModel(client: fixtures ? nil : KeyvaultClient(cuaHome: nil))
         if !fixtures {
-            // Icons: caches survive restarts; fixtures never resolve apps or
-            // touch the network.
+            // Icons: caches survive restarts; fixtures never resolve apps.
             let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
                 .appendingPathComponent("com.trycua.cua-spaces/icons")
             keyvault.appIcons = AppIconCache(dir: caches?.appendingPathComponent("apps"))
-            keyvault.siteIconStore = SiteIconStore(dir: caches?.appendingPathComponent("sites"))
-            keyvault.iconScale = Int(NSScreen.main?.backingScaleFactor ?? 2)
         }
-        // Fixtures never touch the host service, the account, the telemetry
-        // config or the coding agents' configs.
+        // Fixtures never touch the host service, the account or the coding
+        // agents' configs.
         let host: HostRunning = fixtures ? FixtureHost() : PendingHost(gate: gate)
         let account: AccountRunning = fixtures ? FixtureAccount() : PendingAccount(gate: gate)
-        let telemetry: TelemetryRunning = fixtures ? FixtureTelemetry() : LiveTelemetry()
         let agents: AgentSetupRunning = fixtures ? FixtureAgentSetup() : PendingAgentSetup(gate: gate)
         // First run's writes go through the shared core (the Tauri app runs
         // the same installer and host setup); fixtures run none of them.
@@ -102,11 +92,6 @@ public enum AppEnvironment {
             cli: fixtures ? nil : AppCliInstaller.forExecutable(executable: executable),
             host: host, agentSetup: agents)
         if !fixtures {
-            onboarding.onWelcomeLeft = { on in
-                do { try appTelemetryWelcomeLeft(on: on) } catch {
-                    NSLog("Cua Spaces: the usage-data setting was not saved: %@", LiveSpacesBackend.words(error))
-                }
-            }
             onboarding.driveTools = backend as? AgentsToolRunning
         }
         // This Mac on the relay: the session's device key (fixtures: an
@@ -115,7 +100,7 @@ public enum AppEnvironment {
         let startup = fixtures ? fixtureStartup(env["CUA_SPACES_STARTUP"]) : StartupModel(phase: .starting)
         let model = AppModel(backend: backend, keyvault: keyvault, onboarding: onboarding,
                              settingsPath: settingsPath,
-                             host: host, account: account, telemetry: telemetry, agentSetup: agents,
+                             host: host, account: account, agentSetup: agents,
                              billing: fixtures ? FixtureBilling() : PendingBilling(gate: gate),
                              devices: devices,
                              presence: fixtures ? FixturePresence() : LivePresence(),
@@ -169,7 +154,7 @@ public enum AppEnvironment {
             ? FixtureUpdater(lastCheck: Date().addingTimeInterval(-2 * 3600))
             : SparkleUpdater.start(channels: appAboutAllowedChannels(channel: channel))
         model.updates = UpdatesModel(updater: updater, channel: channel)
-        model.updates.telemetry = telemetry
+        model.updates.onAvailable = { [weak model] message in model?.show(info: message) }
         model.updates.saveChannel = { [weak model] channel in model?.setUpdateChannel(channel) }
         // End-to-end runs: check now, with no window unless one is found.
         if env["CUA_SPACES_UPDATE_CHECK"] == "background", let sparkle = updater as? SparkleUpdater {

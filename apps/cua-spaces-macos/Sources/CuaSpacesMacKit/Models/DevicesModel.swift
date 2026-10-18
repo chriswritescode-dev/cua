@@ -195,8 +195,8 @@ public final class FixtureDevices: DevicesRunning, @unchecked Sendable {
         let code = "K7QM-4XPB-\(String(format: "%04d", pairing.count + 1))"
         let made = PairingCode(
             id: "pc_fixture\(pairing.count + 1)", code: code, url: "https://cua.ai/add/\(code)",
-            installSh: "curl -fsSL https://cua.ai/install.sh | sh -s -- --pair \(code)",
-            installPowershell: "& ([scriptblock]::Create((irm https://cua.ai/install.ps1))) -Pair \(code)",
+            installSh: "git clone https://github.com/trycua/cua.git ~/.cua/cua 2>/dev/null; git -C ~/.cua/cua pull --ff-only; cargo build --release -p cua-cli --manifest-path ~/.cua/cua/libs/cua/Cargo.toml && ~/.cua/cua/libs/cua/target/release/cua host setup --pair \(code)",
+            installPowershell: "git clone https://github.com/trycua/cua.git $HOME\\.cua\\cua 2>$null; git -C $HOME\\.cua\\cua pull --ff-only; cargo build --release -p cua-cli --manifest-path $HOME\\.cua\\cua\\libs\\cua\\Cargo.toml; & $HOME\\.cua\\cua\\libs\\cua\\target\\release\\cua.exe host setup --pair \(code)",
             state: "active", team: team, createdAt: now, expiresAt: now + 1800, usedAt: nil, machine: nil)
         pairing.insert(made, at: 0)
         return made
@@ -499,15 +499,8 @@ public final class DevicesModel {
         return notice
     }
 
-    /// One usage event for a Pro or Teams surface (`upsell_<surface>_<action>`,
-    /// fixed names in the app core's telemetry schema).
-    public func recordUpsell(_ feature: String) {
-        telemetry?.record(appTelemetryFeature(feature: feature))
-    }
-
     public func dismissRelayNotice() {
         guard let key = relayUsageView?.notice?.dismissKey else { return }
-        recordUpsell("upsell_meter_dismiss")
         relayNoticeDismissed = key
         defaults.set(key, forKey: Self.relayNoticeDismissedKey)
     }
@@ -540,13 +533,8 @@ public final class DevicesModel {
 
     public func closeEnroll() { enroll = nil }
 
-    /// Where usage events go (enrolled by a sign-in or an approval, or
-    /// failed; the app core's, like the Tauri app).
-    public var telemetry: TelemetryRunning?
-
     func sendEnroll(_ action: AppEnrollAction) {
         guard let s = enroll else { return }
-        telemetry?.record(appTelemetryEnroll(state: s, action: action))
         enroll = appEnrollReduce(state: s, action: action)
     }
 

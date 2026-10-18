@@ -566,18 +566,6 @@ function Invoke-CuaInstall {
             }
             Install-App $manifest $manifestUrl $platform $tmp
         }
-        # How Cua was installed, for the one-time first-run telemetry event
-        # (a fixed enum value; no identifiers). Kept when already recorded.
-        $telemetryDir = Join-Path $(if ($env:CUA_HOME) { $env:CUA_HOME } else { Join-Path $HOME '.cua' }) 'telemetry'
-        $channelFile = Join-Path $telemetryDir 'install_channel'
-        if ($DryRun) { Write-Host "[dry-run] record the install channel in $channelFile" }
-        elseif (-not (Test-Path -LiteralPath $channelFile)) {
-            try {
-                New-Item -ItemType Directory -Force -Path $telemetryDir | Out-Null
-                Set-Content -LiteralPath $channelFile -Value 'install_script'
-            } catch { Write-Verbose "could not record the install channel: $_" }
-        }
-        $env:CUA_INSTALL_CHANNEL = 'install_script'
         if ($sel['cua-driver']) { Install-CuaDriver $cua $tmp $manifestUrl }
         Write-Info 'done'
         if ($cua -and -not $Pair -and -not $CliOnly -and -not $NoOnboarding -and -not $DryRun -and (Test-Interactive)) {

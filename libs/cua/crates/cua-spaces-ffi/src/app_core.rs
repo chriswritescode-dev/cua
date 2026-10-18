@@ -2418,122 +2418,6 @@ impl AppCliInstaller {
     }
 }
 
-// ---- Usage telemetry ------------------------------------------------------------
-
-/// The app started: attributes this process's events to `spaces_app` at
-/// `version`, lets the app show the first-run notice itself (nothing is
-/// sent before it has been shown once), and records `app_launched` (on a
-/// first run, once the notice shows). Call once at launch, before the
-/// first `Cua`. `onboarding_eligible`: the first run is still to finish
-/// (`app_launched` carries it). Returns whether the notice was already
-/// shown here.
-#[uniffi::export]
-pub fn app_telemetry_start(version: String, onboarding_eligible: Option<bool>) -> bool {
-    let t = cua_telemetry::global();
-    t.set_product("spaces_app", &version);
-    t.set_notice_mode(cua_telemetry::NoticeMode::External);
-    core::telemetry::start_with(t, onboarding_eligible)
-}
-
-/// Records `signals` on the SDK's telemetry client (the switch, the notice
-/// and the schema apply) and marks the day active. Returns how many events
-/// were queued.
-#[uniffi::export]
-pub fn app_telemetry_record(signals: Vec<AppTelemetrySignal>) -> u32 {
-    core::telemetry::record(cua_telemetry::global(), &signals) as u32
-}
-
-/// The app started (`app_launched`).
-#[uniffi::export]
-pub fn app_telemetry_launched(onboarding_eligible: Option<bool>) -> Vec<AppTelemetrySignal> {
-    core::telemetry::launched(onboarding_eligible)
-}
-
-/// A Spaces app feature (a fixed name).
-#[uniffi::export]
-pub fn app_telemetry_feature(feature: String) -> Vec<AppTelemetrySignal> {
-    core::telemetry::feature_used(&feature)
-}
-
-/// The first run left Welcome with its usage-data switch at `on`: writes
-/// the machine's setting when it changed (the same as Settings and `cua
-/// telemetry off`), then records that the notice was shown. Nothing is
-/// queued or sent before; with the switch off, nothing after either.
-#[uniffi::export]
-pub fn app_telemetry_welcome_left(on: bool) -> Result<()> {
-    core::telemetry::welcome_left(cua_telemetry::global(), on)
-        .map_err(|e| CuaError::Internal(e.to_string()))
-}
-
-/// The events one first-run step means (call with the state before it).
-#[uniffi::export]
-pub fn app_telemetry_onboarding(
-    state: AppOnboardingState,
-    action: AppOnboardingAction,
-) -> Vec<AppTelemetrySignal> {
-    core::telemetry::onboarding(&state, &action)
-}
-
-/// A sign-in failed (`message`, which never leaves: only its kind) or was
-/// cancelled (none).
-#[uniffi::export]
-pub fn app_telemetry_sign_in_failed(message: Option<String>) -> Vec<AppTelemetrySignal> {
-    core::telemetry::sign_in_failed(message.as_deref())
-}
-
-/// "Start using Cua Spaces".
-#[uniffi::export]
-pub fn app_telemetry_onboarding_finished(state: AppOnboardingState) -> Vec<AppTelemetrySignal> {
-    core::telemetry::onboarding_finished(&state)
-}
-
-/// The events one step of the Spaces being created means, at `now_ms`
-/// (call with the state before it).
-#[uniffi::export]
-pub fn app_telemetry_creates(
-    state: AppCreatesState,
-    action: AppCreateAction,
-    now_ms: i64,
-) -> Vec<AppTelemetrySignal> {
-    core::telemetry::creates(&state, &action, now_ms)
-}
-
-/// The events one step of Settings, Storage means.
-#[uniffi::export]
-pub fn app_telemetry_storage(
-    input: AppStorageInput,
-    state: AppStorageState,
-    action: AppStorageAction,
-) -> Vec<AppTelemetrySignal> {
-    core::telemetry::storage(&input, &state, &action)
-}
-
-/// The events one step of the Share sheet means.
-#[uniffi::export]
-pub fn app_telemetry_share(
-    input: AppShareInput,
-    state: AppShareSheetState,
-    action: AppShareSheetAction,
-) -> Vec<AppTelemetrySignal> {
-    core::telemetry::share(&input, &state, &action)
-}
-
-/// The events of a change in Settings, Experiments (call with the switches
-/// before and after it).
-#[uniffi::export]
-pub fn app_telemetry_experiments_changed(
-    before: AppExperiments,
-    after: AppExperiments,
-) -> Vec<AppTelemetrySignal> {
-    core::telemetry::experiments_changed(&before, &after)
-}
-
-/// Which experiments are on (at launch).
-#[uniffi::export]
-pub fn app_telemetry_experiments_on(experiments: AppExperiments) -> Vec<AppTelemetrySignal> {
-    core::telemetry::experiments_on(&experiments)
-}
-
 /// Settings, Storage's state from JSON (fixtures, parity).
 #[uniffi::export]
 pub fn app_storage_state_from_json(json: String) -> Result<AppStorageState> {
@@ -2552,18 +2436,9 @@ pub fn app_enroll_state_from_json(json: String) -> Result<AppEnrollState> {
     from_json("enroll state", &json)
 }
 
-/// The events one step of the enroll sheet means.
-#[uniffi::export]
-pub fn app_telemetry_enroll(
-    state: AppEnrollState,
-    action: AppEnrollAction,
-) -> Vec<AppTelemetrySignal> {
-    core::telemetry::enroll(&state, &action)
-}
-
 // ---- Getting started and the command palette -----------------------------
 
-/// The getting-started checklist after `action`, and its usage events.
+/// The getting-started checklist after `action`.
 #[uniffi::export]
 pub fn app_checklist_reduce(
     state: AppChecklistState,

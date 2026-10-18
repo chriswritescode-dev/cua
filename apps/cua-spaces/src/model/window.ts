@@ -303,7 +303,6 @@ export interface SettingsInput {
   menuBar: boolean;
   defaultLocation: Location;
   locationLockedBy?: string | null;
-  telemetry?: { enabled: boolean; lockedBy?: string | null } | null;
   agents?: AgentSettingsRow[] | null;
   agentsBusy: boolean;
   agentsPending: string[];

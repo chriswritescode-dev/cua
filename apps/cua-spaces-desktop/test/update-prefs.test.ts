@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { Settings, SwiftMigration } from "../src/settings";
-import { autoCheckPref, autoInstallPref, channelPref, type UpdateChannel } from "../src/update-prefs";
+import { autoCheckPref, channelPref, type UpdateChannel } from "../src/update-prefs";
 
 const moved = (m: Partial<SwiftMigration> = {}): Settings => ({
   swiftMigration: { at: "2026-10-14T18:05:04.636Z", found: true, copied: ["settings.json"], ...m },
@@ -37,18 +37,6 @@ describe("autoCheckPref", () => {
     // The 0.9.0 default was off and the box was never touched: that stays off only if it was written.
     expect(autoCheckPref({ autoUpdate: false })).toBe(false);
     expect(autoCheckPref({ ...fresh, autoUpdate: false })).toBe(false);
-  });
-});
-
-describe("autoInstallPref", () => {
-  it("applies a downloaded update when the app quits, unless the user turned that off", () => {
-    expect(autoInstallPref({})).toBe(true);
-    expect(autoInstallPref(fresh)).toBe(true);
-    // Sparkle's "download automatically" was a different question; it is not carried over.
-    expect(autoInstallPref(moved())).toBe(true);
-    expect(autoInstallPref(moved({ sparkleAutomaticDownloads: false }))).toBe(true);
-    expect(autoInstallPref({ autoInstall: false })).toBe(false);
-    expect(autoInstallPref({ autoInstall: true })).toBe(true);
   });
 });
 

@@ -44,7 +44,6 @@ fn serve_command(
         // skip AT-SPI startup entirely; these tests exist to exercise it.
         .env_remove("NO_AT_BRIDGE")
         .env("CUA_DRIVER_RS_DISABLE_A11Y_ADVERTISE", "1")
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::piped());

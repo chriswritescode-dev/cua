@@ -32,7 +32,7 @@ fn def() -> &'static ToolDef {
         name: "check_for_update".into(),
         description: "Check the saved stable/nightly Cua Driver channel for a release on GitHub. \
              Returns current and selected channels, current and latest versions, an `update_available` boolean, \
-             the install one-liner, and the release notes URL. Read-only — never \
+             the repository rebuild instruction, and the release notes URL. Read-only — never \
              installs. Pacman-owned Linux executables return package-manager guidance \
              without checking GitHub. Mirror of `cua-driver check-update --json`."
             .into(),
@@ -64,10 +64,6 @@ impl Tool for CheckForUpdateTool {
         let state = tokio::task::spawn_blocking(|| crate::version_check::check_update_state(false))
             .await
             .expect("version_check::check_update_state never panics");
-        crate::version_check::capture_update_state(
-            &state,
-            crate::telemetry::UpdateCheckSource::Mcp,
-        );
 
         let summary = if let Some(err) = &state.error {
             format!("Update check unavailable: {err}")

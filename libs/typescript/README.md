@@ -4,7 +4,7 @@ pnpm workspace for the Cua TypeScript packages:
 
 | Package              | Purpose                                                                 |
 | -------------------- | ----------------------------------------------------------------------- |
-| `@trycua/core`       | Shared telemetry and utilities                                          |
+| `@trycua/core`       | Shared utilities                                                        |
 | `@trycua/agent`      | Client for Cua agent proxies (HTTP/HTTPS or peer-to-peer)               |
 | `@trycua/fleet`      | Browser and Node.js SDK for Fleet templates, pools, claims and services |
 | `@trycua/playground` | Reusable playground UI for computer-use agents                          |

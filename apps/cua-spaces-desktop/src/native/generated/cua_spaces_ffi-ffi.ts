@@ -1517,76 +1517,6 @@ const DEFINITIONS = {
       ret: FfiType.Handle,
       hasRustCallStatus: false,
     },
-    "uniffi_cua_spaces_ffi_fn_func_app_telemetry_creates": {
-      args: [FfiType.RustBuffer, FfiType.RustBuffer, FfiType.Int64],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_spaces_ffi_fn_func_app_telemetry_enroll": {
-      args: [FfiType.RustBuffer, FfiType.RustBuffer],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_spaces_ffi_fn_func_app_telemetry_experiments_changed": {
-      args: [FfiType.RustBuffer, FfiType.RustBuffer],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_spaces_ffi_fn_func_app_telemetry_experiments_on": {
-      args: [FfiType.RustBuffer],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_spaces_ffi_fn_func_app_telemetry_feature": {
-      args: [FfiType.RustBuffer],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_spaces_ffi_fn_func_app_telemetry_launched": {
-      args: [FfiType.RustBuffer],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_spaces_ffi_fn_func_app_telemetry_onboarding": {
-      args: [FfiType.RustBuffer, FfiType.RustBuffer],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_spaces_ffi_fn_func_app_telemetry_onboarding_finished": {
-      args: [FfiType.RustBuffer],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_spaces_ffi_fn_func_app_telemetry_record": {
-      args: [FfiType.RustBuffer],
-      ret: FfiType.UInt32,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_spaces_ffi_fn_func_app_telemetry_share": {
-      args: [FfiType.RustBuffer, FfiType.RustBuffer, FfiType.RustBuffer],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_spaces_ffi_fn_func_app_telemetry_sign_in_failed": {
-      args: [FfiType.RustBuffer],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_spaces_ffi_fn_func_app_telemetry_start": {
-      args: [FfiType.RustBuffer, FfiType.RustBuffer],
-      ret: FfiType.Int8,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_spaces_ffi_fn_func_app_telemetry_storage": {
-      args: [FfiType.RustBuffer, FfiType.RustBuffer, FfiType.RustBuffer],
-      ret: FfiType.RustBuffer,
-      hasRustCallStatus: true,
-    },
-    "uniffi_cua_spaces_ffi_fn_func_app_telemetry_welcome_left": {
-      args: [FfiType.Int8],
-      ret: FfiType.Void,
-      hasRustCallStatus: true,
-    },
     "uniffi_cua_spaces_ffi_fn_func_app_teleport_plan": {
       args: [FfiType.RustBuffer],
       ret: FfiType.RustBuffer,
@@ -3212,76 +3142,6 @@ const DEFINITIONS = {
       ret: FfiType.UInt16,
       hasRustCallStatus: false,
     },
-    "uniffi_cua_spaces_ffi_checksum_func_app_telemetry_creates": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_spaces_ffi_checksum_func_app_telemetry_enroll": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_spaces_ffi_checksum_func_app_telemetry_experiments_changed": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_spaces_ffi_checksum_func_app_telemetry_experiments_on": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_spaces_ffi_checksum_func_app_telemetry_feature": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_spaces_ffi_checksum_func_app_telemetry_launched": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_spaces_ffi_checksum_func_app_telemetry_onboarding": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_spaces_ffi_checksum_func_app_telemetry_onboarding_finished": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_spaces_ffi_checksum_func_app_telemetry_record": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_spaces_ffi_checksum_func_app_telemetry_share": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_spaces_ffi_checksum_func_app_telemetry_sign_in_failed": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_spaces_ffi_checksum_func_app_telemetry_start": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_spaces_ffi_checksum_func_app_telemetry_storage": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
-    "uniffi_cua_spaces_ffi_checksum_func_app_telemetry_welcome_left": {
-      args: [],
-      ret: FfiType.UInt16,
-      hasRustCallStatus: false,
-    },
     "uniffi_cua_spaces_ffi_checksum_func_app_teleport_plan": {
       args: [],
       ret: FfiType.UInt16,
@@ -4199,20 +4059,6 @@ interface NativeModuleInterface {
     uniffi_cua_spaces_ffi_fn_func_app_stream_pip_reduce(open: Uint8Array, event: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
     uniffi_cua_spaces_ffi_fn_func_app_stream_section(input: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
     uniffi_cua_spaces_ffi_fn_func_app_teams(accountToken: Uint8Array): bigint;
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_creates(state: Uint8Array, action: Uint8Array, nowMs: bigint, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_enroll(state: Uint8Array, action: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_experiments_changed(before: Uint8Array, after: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_experiments_on(experiments: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_feature(feature: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_launched(onboardingEligible: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_onboarding(state: Uint8Array, action: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_onboarding_finished(state: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_record(signals: Uint8Array, uniffi_out_err: UniffiRustCallStatus): number;
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_share(input: Uint8Array, state: Uint8Array, action: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_sign_in_failed(message: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_start(version: Uint8Array, onboardingEligible: Uint8Array, uniffi_out_err: UniffiRustCallStatus): number;
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_storage(input: Uint8Array, state: Uint8Array, action: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
-    uniffi_cua_spaces_ffi_fn_func_app_telemetry_welcome_left(on: number, uniffi_out_err: UniffiRustCallStatus): void;
     uniffi_cua_spaces_ffi_fn_func_app_teleport_plan(plan: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
     uniffi_cua_spaces_ffi_fn_func_app_teleport_plan_from_json(json: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
     uniffi_cua_spaces_ffi_fn_func_app_teleport_run_event(event: Uint8Array, uniffi_out_err: UniffiRustCallStatus): Uint8Array;
@@ -4538,20 +4384,6 @@ interface NativeModuleInterface {
     uniffi_cua_spaces_ffi_checksum_func_app_stream_pip_reduce(): number;
     uniffi_cua_spaces_ffi_checksum_func_app_stream_section(): number;
     uniffi_cua_spaces_ffi_checksum_func_app_teams(): number;
-    uniffi_cua_spaces_ffi_checksum_func_app_telemetry_creates(): number;
-    uniffi_cua_spaces_ffi_checksum_func_app_telemetry_enroll(): number;
-    uniffi_cua_spaces_ffi_checksum_func_app_telemetry_experiments_changed(): number;
-    uniffi_cua_spaces_ffi_checksum_func_app_telemetry_experiments_on(): number;
-    uniffi_cua_spaces_ffi_checksum_func_app_telemetry_feature(): number;
-    uniffi_cua_spaces_ffi_checksum_func_app_telemetry_launched(): number;
-    uniffi_cua_spaces_ffi_checksum_func_app_telemetry_onboarding(): number;
-    uniffi_cua_spaces_ffi_checksum_func_app_telemetry_onboarding_finished(): number;
-    uniffi_cua_spaces_ffi_checksum_func_app_telemetry_record(): number;
-    uniffi_cua_spaces_ffi_checksum_func_app_telemetry_share(): number;
-    uniffi_cua_spaces_ffi_checksum_func_app_telemetry_sign_in_failed(): number;
-    uniffi_cua_spaces_ffi_checksum_func_app_telemetry_start(): number;
-    uniffi_cua_spaces_ffi_checksum_func_app_telemetry_storage(): number;
-    uniffi_cua_spaces_ffi_checksum_func_app_telemetry_welcome_left(): number;
     uniffi_cua_spaces_ffi_checksum_func_app_teleport_plan(): number;
     uniffi_cua_spaces_ffi_checksum_func_app_teleport_plan_from_json(): number;
     uniffi_cua_spaces_ffi_checksum_func_app_teleport_run_event(): number;

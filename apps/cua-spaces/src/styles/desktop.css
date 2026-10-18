@@ -2244,26 +2244,13 @@ html.is-teleport-picker .hp-panel {
   opacity: 0.5;
 }
 
-/* Settings > Privacy and the onboarding telemetry notice. */
+/* Settings notes and the onboarding Teams line. */
 .st-note,
-.onboarding-telemetry-notice,
 .onboarding-teams {
   margin: 0;
   font-size: 12px;
   line-height: 1.45;
   color: var(--dw-text-secondary, rgba(255, 255, 255, 0.6));
-}
-.onboarding-telemetry-notice {
-  margin-top: 8px;
-  max-width: 520px;
-}
-/* Welcome's usage-data switch, above its notice. */
-.onboarding-usage {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 20px;
-  font-size: 13px;
 }
 .onboarding-teams {
   margin-top: 16px;
@@ -2840,7 +2827,6 @@ html.is-teleport-picker .hp-panel {
 
 /* Onboarding helper and note text wraps onto more lines; it is never cut
    short. */
-.dw .onboarding-telemetry-notice,
 .dw .ob-page .host-setup-lede,
 .dw .ob-page-card .st-note,
 .dw .ob-page-card .st-error,

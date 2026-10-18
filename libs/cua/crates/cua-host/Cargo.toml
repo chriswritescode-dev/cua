@@ -26,7 +26,6 @@ base64.workspace = true
 # The device key lives in the session's credential vault.
 cua-auth.workspace = true
 cua-home.workspace = true
-flate2 = "1"
 hex.workspace = true
 rand.workspace = true
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-native-roots", "json"] }
@@ -36,7 +35,6 @@ ring = "0.17"
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
-tar = "0.4"
 thiserror.workspace = true
 tokio = { workspace = true }
 tracing.workspace = true

@@ -74,6 +74,16 @@ run (with a throwaway `HOME`). State lives under `$HOME/Library/Application Supp
 `CuaSpacesMac --check-launch-only` loads the app's libraries, prints its version and exits
 (`scripts/check-launch.sh`; release builds too).
 
+## Privacy
+
+The app sends no product telemetry: no usage events, first-run funnel,
+feature counters or update outcomes leave the machine, and there is no
+usage-data switch. Keyvault site icons are the browser's own, read locally
+through the vault's `favicons()`; the app makes no favicon request to Google
+or any other service, and a site without one shows a globe. Updates are a
+notification only (see below): the app checks the feed it ships with and
+never downloads or installs a release.
+
 ## New UI
 
 The New UI (the `web_ui` experiment) makes
@@ -330,37 +340,38 @@ it only when the art changes.
 
 ## Updates (Sparkle)
 
-The app updates itself with [Sparkle](https://sparkle-project.org) 2
-(SwiftPM, pinned in `Package.resolved`; Settings, About drives it through
-the core's `about` module). Info.plist names the feed and the EdDSA public
-key: `SUFeedURL` is
+Sparkle 2 (SwiftPM, pinned in `Package.resolved`; Settings, About reads it
+through the core's `about` module) only notifies: this app never downloads
+or installs a release. Info.plist names the feed and the EdDSA public key:
+`SUFeedURL` is
 `https://github.com/trycua/cua/releases/download/cua-spaces-latest/cua-spaces-appcast.xml`,
 the rolling `cua-spaces-latest` release that already carries the Spaces
 updater feed. GitHub's repository-wide "latest" release belongs to whichever
 component released last, so a `/releases/latest/download/` URL would not
-always be the Spaces feed; a fixed tag always is. The app is outside the App
-Sandbox, so it needs no `SUEnableInstallerLauncherService`.
+always be the Spaces feed; a fixed tag always is. `SUEnableAutomaticChecks`
+is on, so the app checks at launch and periodically; `SUAutomaticallyUpdate`
+is off, and `SparkleUpdater` sets `automaticallyDownloadsUpdates = false`.
 `SUVerifyUpdateBeforeExtraction` checks the signature before anything is
 unpacked (Sparkle does this whatever the user driver).
 
 Sparkle shows no window of its own. `SparkleUpdater` runs an `SPUUpdater`
 with a custom user driver (`UpdateUserDriver`, over the plain-value
-`UpdateFlow` state machine in `UpdateDriver.swift`). It checks at launch and
-periodically (`SUEnableAutomaticChecks` and `SUAutomaticallyUpdate` are on, so
-updates check and download in the background out of the box, as on Windows
-and Linux; an explicit off is kept). An
-update found by a scheduled check downloads and extracts at once; Sparkle's
-ready-to-install reply is then held, and nothing restarts the app until the
-page calls `update.install` ("Restart to update"). With "check for and
-download updates automatically" on (the default), Sparkle's silent path reaches the same state through
-`updater(_:willInstallUpdateOnQuit:immediateInstallationBlock:)`. The page
-reads the state with `update.get` (`{status, currentVersion, version,
-percent, notesUrl, message}`; status is `idle`, `checking`, `available`,
-`downloading`, `downloaded` or `error`) and refetches on the `update.changed`
-event. Check Now (Settings, About) is quiet too: nothing found ends silently,
-and only an error from a check the user started shows a small "Update Error!"
-alert; background errors are logged. Usage telemetry records `found`,
-`not_found`, `downloaded`, `installed` and `failed`.
+`UpdateFlow` state machine in `UpdateDriver.swift`). A check that finds a
+newer release records its version, the release notes page and this message,
+shown in the main window's banner and in Settings, About; its status stays
+`idle` because there is nothing this app can install:
+
+> A newer Cua Spaces release (X) is available. Update by pulling the
+> repository and rebuilding: git pull && apps/cua-spaces-macos/scripts/build-release.sh
+
+The page reads the state with `update.get` (`{status, currentVersion,
+version, notesUrl, message}`; status is `idle`, `checking` or `error`) and
+refetches on the `update.changed` event. There is no
+`update.install` action, no download progress, no install on quit and no
+restart path, and no "install automatically" setting. Check Now (Settings,
+About) is quiet: nothing found ends silently, and only an error from a check
+the user started shows a small "Update Error!" alert; background errors are
+logged.
 
 Channels: an `X.Y.Z-suffix` release is a `beta` item, which only apps set to
 "Update to: Beta" (`AppSettings.updateChannel`) are offered.

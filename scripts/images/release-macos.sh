@@ -79,7 +79,7 @@ elif [ ! -d "$WORK/app/Cua Spacesd.app" ]; then
 fi
 [ "$DRY" = 1 ] || [ -d "$WORK/app/Cua Spacesd.app" ] || { echo "$ASSET has no Cua Spacesd.app" >&2; exit 1; }
 
-export CUA_HOME="$WORK/cuahome" CUA_TELEMETRY=0 DO_NOT_TRACK=1
+export CUA_HOME="$WORK/cuahome"
 export CUA_MACOS_APP="$WORK/app/Cua Spacesd.app" CUA_MACOS_SPACESD_SOURCE=release
 if [ "$DRY" = 0 ]; then
     export GITHUB_USERNAME="${GITHUB_USERNAME:-$(gh api user -q .login)}"

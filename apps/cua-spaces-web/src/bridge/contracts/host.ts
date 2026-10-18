@@ -2,10 +2,10 @@
 // Copyright (c) 2026 Cua AI, Inc.
 
 /**
- * Account, daemon, machine, onboarding, telemetry and Settings shapes.
+ * Account, daemon, machine, onboarding and Settings shapes.
  *
  * Hand-written mirror of the Tauri app's adapters (`apps/cua-spaces/src/
- * native/fleet.ts`, `native/host.ts`, `native/telemetry.ts`,
+ * native/fleet.ts`, `native/host.ts`,
  * `components/desktop/NewSpaceWizard.tsx`) and of the app core's
  * `settings` module (`libs/cua/crates/cua-spaces-app-core/src/settings.rs`).
  * Rust is the source of truth; these are its JSON (camelCase) shapes.
@@ -419,7 +419,7 @@ export interface HostFormView {
 /** What the system reports for the app as a login item (`login_item::LoginItemStatus`). */
 export type LoginItemStatus = "enabled" | "notRegistered" | "requiresApproval" | "notFound";
 
-/* ---- Onboarding, telemetry ---------------------------------------------- */
+/* ---- Onboarding --------------------------------------------------------- */
 
 export type OnboardingMode = "client" | "host";
 
@@ -427,16 +427,6 @@ export interface OnboardingState {
   completed: boolean;
   mode?: OnboardingMode | null;
   installerMode?: OnboardingMode | null;
-}
-
-/** `telemetry_status`. */
-export interface TelemetryView {
-  enabled: boolean;
-  source: string;
-  sourceKind: string;
-  noticeShown: boolean;
-  noticeText: string;
-  docsUrl: string;
 }
 
 /* ---- Settings page (app core `settings::page`) --------------------------- */
@@ -457,13 +447,10 @@ export interface SettingsInput {
   menuBar?: boolean;
   defaultLocation?: "cloud" | "local" | "yours" | "host";
   locationLockedBy?: string | null;
-  telemetry?: { enabled: boolean; lockedBy?: string | null } | null;
   /** The Keyvault's auto-wipe (none: no Keyvault section). */
   keyvaultAutoWipe?: boolean | null;
   /** The unlock prompt shows (none: no row). */
   keyvaultUnlockPrompt?: boolean | null;
-  /** Load site icons the browser had none for (the core's default: on). */
-  keyvaultSiteIcons?: boolean;
   /** The Keyvault's protection facts (Touch ID, the daemon's signature). */
   keyvaultProtection?: { label: string; value: string }[];
   /** "Connect to the desktop automatically" (none: no row). */

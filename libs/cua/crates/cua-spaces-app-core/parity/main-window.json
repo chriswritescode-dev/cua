@@ -178,7 +178,6 @@
       "signIn": { "kind": "idle" },
       "menuBar": false,
       "defaultLocation": "local",
-      "telemetry": null,
       "agents": null
     },
     {
@@ -187,14 +186,12 @@
       "menuBar": true,
       "defaultLocation": "cloud",
       "locationLockedBy": "CUA_DEFAULT_ON",
-      "telemetry": { "enabled": false, "lockedBy": "DO_NOT_TRACK" },
       "agents": [],
       "agentsBusy": false
     },
     {
       "signIn": { "kind": "waiting", "userCode": "WXYZ-1234" },
       "defaultLocation": "local",
-      "telemetry": { "enabled": true },
       "agentsBusy": false,
       "agentsPending": ["cursor"]
     },
@@ -202,7 +199,6 @@
       "identity": "ada@example.com",
       "canSignOut": true,
       "defaultLocation": "local",
-      "telemetry": { "enabled": true },
       "agentsBusy": true
     }
   ],

@@ -25,7 +25,7 @@
 //! | [`teleport`] | picker filters and primary action, the review gate, drag-to-notch, transfer overlay |
 //! | [`keyvault`] | grouping, consent chips, decisions, categories, the approval sheet, the broker client |
 //! | [`onboarding`] | the first-run steps |
-//! | [`checklist`] | the getting-started checklist: its steps, what ticks them off, its usage events |
+//! | [`checklist`] | the getting-started checklist: its steps and what ticks them off |
 //! | [`palette`] | the command palette's ranking and the shared keyboard shortcuts |
 //! | [`driver_preview`] | the AI agents page's background computer-use card (its animated miniature) |
 //! | [`settings`] | hotkey format, defaults, the settings file, the Settings page |
@@ -46,7 +46,6 @@
 //! | [`share`] | who a Space is shared with (viewer or editor) and the Share sheet |
 //! | `installer` | the "Command line" step: plan and install the bundled `cua` (feature `installer`) |
 //! | [`agents`] | coding agent runs (labels, order, filter) and the agents on this machine (Settings rows, setup summary) |
-//! | [`telemetry`] | which anonymous usage events a UI step means, and sending them (feature `telemetry`) |
 //! | [`presence`] | the name and principal id the apps join a Space's presence as |
 //! | [`paths`] | home-relative paths |
 //! | [`errors`] | the words a failed action shows (a dead daemon in plain words) |
@@ -87,7 +86,6 @@ pub mod settings;
 pub mod share;
 pub mod spaces;
 pub mod teams;
-pub mod telemetry;
 pub mod teleport;
 pub mod upsell;
 mod util;

@@ -11,8 +11,6 @@
         "driveStorage": null,
         "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
         "lede": "Cua Spaces is in your menu bar.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Start using Cua Spaces",
         "prompts": [
@@ -29,8 +27,7 @@
           "Shows in: Notch and menu bar",
           "This machine: Access other machines"
         ],
-        "title": "You're all set",
-        "usage": null
+        "title": "You're all set"
       },
       "launchAtLogin": true,
       "onboarding": "mode-chosen"
@@ -45,8 +42,6 @@
         "driveStorage": null,
         "launchAtLogin": "[ ] Launch at login ~Keeps your Spaces and agents available after a restart.",
         "lede": "Cua Spaces is in your menu bar.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Start using Cua Spaces",
         "prompts": [
@@ -63,8 +58,7 @@
           "Shows in: Notch and menu bar",
           "This machine: Access other machines"
         ],
-        "title": "You're all set",
-        "usage": null
+        "title": "You're all set"
       },
       "launchAtLogin": false,
       "onboarding": "launch-at-login-toggled"
@@ -79,8 +73,6 @@
         "driveStorage": null,
         "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
         "lede": "Cua Spaces is in your menu bar.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Start using Cua Spaces",
         "prompts": [
@@ -97,8 +89,7 @@
           "Shows in: Notch and menu bar",
           "This machine: Access other machines"
         ],
-        "title": "You're all set",
-        "usage": null
+        "title": "You're all set"
       },
       "launchAtLogin": true,
       "onboarding": "launch-at-login-toggled"
@@ -113,8 +104,6 @@
         "driveStorage": null,
         "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
         "lede": "Cua Spaces is in your menu bar.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Start using Cua Spaces",
         "prompts": [
@@ -131,8 +120,7 @@
           "Shows in: Notch and menu bar",
           "This machine: Set up for unattended access"
         ],
-        "title": "You're all set",
-        "usage": null
+        "title": "You're all set"
       },
       "launchAtLogin": true,
       "onboarding": "mode-chosen"
@@ -147,8 +135,6 @@
         "driveStorage": null,
         "launchAtLogin": "[ ] Launch at login ~Keeps your Spaces and agents available after a restart.",
         "lede": "Cua Spaces is in your menu bar.",
-        "notice": null,
-        "noticeLink": null,
         "presentations": [],
         "primary": "Start using Cua Spaces",
         "prompts": [
@@ -165,8 +151,7 @@
           "Shows in: Notch and menu bar",
           "This machine: Set up for unattended access"
         ],
-        "title": "You're all set",
-        "usage": null
+        "title": "You're all set"
       },
       "launchAtLogin": false,
       "onboarding": "launch-at-login-toggled"

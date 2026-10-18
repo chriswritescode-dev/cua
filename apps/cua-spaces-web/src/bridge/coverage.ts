@@ -43,7 +43,6 @@ import { RELAY_USAGE_COVERAGE } from "./ops/relay-usage";
 import { CHECKLIST_COVERAGE } from "./ops/checklist";
 import { PRESENCE_COVERAGE } from "./ops/presence";
 import { RUNTIME_FIX_COVERAGE } from "./ops/runtime-fix";
-import { TELEMETRY_COVERAGE } from "./ops/telemetry";
 import { STARTUP_COVERAGE } from "./ops/startup";
 
 export interface OpCoverage {
@@ -68,13 +67,13 @@ export const HOST_COVERAGE = {
     tauri: ["host_status", "list_hosts", "get_environment"],
   },
   "host.status": { webkit: { methods: ["host.status"] }, tauri: ["host_status"] },
-  "settings.get": { webkit: { methods: ["settings.get"] }, tauri: ["telemetry_status", "get_default_location", "login_item_status"] },
+  "settings.get": { webkit: { methods: ["settings.get"] }, tauri: ["get_default_location", "login_item_status"] },
   "settings.set": {
     webkit: {
       methods: ["settings.choose", "settings.get", "window.setBackgroundColor"],
       byDesign: "theme and hotkey are page-side; New Spaces start on This Mac or Cua Cloud only",
     },
-    tauri: ["ui_storage_set", "telemetry_set_enabled", "set_default_location", "login_item_set", "telemetry_status", "get_default_location", "login_item_status"],
+    tauri: ["ui_storage_set", "set_default_location", "login_item_set", "get_default_location", "login_item_status"],
   },
   "settings.choose": {
     webkit: { methods: ["settings.choose", "settings.get"] },
@@ -137,7 +136,6 @@ export const HOST_COVERAGE = {
   "about.set": { webkit: { methods: ["about.set"] }, tauri: ST["about.set"], unsupported: { tauri: "the Tauri updater has one feed and no controls" } },
   "about.checkNow": { webkit: { methods: ["about.checkNow"] }, tauri: ST["about.checkNow"], unsupported: { tauri: "the Tauri updater has one feed and no controls" } },
   "update.get": { webkit: { methods: ["update.get"] }, tauri: ST["update.get"], unsupported: { tauri: "the Tauri updater has no in-app indicator" } },
-  "update.install": { webkit: { methods: ["update.install"] }, tauri: ST["update.install"], unsupported: { tauri: "the Tauri updater has no in-app indicator" } },
   "experiments.get": { webkit: { methods: ["app.info"] }, tauri: ST["experiments.get"] },
   "experiments.set": { webkit: { methods: ["app.info", "settings.choose"] }, tauri: ST["experiments.set"] },
   "loginItem.get": { webkit: { methods: ["loginItem.get"] }, tauri: ST["loginItem.get"] },
@@ -160,7 +158,6 @@ export const HOST_COVERAGE = {
   "notifications.list": { webkit: { methods: ["notifications.list"] }, tauri: NT["notifications.list"] },
   "notifications.markAllRead": { webkit: { methods: ["notifications.markAllRead"] }, tauri: NT["notifications.markAllRead"] },
   "notifications.markRead": { webkit: { methods: ["notifications.markRead"] }, tauri: NT["notifications.markRead"] },
-  ...TELEMETRY_COVERAGE,
   ...SPACE_DETAIL_COVERAGE,
   ...HOST_SETUP_COVERAGE,
   ...STARTUP_COVERAGE,

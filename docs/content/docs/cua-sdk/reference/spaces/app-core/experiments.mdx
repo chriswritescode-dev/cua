@@ -165,62 +165,6 @@ pub fn app_settings_choose_experiment(settings: AppSettings, row: String, option
 
 **Returns** [`AppSettings`](/cua-sdk/reference/spaces/app-core/onboarding-settings#appsettings-record)
 
-## `app_telemetry_experiments_changed`
-
-The events of a change in Settings, Experiments (call with the switches
-before and after it).
-
-<Tabs items={['Swift', 'Rust']} groupId="sdk-lang" persist>
-<Tab value="Swift">
-
-```swift
-func appTelemetryExperimentsChanged(before: AppExperiments, after: AppExperiments) -> [AppTelemetrySignal]
-```
-
-</Tab>
-<Tab value="Rust">
-
-```rust
-pub fn app_telemetry_experiments_changed(before: AppExperiments, after: AppExperiments) -> Vec<AppTelemetrySignal>
-```
-
-</Tab>
-</Tabs>
-
-| Parameter | Type | Default |
-| --- | --- | --- |
-| `before` | [`AppExperiments`](#appexperiments-record) | required |
-| `after` | [`AppExperiments`](#appexperiments-record) | required |
-
-**Returns** [`Vec<AppTelemetrySignal>`](/cua-sdk/reference/spaces/app-core/telemetry#apptelemetrysignal-enum)
-
-## `app_telemetry_experiments_on`
-
-Which experiments are on (at launch).
-
-<Tabs items={['Swift', 'Rust']} groupId="sdk-lang" persist>
-<Tab value="Swift">
-
-```swift
-func appTelemetryExperimentsOn(experiments: AppExperiments) -> [AppTelemetrySignal]
-```
-
-</Tab>
-<Tab value="Rust">
-
-```rust
-pub fn app_telemetry_experiments_on(experiments: AppExperiments) -> Vec<AppTelemetrySignal>
-```
-
-</Tab>
-</Tabs>
-
-| Parameter | Type | Default |
-| --- | --- | --- |
-| `experiments` | [`AppExperiments`](#appexperiments-record) | required |
-
-**Returns** [`Vec<AppTelemetrySignal>`](/cua-sdk/reference/spaces/app-core/telemetry#apptelemetrysignal-enum)
-
 ## `AppExperiments` record
 
 Returned by [`app_experiments_choose`](#app_experiments_choose), [`app_experiments_from_json`](#app_experiments_from_json).

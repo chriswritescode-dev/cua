@@ -672,7 +672,6 @@ class ArmsAndHostTest(unittest.TestCase):
             self.assertEqual(entry["command"], str(ca.CUA_BIN))
             self.assertIn("0.34.0", entry["command"])
             self.assertEqual(entry["args"], ["--socket", ca.AGENT_SOCKET, "mcp"])
-            self.assertEqual(entry["env"]["CUA_DRIVER_RS_TELEMETRY_ENABLED"], "false")
 
     def test_main_build_arm_has_its_own_binary_socket_and_state(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -682,7 +681,6 @@ class ArmsAndHostTest(unittest.TestCase):
             self.assertEqual(entry["command"], str(ca.CUA_MAIN_APP / "Contents/MacOS/cua-driver"))
             self.assertEqual(entry["args"], ["--socket", ca.MAIN_SOCKET, "mcp"])
             self.assertNotEqual(ca.MAIN_SOCKET, ca.AGENT_SOCKET)
-            self.assertEqual(entry["env"]["DO_NOT_TRACK"], "1")
 
     def test_skill_arm_differs_from_main_only_in_the_system_prompt(self) -> None:
         from unittest import mock

@@ -13,10 +13,7 @@ from cua_agent.callbacks import (
     ImageRetentionCallback,
     LoggingCallback,
     OperatorNormalizerCallback,
-    OtelCallback,
-    OtelErrorCallback,
     PromptInstructionsCallback,
-    TelemetryCallback,
     TrajectorySaverCallback,
 )
 
@@ -26,9 +23,6 @@ __all__ = [
     "LoggingCallback",
     "TrajectorySaverCallback",
     "BudgetManagerCallback",
-    "TelemetryCallback",
-    "OtelCallback",
-    "OtelErrorCallback",
     "OperatorNormalizerCallback",
     "PromptInstructionsCallback",
 ]

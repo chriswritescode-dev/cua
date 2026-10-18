@@ -1,30 +1,33 @@
 ---
 title: Updates
-description: 'How the Cua Spaces app for macOS updates itself, how to pick the Stable or Beta channel, and what it refreshes after an update.'
+description: 'How the Cua Spaces app reports a newer release, how to pick the Stable or Beta channel, and how to update by pulling the repository and rebuilding.'
 ---
 
-The Cua Spaces app for macOS checks for new versions and installs them for
-you. Everything is in **Settings, About**.
+The Cua Spaces app checks for new versions but never downloads or installs
+them. When a newer release exists, it says so and gives the command that
+updates your checkout and rebuilds the app; the update itself is yours to run.
+Everything is in **Settings, About**.
 
-## How updates work
+## How it works
 
-The app checks when it starts and again every few hours, and downloads a
-new version in the background. When one is ready, a line appears at the
-bottom of the sidebar: **Update ready**, with **Restart to update** and a
-**What's new** link to the release notes. Nothing restarts until you click.
-If an agent is still working, the app asks first. **Check Now** checks right
+The app checks when it starts and again every few hours. A found release
+appears as **Update available** at the bottom of the sidebar, with the
+version, a **What's new** link to the release notes and the rebuild
+instruction; **Settings, About** shows the same. **Check Now** checks right
 away, and **Last check** says when it last looked. Turn off **Automatically
-check for updates** to only check by hand. With **Install updates
-automatically** on (Windows and Linux), a downloaded update is also installed
-when you quit the app.
+check for updates** to only check by hand.
 
-Every update is the same notarized disk image as the download on the
-release page, and the app installs it only when its signature matches the
-key built into the app.
+## Updating
+
+Pull the repository and rebuild the app you run:
+
+- Desktop app: `git pull && pnpm --dir apps/cua-spaces-desktop dist:mac`
+  (use `dist:win` on Windows and `dist:linux` on Linux).
+- Native macOS app: `git pull && apps/cua-spaces-macos/scripts/build-release.sh`.
 
 ## Channels
 
-**Update to** picks what you get:
+**Update to** picks which releases the check follows:
 
 - **Stable**: releases.
 - **Beta**: releases and prereleases, with new features sooner and rough
@@ -33,9 +36,9 @@ key built into the app.
 Going back to Stable from a newer beta keeps the version you have until a
 newer stable release is out.
 
-## After an update
+## After updating
 
-The first time the new version opens, it refreshes what Cua installed into
+The first time the new build opens, it refreshes what Cua installed into
 your AI agents, the way `cua agents update` does: the Cua skill folders and
 the Cua MCP entries in Claude Code, Cursor and the other agents you set up.
 A skill folder you edited is left as you left it. It also restarts the Cua
@@ -43,5 +46,3 @@ daemon when the app started it, so the daemon runs the new version too.
 
 This happens without any window. If something fails, the app shows one
 notice with what to run.
-
-On Linux and Windows, the Tauri app updates through its own updater.

@@ -7453,8 +7453,7 @@ class _UniffiFfiConverterTypeEmbeddedDriverHostState(_UniffiConverterRustBuffer)
 class SdkClientKind(enum.Enum):
     """
     Runtime that imported the shared UniFFI SDK library. The language package
-    selects this automatically at its root entry point; callers do not need to
-    supply telemetry metadata.
+    selects this automatically at its root entry point.
 """
 
     PYTHON = 0

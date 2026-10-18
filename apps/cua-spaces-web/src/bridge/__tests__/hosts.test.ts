@@ -170,7 +170,6 @@ describe("tauri adapter", () => {
 
   it("reads UI settings from the shell's storage and writes each key to its command", async () => {
     const { win, calls } = tauriHost({
-      telemetry_status: { enabled: false, sourceKind: "config" },
       get_default_location: { value: "cloud", source: "config", path: "x" },
       login_item_status: "requiresApproval",
       login_item_set: "notRegistered",
@@ -181,20 +180,17 @@ describe("tauri adapter", () => {
       theme: "dark",
       menuBar: true,
       hotkey: "⌘⇧Space",
-      telemetry: false,
       defaultLocation: "cloud",
       launchAtLogin: true,
       updateChannel: null,
     });
     await a.call("settings.set", { key: "theme", value: "light" });
-    await a.call("settings.set", { key: "telemetry", value: true });
     await a.call("settings.set", { key: "defaultLocation", value: "local" });
     await a.call("settings.set", { key: "launchAtLogin", value: false });
     await expect(a.call("settings.set", { key: "updateChannel", value: "beta" })).rejects.toThrow(/not available/);
     expect(win.__CUA_UI_STORAGE__?.["cua.settings.appearance"]).toBe("light");
-    expect(calls.filter(([c]) => !["telemetry_status", "get_default_location", "login_item_status"].includes(c))).toEqual([
+    expect(calls.filter(([c]) => !["get_default_location", "login_item_status"].includes(c))).toEqual([
       ["ui_storage_set", { key: "cua.settings.appearance", value: "light" }],
-      ["telemetry_set_enabled", { enabled: true }],
       ["set_default_location", { on: "local" }],
       ["login_item_set", { on: false }],
     ]);
@@ -316,14 +312,13 @@ describe("electron adapter", () => {
     await expect(createElectronAdapter(win).call("spaces.list", {})).rejects.toMatchObject({ code: "protocol" });
   });
 
-  it("reads update.get and update.install from the host, and turns update.changed into the page's event", async () => {
-    const state = { status: "downloaded", currentVersion: "0.9.2", version: "0.9.3", percent: 100, notesUrl: "https://github.com/trycua/cua/releases/tag/cua-spaces-v0.9.3", message: null };
+  it("reads update.get from the host, and turns update.changed into the page's event", async () => {
+    const state = { status: "available", currentVersion: "0.9.2", version: "0.9.3", notesUrl: "https://github.com/trycua/cua/releases/tag/cua-spaces-v0.9.3", instructions: "git pull && pnpm --dir apps/cua-spaces tauri build", message: null };
     const asked: string[] = [];
     const { win, subs } = electronHost(bridged((method) => (asked.push(method), { ok: true, result: state })));
     const a = createElectronAdapter(win);
     expect(await a.call("update.get", {})).toEqual(state);
-    expect(await a.call("update.install", {})).toEqual(state);
-    expect(asked).toEqual(["update.get", "update.install"]);
+    expect(asked).toEqual(["update.get"]);
     const got: HostEvent[] = [];
     a.subscribe((e) => got.push(e));
     subs.get(ELECTRON_EVENT_CHANNEL)?.({ event: "update.changed" });
@@ -416,7 +411,6 @@ const settingsPage = {
           { id: "default-location", kind: "choice", label: "", enabled: false, help: "Set by CUA_ON", options: [{ id: "local", label: "", active: false }, { id: "cloud", label: "", active: true }] },
         ],
       },
-      { id: "privacy", rows: [{ id: "telemetry", kind: "choice", label: "", enabled: true, options: [{ id: "on", label: "", active: false }, { id: "off", label: "", active: true }] }] },
     ],
   },
 };
@@ -496,7 +490,6 @@ describe("webkit adapter", () => {
     await a.call("keyvault.setUnattended", { itemIds: ["k1"], unattended: false });
     await a.call("keyvault.unlock", {});
     await a.call("settings.set", { key: "menuBar", value: false });
-    await a.call("settings.set", { key: "telemetry", value: true });
     expect(sent.map((r) => [r.method, r.args])).toEqual([
       ["spaces.setPower", { id: "s1", on: true }],
       ["spaces.delete", { id: "s1" }],
@@ -507,15 +500,13 @@ describe("webkit adapter", () => {
       ["keyvault.unlockVault", {}],
       ["settings.choose", { row: "notch", option: "show" }],
       ["settings.get", {}],
-      ["settings.choose", { row: "telemetry", option: "on" }],
-      ["settings.get", {}],
     ]);
   });
 
   it("reads settings from the core's page", async () => {
     const { win } = webkitHost(() => ok(settingsPage));
     const snap = await createWebkitAdapter(win).call("settings.get", {});
-    expect(snap.values).toMatchObject({ menuBar: true, telemetry: false, defaultLocation: "cloud", launchAtLogin: null, updateChannel: null });
+    expect(snap.values).toMatchObject({ menuBar: true, defaultLocation: "cloud", launchAtLogin: null, updateChannel: null });
     expect(snap.defaultLocation).toMatchObject({ source: "env", env: "CUA_ON" });
   });
 
@@ -859,7 +850,6 @@ describe("webkit adapter", () => {
       autoConnect: false,
       keyvaultAutoWipe: true,
       keyvaultUnlockPrompt: false,
-      keyvaultSiteIcons: true,
       keyvaultProtection: [{ label: "Unlock", value: "Mac login" }],
     });
     await a.call("settings.choose", { row: "macos-runtime", option: "system" });
@@ -875,7 +865,6 @@ describe("webkit adapter", () => {
       autoConnect: null,
       keyvaultAutoWipe: null,
       keyvaultUnlockPrompt: null,
-      keyvaultSiteIcons: null,
       keyvaultProtection: null,
     });
   });
@@ -916,14 +905,11 @@ describe("webkit adapter", () => {
     ]);
   });
 
-  it("sends only clean usage events, and opens only System Settings panes", async () => {
+  it("opens only System Settings panes", async () => {
     const { win, sent } = webkitHost(() => ok(null));
     const a = createWebkitAdapter(win);
-    await a.call("telemetry.track", { signals: [{ type: "feature", feature: "space_open" }, { type: "feature", feature: "/Users/ada" } as never] });
-    await a.call("telemetry.track", { signals: [{ type: "feature", feature: "Ada Lovelace" } as never] });
-    expect(sent.map((r) => [r.method, r.args])).toEqual([["telemetry.track", { signals: [{ type: "feature", feature: "space_open" }] }]]);
     await expect(a.call("host.openSettings", { url: "https://example.com" })).rejects.toMatchObject({ code: "bad_args" });
-    expect(sent).toHaveLength(1);
+    expect(sent).toHaveLength(0);
   });
 
   it("runs New Space on the app's env and create, with its progress", async () => {

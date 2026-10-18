@@ -20,7 +20,6 @@
     "signIn": { "kind": "idle" },
     "menuBar": false,
     "defaultLocation": "local",
-    "telemetry": { "enabled": true },
     "agents": [],
     "loginItem": { "status": "enabled" }
   },

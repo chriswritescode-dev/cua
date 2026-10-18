@@ -4,15 +4,15 @@
 //! The install scripts intentionally do NOT touch the user's
 //! `~/.claude/skills/` (etc.) directories — too invasive for an
 //! `irm | iex` / `curl | sh` one-liner that the user might be running
-//! just to try the binary. This verb is the opt-in path: fetch the
-//! versioned skill pack from a matching GitHub release and symlink it
-//! into each detected agent's skills dir.
+//! just to try the binary. This verb is the opt-in path: stage the skill
+//! pack bundled with the local build and symlink it into each detected
+//! agent's skills dir.
 //!
 //! ## Subcommands
 //!
-//! - `install` — fetch + place + symlink (idempotent: re-run is a no-op).
-//! - `update` — same as `install --force`: re-fetch even if local copy
-//!   already exists, refreshes content.
+//! - `install` — stage + link (idempotent: re-run is a no-op).
+//! - `update` — same as `install --force`: re-stage even if a local copy
+//!   already exists, refreshing content.
 //! - `uninstall [--all]` — remove the agent symlinks. With `--all`, also
 //!   delete the local copy under `<HomeDir>/skills/cua-driver/` (and the
 //!   pre-rename `cua-driver-rs/` location if present).
@@ -24,17 +24,12 @@
 //! `--all-platforms` to keep all three (useful when assisting users
 //! across OSes from one machine).
 //!
-//! ## Fetch source
+//! ## Source
 //!
-//! The default fetch URL is the versioned release asset matched to the
-//! binary's own version: `cua-driver-rs-v<v>-skills.tar.gz` from the
-//! matching stable or nightly GitHub release tag. This pins the skill
-//! content to the binary release so an agent loading the doc knows
-//! every example matches the daemon it'll talk to.
-//!
-//! `--from main` fetches the latest from the `main` branch via the
-//! `Skills/cua-driver/` directory (one HTTP call per file — used
-//! for bleeding-edge dev validation; not the default).
+//! The skill pack is always the locally built/bundled copy: `install-local.sh`
+//! and `install-local.ps1` stage `Skills/cua-driver/` next to the installed
+//! binary, and a checkout build can read it from the repository tree. Nothing
+//! is downloaded from a release.
 //!
 //! ## Agent detection
 //!
@@ -69,27 +64,12 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 const SKILL_PACK_NAME: &str = "cua-driver";
-const STABLE_RELEASE_TAG_PREFIX: &str = "cua-driver-rs-v";
-const NIGHTLY_RELEASE_TAG_PREFIX: &str = "nightly-cua-driver-rs-v";
 /// Pre-rename name. The skill pack used to install as `cua-driver-rs`
 /// (when the Rust port lived at `libs/cua-driver-rs/`). On install /
 /// uninstall we sweep this name out of every agent skills dir and the
 /// local stage so a user who had the old skill installed ends up with
 /// exactly one pack, named consistently with the rest of the binary.
 const LEGACY_SKILL_PACK_NAME: &str = "cua-driver-rs";
-const SKILL_FILES: &[&str] = &[
-    "README.md",
-    "SKILL.md",
-    "WORKFLOW.md",
-    "RUNTIME.md",
-    "WINDOWS.md",
-    "MACOS.md",
-    "LINUX.md",
-    "BROWSER.md",
-    "VISUAL.md",
-    "RECORDING.md",
-    "EMBEDDING.md",
-];
 
 /// Per-host filter: returns the platform-specific docs that should NOT
 /// land in the local stage. The skill pack ships docs for all three
@@ -399,21 +379,15 @@ pub fn run(subcommand: &str, flags: &[String]) {
 // ── install / update ──────────────────────────────────────────────────────
 
 fn install(flags: &[String], force: bool) -> Result<()> {
-    let from_main = flags.iter().any(|f| f == "--from=main")
-        || (flags.iter().any(|f| f == "--from")
-            && flags
-                .iter()
-                .zip(flags.iter().skip(1))
-                .any(|(a, b)| a == "--from" && b == "main"));
     let force = force || flags.iter().any(|f| f == "--force");
     // `--all-platforms` opts INTO keeping LINUX.md / MACOS.md / WINDOWS.md
     // for every host. Default is host-only — only the matching platform's
-    // doc is kept, the other two are skipped during fetch.
+    // doc is kept, the other two are skipped while staging.
     let all_platforms = flags.iter().any(|f| f == "--all-platforms");
 
     // Sweep the legacy `cua-driver-rs`-named pack out FIRST so the
     // post-install state has exactly one skill pack at the new name.
-    // Done before fetch so a fresh install on a previously-installed
+    // Done before staging so a fresh install on a previously-installed
     // machine doesn't leave orphan links pointing at a stale local dir.
     sweep_legacy_skill_pack();
 
@@ -421,8 +395,8 @@ fn install(flags: &[String], force: bool) -> Result<()> {
     let already_present = local.join("SKILL.md").exists();
 
     if !already_present || force {
-        fetch_into(&local, from_main, all_platforms)
-            .with_context(|| format!("failed to fetch skill pack to {}", local.display()))?;
+        stage_local_skill_pack(&local, all_platforms)
+            .with_context(|| format!("failed to stage skill pack to {}", local.display()))?;
         println!("✅ Skill pack at {}", local.display());
     } else {
         println!(
@@ -660,9 +634,38 @@ fn make_dir_symlink(target: &Path, link: &Path) -> Result<()> {
     Ok(())
 }
 
-// ── fetch ──────────────────────────────────────────────────────────────────
+// ── local source ──────────────────────────────────────────────────────────
 
-fn fetch_into(dest: &Path, from_main: bool, all_platforms: bool) -> Result<()> {
+/// Locate the bundled skill pack beside the running executable.
+///
+/// `install-local` stages `Skills/cua-driver/` in the versioned install
+/// directory next to the binary; a repository build finds the same directory
+/// by walking up from `target/<profile>/`.
+fn bundled_skill_dir() -> Result<PathBuf> {
+    let executable = std::env::current_exe().context("locate the cua-driver executable")?;
+    let directory = executable
+        .parent()
+        .ok_or_else(|| anyhow!("cua-driver executable has no parent directory"))?;
+    let beside_executable = directory
+        .ancestors()
+        .map(|ancestor| ancestor.join("Skills").join(SKILL_PACK_NAME));
+    let installed_home = home_dir()
+        .map(|home| home.join("packages/current/Skills").join(SKILL_PACK_NAME))
+        .into_iter();
+    beside_executable
+        .chain(installed_home)
+        .find(|candidate| candidate.join("SKILL.md").is_file())
+        .ok_or_else(|| {
+            anyhow!(
+                "no local skill pack found next to {}; rebuild and install from the repository:\n  {}",
+                executable.display(),
+                crate::updater::rebuild_instruction()
+            )
+        })
+}
+
+fn stage_local_skill_pack(dest: &Path, all_platforms: bool) -> Result<()> {
+    let source = bundled_skill_dir()?;
     if let Some(parent) = dest.parent() {
         fs::create_dir_all(parent)?;
     }
@@ -671,129 +674,30 @@ fn fetch_into(dest: &Path, from_main: bool, all_platforms: bool) -> Result<()> {
         fs::remove_dir_all(dest)?;
     }
     fs::create_dir_all(dest)?;
-
-    if from_main {
-        // Per-file raw GitHub fetch — used for bleeding-edge dev validation.
-        let base = "https://raw.githubusercontent.com/trycua/cua/main/libs/cua-driver/rust/Skills/cua-driver";
-        for f in SKILL_FILES {
-            if is_excluded_platform_doc(f, all_platforms) {
-                continue;
-            }
-            let url = format!("{base}/{f}");
-            let body = http_get_text(&url).with_context(|| format!("GET {url}"))?;
-            fs::write(dest.join(f), body)?;
-        }
-        return Ok(());
-    }
-
-    // Versioned release asset.
-    let version = env!("CARGO_PKG_VERSION");
-    let url = skill_release_url(version);
-    let bytes = http_get_bytes(&url).with_context(|| format!("GET {url}"))?;
-    extract_tar_gz(&bytes, dest, all_platforms)?;
-    Ok(())
+    copy_skill_pack(&source, dest, all_platforms)
 }
 
-fn skill_release_url(version: &str) -> String {
-    let tag_prefix = if is_nightly_version(version) {
-        NIGHTLY_RELEASE_TAG_PREFIX
-    } else {
-        STABLE_RELEASE_TAG_PREFIX
-    };
-    format!(
-        "https://github.com/trycua/cua/releases/download/{tag_prefix}{version}/\
-         {STABLE_RELEASE_TAG_PREFIX}{version}-skills.tar.gz"
-    )
-}
-
-fn is_nightly_version(version: &str) -> bool {
-    let Ok(version) = semver::Version::parse(version) else {
-        return false;
-    };
-    if !version.build.is_empty() {
-        return false;
-    }
-    let parts = version.pre.as_str().split('.').collect::<Vec<_>>();
-    matches!(parts.as_slice(), ["nightly", date, run]
-        if date.len() == 8
-            && date.bytes().all(|byte| byte.is_ascii_digit())
-            && !run.is_empty()
-            && !run.starts_with('0')
-            && run.bytes().all(|byte| byte.is_ascii_digit()))
-}
-
-fn http_get_text(url: &str) -> Result<String> {
-    let resp = ureq::get(url)
-        .call()
-        .map_err(|e| anyhow!("HTTP error fetching {url}: {e}"))?;
-    if resp.status() != 200 {
-        bail!("HTTP {} fetching {url}", resp.status());
-    }
-    Ok(resp.into_body().read_to_string()?)
-}
-
-fn http_get_bytes(url: &str) -> Result<Vec<u8>> {
-    let resp = ureq::get(url)
-        .call()
-        .map_err(|e| anyhow!("HTTP error fetching {url}: {e}"))?;
-    if resp.status() != 200 {
-        bail!("HTTP {} fetching {url}", resp.status());
-    }
-    let mut body = resp.into_body();
-    let mut buf = Vec::new();
-    body.as_reader().read_to_end(&mut buf)?;
-    Ok(buf)
-}
-
-fn extract_tar_gz(bytes: &[u8], dest: &Path, all_platforms: bool) -> Result<()> {
-    let gz = flate2::read::GzDecoder::new(bytes);
-    let mut archive = tar::Archive::new(gz);
-    // Tarball shape across versions:
-    //   v0.2.18 and earlier: cua-driver-rs-v<v>-skills/cua-driver-rs/<file>
-    //   v0.2.19 (briefly):   cua-driver-rs-v<v>-skills/cua-driver/<file>
-    //   v0.2.20+:            cua-driver-rs-v<v>-skills/<file>     (CD workflow now flattens)
-    //
-    // Strip the outer staging dir always; additionally strip a SECOND
-    // wrapping dir IF it's named `cua-driver` or `cua-driver-rs` — that
-    // covers the legacy double-wrap without losing files in the
-    // (now-canonical) single-wrap shape.
-    for entry in archive.entries()? {
-        let mut entry = entry?;
-        let path = entry.path()?.into_owned();
-        let mut components = path.components();
-        if components.next().is_none() {
-            continue; // empty entry
-        }
-        // Peek the next component; if it's an unambiguous skill-pack
-        // wrapper, drop it too.
-        let mut peek = components.clone();
-        if let Some(next) = peek.next() {
-            let name = next.as_os_str();
-            if name == "cua-driver" || name == "cua-driver-rs" {
-                components.next();
-            }
-        }
-        let stripped: PathBuf = components.collect();
-        if stripped.as_os_str().is_empty() {
+fn copy_skill_pack(source: &Path, dest: &Path, all_platforms: bool) -> Result<()> {
+    for entry in fs::read_dir(source)? {
+        let entry = entry?;
+        let name = entry.file_name();
+        if name
+            .to_str()
+            .is_some_and(|name| is_excluded_platform_doc(name, all_platforms))
+        {
             continue;
         }
-        // Per-host filter: skip the other platforms' .md files unless
-        // the user opted into the full set with --all-platforms.
-        if let Some(basename) = stripped.file_name().and_then(|s| s.to_str()) {
-            if is_excluded_platform_doc(basename, all_platforms) {
-                continue;
-            }
+        let from = entry.path();
+        let to = dest.join(&name);
+        if from.is_dir() {
+            fs::create_dir_all(&to)?;
+            copy_skill_pack(&from, &to, all_platforms)?;
+        } else {
+            fs::copy(&from, &to)?;
         }
-        let out = dest.join(&stripped);
-        if let Some(parent) = out.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        entry.unpack(&out)?;
     }
     Ok(())
 }
-
-use std::io::Read;
 
 // ── uninstall ──────────────────────────────────────────────────────────────
 
@@ -903,7 +807,7 @@ fn status() -> Result<()> {
     if local.exists() && local.join("SKILL.md").exists() {
         println!("Local skill pack: {} ✅", local.display());
     } else {
-        println!("Local skill pack: not installed (`cua-driver skills install` to fetch)");
+        println!("Local skill pack: not installed (`cua-driver skills install` to stage)");
     }
     println!();
     println!("Agent links:");
@@ -955,9 +859,8 @@ fn print_path() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::{
-        ensure_skills_parent, extract_tar_gz, link_agent_paths, resolve_hermes_skills_dir,
-        skill_release_url, unix_hermes_home, windows_hermes_home, AgentParent, LinkStatus, AGENTS,
-        SKILL_FILES,
+        copy_skill_pack, ensure_skills_parent, link_agent_paths, resolve_hermes_skills_dir,
+        unix_hermes_home, windows_hermes_home, AgentParent, LinkStatus, AGENTS,
     };
     use std::path::PathBuf;
     use tempfile::tempdir;
@@ -1230,67 +1133,6 @@ mod tests {
         }
     }
 
-    #[test]
-    fn stable_skill_pack_uses_the_stable_release_tag() {
-        assert_eq!(
-            skill_release_url("0.19.3"),
-            "https://github.com/trycua/cua/releases/download/\
-             cua-driver-rs-v0.19.3/cua-driver-rs-v0.19.3-skills.tar.gz"
-        );
-    }
-
-    #[test]
-    fn nightly_skill_pack_uses_the_nightly_tag_and_compatible_asset_name() {
-        assert_eq!(
-            skill_release_url("0.19.4-nightly.20260812.3097"),
-            "https://github.com/trycua/cua/releases/download/\
-             nightly-cua-driver-rs-v0.19.4-nightly.20260812.3097/\
-             cua-driver-rs-v0.19.4-nightly.20260812.3097-skills.tar.gz"
-        );
-    }
-
-    /// Build a gzipped tarball with the entries given as
-    /// `(path, contents)` pairs. Returns the raw `.tar.gz` bytes.
-    fn build_tarball(entries: &[(&str, &[u8])]) -> Vec<u8> {
-        let mut gz_buf = Vec::new();
-        {
-            let gz = flate2::write::GzEncoder::new(&mut gz_buf, flate2::Compression::default());
-            let mut tar = tar::Builder::new(gz);
-            for (path, contents) in entries {
-                let mut header = tar::Header::new_gnu();
-                header.set_size(contents.len() as u64);
-                header.set_mode(0o644);
-                header.set_cksum();
-                tar.append_data(&mut header, path, &contents[..]).unwrap();
-            }
-            tar.finish().unwrap();
-        }
-        gz_buf
-    }
-
-    #[test]
-    fn from_main_manifest_matches_canonical_markdown_files() {
-        let skill_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../Skills/cua-driver");
-        let mut canonical = std::fs::read_dir(&skill_dir)
-            .unwrap_or_else(|error| panic!("failed to read {}: {error}", skill_dir.display()))
-            .map(|entry| entry.unwrap().path())
-            .filter(|path| path.extension().and_then(|extension| extension.to_str()) == Some("md"))
-            .map(|path| path.file_name().unwrap().to_string_lossy().into_owned())
-            .collect::<Vec<_>>();
-        canonical.sort();
-
-        let mut manifest = SKILL_FILES
-            .iter()
-            .map(|file| (*file).to_owned())
-            .collect::<Vec<_>>();
-        manifest.sort();
-
-        assert_eq!(
-            manifest, canonical,
-            "SKILL_FILES must include every canonical Markdown file"
-        );
-    }
-
     fn core_guidance() -> String {
         let skill_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../Skills/cua-driver");
         ["SKILL.md", "WORKFLOW.md", "RUNTIME.md"]
@@ -1421,50 +1263,65 @@ mod tests {
     }
 
     #[test]
-    fn extracted_skill_pack_keeps_canonical_skill_bytes() {
+    fn local_skill_pack_staging_keeps_canonical_skill_bytes() {
         let crate_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let files = SKILL_FILES
-            .iter()
-            .map(|name| {
-                (
-                    format!("cua-driver-skills/{name}"),
-                    std::fs::read(crate_dir.join("../../Skills/cua-driver").join(name))
-                        .expect("canonical skill file must be readable"),
-                )
-            })
-            .collect::<Vec<_>>();
-        let entries = files
-            .iter()
-            .map(|(name, bytes)| (name.as_str(), bytes.as_slice()))
-            .collect::<Vec<_>>();
-        let bytes = build_tarball(&entries);
+        let source = crate_dir.join("../../Skills/cua-driver");
         let dest = tempdir().unwrap();
 
-        extract_tar_gz(&bytes, dest.path(), false).unwrap();
+        copy_skill_pack(&source, dest.path(), false).unwrap();
 
         let packaged = std::fs::read_to_string(dest.path().join("SKILL.md"))
-            .expect("extracted skill must be readable");
-        // The canonical guidance phrases are owned by the bundled_skill_* tests;
-        // extraction must deliver those exact bytes.
+            .expect("staged skill must be readable");
         assert_eq!(
             packaged.as_bytes(),
-            std::fs::read(crate_dir.join("../../Skills/cua-driver/SKILL.md"))
-                .unwrap()
-                .as_slice(),
-            "extracted SKILL.md must equal the canonical skill"
+            std::fs::read(source.join("SKILL.md")).unwrap().as_slice(),
+            "staged SKILL.md must equal the canonical skill"
         );
         for reference in ["WORKFLOW.md", "RUNTIME.md"] {
             assert!(
                 packaged.contains(&format!("]({reference})")),
                 "entrypoint must route to bundled {reference}"
             );
-            let expected =
-                std::fs::read(crate_dir.join("../../Skills/cua-driver").join(reference)).unwrap();
+        }
+    }
+
+    #[test]
+    fn local_staging_keeps_subdirectories_and_filters_platform_docs() {
+        let source = tempdir().unwrap();
+        std::fs::create_dir_all(source.path().join("examples")).unwrap();
+        std::fs::write(source.path().join("SKILL.md"), "s").unwrap();
+        std::fs::write(source.path().join("README.md"), "r").unwrap();
+        std::fs::write(source.path().join("WINDOWS.md"), "w").unwrap();
+        std::fs::write(source.path().join("MACOS.md"), "m").unwrap();
+        std::fs::write(source.path().join("LINUX.md"), "l").unwrap();
+        std::fs::write(source.path().join("examples/click.md"), "sample").unwrap();
+        let dest = tempdir().unwrap();
+
+        copy_skill_pack(source.path(), dest.path(), false).unwrap();
+
+        for file in ["SKILL.md", "README.md", "examples/click.md"] {
+            assert!(dest.path().join(file).is_file(), "{file}");
+        }
+        #[cfg(target_os = "windows")]
+        let host = "WINDOWS.md";
+        #[cfg(target_os = "linux")]
+        let host = "LINUX.md";
+        #[cfg(target_os = "macos")]
+        let host = "MACOS.md";
+        #[cfg(not(any(target_os = "windows", target_os = "linux", target_os = "macos")))]
+        let host = "";
+        for file in ["WINDOWS.md", "MACOS.md", "LINUX.md"] {
             assert_eq!(
-                std::fs::read(dest.path().join(reference)).unwrap(),
-                expected,
-                "host-filtered install must retain the complete {reference}"
+                dest.path().join(file).is_file(),
+                file == host,
+                "{file} presence must match the host filter"
             );
+        }
+
+        let all = tempdir().unwrap();
+        copy_skill_pack(source.path(), all.path(), true).unwrap();
+        for file in ["WINDOWS.md", "MACOS.md", "LINUX.md"] {
+            assert!(all.path().join(file).is_file(), "{file}");
         }
     }
 
@@ -1544,152 +1401,6 @@ mod tests {
             assert!(
                 linux.contains(required),
                 "Linux skill lost required non-interference guidance: {required}"
-            );
-        }
-    }
-
-    #[test]
-    fn extract_flat_tarball_v_0_2_20_plus() {
-        // Post-fix shape: one wrapper dir, files directly under it.
-        //   cua-driver-rs-v0.2.20-skills/SKILL.md
-        //   cua-driver-rs-v0.2.20-skills/WINDOWS.md
-        let bytes = build_tarball(&[
-            ("cua-driver-rs-v0.2.20-skills/SKILL.md", b"flat-skill"),
-            ("cua-driver-rs-v0.2.20-skills/WINDOWS.md", b"flat-win"),
-        ]);
-        let dest = tempdir().unwrap();
-        extract_tar_gz(&bytes, dest.path(), true).unwrap();
-
-        let s = std::fs::read_to_string(dest.path().join("SKILL.md")).unwrap();
-        assert_eq!(s, "flat-skill");
-        let w = std::fs::read_to_string(dest.path().join("WINDOWS.md")).unwrap();
-        assert_eq!(w, "flat-win");
-        // No nested wrapper dir created.
-        assert!(!dest.path().join("cua-driver").exists());
-        assert!(!dest.path().join("cua-driver-rs").exists());
-    }
-
-    #[test]
-    fn extract_legacy_tarball_v_0_2_18_double_wrap_old_name() {
-        // v0.2.18 and earlier shape:
-        //   cua-driver-rs-v0.2.18-skills/cua-driver-rs/SKILL.md
-        // Both wrappers must be stripped or the user ends up with a
-        // nested cua-driver-rs/ dir (the bug this fixes).
-        let bytes = build_tarball(&[
-            (
-                "cua-driver-rs-v0.2.18-skills/cua-driver-rs/SKILL.md",
-                b"legacy-skill",
-            ),
-            (
-                "cua-driver-rs-v0.2.18-skills/cua-driver-rs/WINDOWS.md",
-                b"legacy-win",
-            ),
-        ]);
-        let dest = tempdir().unwrap();
-        extract_tar_gz(&bytes, dest.path(), true).unwrap();
-
-        let s = std::fs::read_to_string(dest.path().join("SKILL.md")).unwrap();
-        assert_eq!(s, "legacy-skill");
-        let w = std::fs::read_to_string(dest.path().join("WINDOWS.md")).unwrap();
-        assert_eq!(w, "legacy-win");
-        assert!(
-            !dest.path().join("cua-driver-rs").exists(),
-            "nested cua-driver-rs/ dir should have been stripped"
-        );
-    }
-
-    #[test]
-    fn extract_double_wrap_new_name_also_strips() {
-        // Interim shape (v0.2.19, briefly): inner dir is `cua-driver/`.
-        let bytes = build_tarball(&[(
-            "cua-driver-rs-v0.2.19-skills/cua-driver/SKILL.md",
-            b"interim-skill",
-        )]);
-        let dest = tempdir().unwrap();
-        extract_tar_gz(&bytes, dest.path(), true).unwrap();
-        let s = std::fs::read_to_string(dest.path().join("SKILL.md")).unwrap();
-        assert_eq!(s, "interim-skill");
-        assert!(!dest.path().join("cua-driver").exists());
-    }
-
-    #[test]
-    fn extract_preserves_subdirs_inside_pack() {
-        // If a future skill pack adds a real subdir (e.g. `examples/`),
-        // it must NOT be stripped — only the unambiguous pack-name
-        // wrappers are.
-        let bytes = build_tarball(&[("cua-driver-rs-v0.2.20-skills/examples/click.md", b"sample")]);
-        let dest = tempdir().unwrap();
-        extract_tar_gz(&bytes, dest.path(), true).unwrap();
-        let s = std::fs::read_to_string(dest.path().join("examples/click.md")).unwrap();
-        assert_eq!(s, "sample");
-    }
-
-    #[test]
-    fn extract_per_host_filter_drops_other_platform_docs() {
-        // The skill pack ships docs for all three platforms but a given
-        // host only needs one. all_platforms=false means the other two
-        // platform docs get skipped during extraction. README + SKILL +
-        // platform-agnostic docs are always kept.
-        let bytes = build_tarball(&[
-            ("cua-driver-rs-v0.2.20-skills/README.md", b"r"),
-            ("cua-driver-rs-v0.2.20-skills/SKILL.md", b"s"),
-            ("cua-driver-rs-v0.2.20-skills/WINDOWS.md", b"w"),
-            ("cua-driver-rs-v0.2.20-skills/MACOS.md", b"m"),
-            ("cua-driver-rs-v0.2.20-skills/LINUX.md", b"l"),
-            ("cua-driver-rs-v0.2.20-skills/RECORDING.md", b"R"),
-            ("cua-driver-rs-v0.2.20-skills/BROWSER.md", b"B"),
-            ("cua-driver-rs-v0.2.20-skills/VISUAL.md", b"V"),
-            ("cua-driver-rs-v0.2.20-skills/EMBEDDING.md", b"E"),
-        ]);
-        let dest = tempdir().unwrap();
-        extract_tar_gz(&bytes, dest.path(), /*all_platforms=*/ false).unwrap();
-        // README + SKILL + cross-platform docs ALWAYS present.
-        for f in [
-            "README.md",
-            "SKILL.md",
-            "RECORDING.md",
-            "BROWSER.md",
-            "VISUAL.md",
-            "EMBEDDING.md",
-        ] {
-            assert!(
-                dest.path().join(f).exists(),
-                "{f} should be present after per-host extraction"
-            );
-        }
-        // Exactly one platform doc should land — whichever matches this
-        // test's compile target. The other two must be absent.
-        #[cfg(target_os = "windows")]
-        let expected_present = "WINDOWS.md";
-        #[cfg(target_os = "linux")]
-        let expected_present = "LINUX.md";
-        #[cfg(target_os = "macos")]
-        let expected_present = "MACOS.md";
-        #[cfg(not(any(target_os = "windows", target_os = "linux", target_os = "macos")))]
-        let expected_present = "";
-        for f in ["WINDOWS.md", "MACOS.md", "LINUX.md"] {
-            let exists = dest.path().join(f).exists();
-            if f == expected_present {
-                assert!(exists, "{f} (host doc) should be present");
-            } else if !expected_present.is_empty() {
-                assert!(!exists, "{f} (non-host doc) should NOT be present");
-            }
-        }
-    }
-
-    #[test]
-    fn extract_all_platforms_flag_keeps_every_platform_doc() {
-        let bytes = build_tarball(&[
-            ("cua-driver-rs-v0.2.20-skills/WINDOWS.md", b"w"),
-            ("cua-driver-rs-v0.2.20-skills/MACOS.md", b"m"),
-            ("cua-driver-rs-v0.2.20-skills/LINUX.md", b"l"),
-        ]);
-        let dest = tempdir().unwrap();
-        extract_tar_gz(&bytes, dest.path(), /*all_platforms=*/ true).unwrap();
-        for f in ["WINDOWS.md", "MACOS.md", "LINUX.md"] {
-            assert!(
-                dest.path().join(f).exists(),
-                "--all-platforms should keep {f}"
             );
         }
     }

@@ -45,7 +45,7 @@ describe("without the core", () => {
       ["ubuntu-build", "running"],
       ["windows-legacy", "suspended"],
     ]);
-    expect(settingsPage(noCore, { values: DEFAULT_SETTINGS, defaultLocation: null, telemetry: null }, undefined, undefined)).toBeNull();
+    expect(settingsPage(noCore, { values: DEFAULT_SETTINGS, defaultLocation: null }, undefined, undefined)).toBeNull();
   });
 
   it("keeps an OS that was not reported unknown, never Linux", () => {
@@ -140,7 +140,7 @@ describe.skipIf(!wasmBuilt)("with the wasm core", () => {
     const core = await testCore();
     const page = settingsPage(
       core,
-      { values: DEFAULT_SETTINGS, defaultLocation: null, telemetry: null },
+      { values: DEFAULT_SETTINGS, defaultLocation: null },
       {
         fleet: { configured: true, authMode: "user", baseUrl: "", tokenUrl: "", identity: "ada@example.com" },
         onboarding: { completed: true },

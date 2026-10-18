@@ -28,7 +28,6 @@
     "daemon",
     "cache",
     "runtime",
-    "doctor",
-    "telemetry"
+    "doctor"
   ]
 }

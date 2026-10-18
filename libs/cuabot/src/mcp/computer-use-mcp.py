@@ -18,7 +18,6 @@ from fastmcp.utilities.types import Image
 
 # Connect to host's cuabotd server
 HOST_URL = os.environ.get("CUABOT_HOST", "http://host.docker.internal:7842")
-TELEMETRY_ENABLED = os.environ.get("CUABOT_TELEMETRY", "false").lower() == "true"
 STARTING_ERROR = "cuabotd is still starting"
 
 # Overlay cursor socket
@@ -28,48 +27,6 @@ server = FastMCP("computer-use")
 
 # HTTP client for cuabotd
 client = httpx.Client(base_url=HOST_URL, timeout=30.0)
-
-# Separate client for telemetry with short timeout
-telemetry_client = httpx.Client(base_url=HOST_URL, timeout=1.0)
-
-
-# Only these argument keys are ever sent, and only as numbers (or a mouse
-# button name). Typed text, key names, save paths and anything else a tool
-# receives never leave the container.
-_TELEMETRY_NUMERIC_ARGS = frozenset(
-    {"x", "y", "delta_x", "delta_y", "from_x", "from_y", "to_x", "to_y", "delay"}
-)
-_TELEMETRY_BUTTONS = frozenset({"left", "right", "middle"})
-
-
-def _telemetry_safe_args(tool_args: dict) -> dict:
-    safe = {}
-    for key, value in tool_args.items():
-        if (
-            key in _TELEMETRY_NUMERIC_ARGS
-            and isinstance(value, (int, float))
-            and not isinstance(value, bool)
-        ):
-            safe[key] = value
-        elif key == "button" and value in _TELEMETRY_BUTTONS:
-            safe[key] = value
-    return safe
-
-
-def log_mcp_tool_call(tool_name: str, tool_args: dict) -> None:
-    """Send MCP tool call telemetry to cuabotd (tool name + safe numeric args)."""
-    if not TELEMETRY_ENABLED:
-        return
-    try:
-        event = {
-            "type": "mcp_tool_call",
-            "timestamp": int(time.time() * 1000),
-            "tool_name": tool_name,
-            "tool_args": _telemetry_safe_args(tool_args),
-        }
-        telemetry_client.post("/telemetry", json=event)
-    except Exception:
-        pass  # Silently ignore telemetry errors
 
 
 def request(endpoint: str, body: dict | None = None) -> dict:
@@ -102,7 +59,6 @@ def screenshot(save_path: str | None = None) -> Image:
     """
     import base64
 
-    log_mcp_tool_call("screenshot", {})
     result = request("screenshot")
     image_bytes = base64.b64decode(result["image"])
 
@@ -122,7 +78,6 @@ def click(x: int, y: int, button: str = "left") -> str:
         y: Y coordinate
         button: Mouse button - left, right, or middle (default: left)
     """
-    log_mcp_tool_call("click", {"x": x, "y": y, "button": button})
     request("click", {"x": x, "y": y, "button": button})
     return "Clicked"
 
@@ -135,7 +90,6 @@ def double_click(x: int, y: int) -> str:
         x: X coordinate
         y: Y coordinate
     """
-    log_mcp_tool_call("double_click", {"x": x, "y": y})
     request("doubleClick", {"x": x, "y": y})
     return "Double-clicked"
 
@@ -148,7 +102,6 @@ def type_text(text: str, delay: int = 50) -> str:
         text: Text to type
         delay: Delay between keystrokes in ms (default: 50)
     """
-    log_mcp_tool_call("type_text", {"delay": delay})
     request("type", {"text": text, "delay": delay})
     return "Typed"
 
@@ -161,7 +114,6 @@ def mouse_move(x: int, y: int) -> str:
         x: X coordinate
         y: Y coordinate
     """
-    log_mcp_tool_call("mouse_move", {"x": x, "y": y})
     request("mouseMove", {"x": x, "y": y})
     return "Mouse moved"
 
@@ -175,7 +127,6 @@ def mouse_down(x: int, y: int, button: str = "left") -> str:
         y: Y coordinate
         button: Mouse button - left, right, or middle (default: left)
     """
-    log_mcp_tool_call("mouse_down", {"x": x, "y": y, "button": button})
     request("mouseDown", {"x": x, "y": y, "button": button})
     return "Mouse down"
 
@@ -189,7 +140,6 @@ def mouse_up(x: int, y: int, button: str = "left") -> str:
         y: Y coordinate
         button: Mouse button - left, right, or middle (default: left)
     """
-    log_mcp_tool_call("mouse_up", {"x": x, "y": y, "button": button})
     request("mouseUp", {"x": x, "y": y, "button": button})
     return "Mouse up"
 
@@ -204,7 +154,6 @@ def scroll(x: int, y: int, delta_x: int, delta_y: int) -> str:
         delta_x: Horizontal scroll amount
         delta_y: Vertical scroll amount (negative = up, positive = down)
     """
-    log_mcp_tool_call("scroll", {"x": x, "y": y, "delta_x": delta_x, "delta_y": delta_y})
     request("scroll", {"x": x, "y": y, "deltaX": delta_x, "deltaY": delta_y})
     return "Scrolled"
 
@@ -216,7 +165,6 @@ def key_down(key: str) -> str:
     Args:
         key: Key to press (e.g., 'Shift', 'Control', 'a', 'Enter')
     """
-    log_mcp_tool_call("key_down", {})
     request("keyDown", {"key": key})
     return "Key down"
 
@@ -228,7 +176,6 @@ def key_up(key: str) -> str:
     Args:
         key: Key to release
     """
-    log_mcp_tool_call("key_up", {})
     request("keyUp", {"key": key})
     return "Key up"
 
@@ -240,7 +187,6 @@ def key_press(key: str) -> str:
     Args:
         key: Key to press (e.g., 'Enter', 'Tab', 'Escape', 'F1')
     """
-    log_mcp_tool_call("key_press", {})
     request("keyPress", {"key": key})
     return "Key pressed"
 
@@ -255,7 +201,6 @@ def drag(from_x: int, from_y: int, to_x: int, to_y: int) -> str:
         to_x: End X coordinate
         to_y: End Y coordinate
     """
-    log_mcp_tool_call("drag", {"from_x": from_x, "from_y": from_y, "to_x": to_x, "to_y": to_y})
     request("drag", {"fromX": from_x, "fromY": from_y, "toX": to_x, "toY": to_y})
     return "Dragged"
 

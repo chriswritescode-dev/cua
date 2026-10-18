@@ -82,7 +82,7 @@ class NativeTransport(Transport):
 async def test_real_canonical_driver_uses_fleet_callback_and_disconnects(sdk):
 
     transport = NativeTransport()
-    sandbox = Sandbox(transport, _telemetry_enabled=False)
+    sandbox = Sandbox(transport)
     await sandbox._connect()
     try:
         async with sandbox.driver.connect() as driver:
@@ -118,7 +118,7 @@ async def test_real_canonical_action_target_serializes_over_fleet(
     sdk, refusal, variant, fields, expected
 ):
     transport = NativeTransport(result=refusal)
-    sandbox = Sandbox(transport, _telemetry_enabled=False)
+    sandbox = Sandbox(transport)
     await sandbox._connect()
     try:
         async with sandbox.driver.connect() as driver:
@@ -150,7 +150,7 @@ async def test_real_canonical_action_target_serializes_over_fleet(
 
 async def test_real_canonical_tool_result_preserves_structured_refusal(sdk, refusal):
     transport = NativeTransport(result=refusal)
-    sandbox = Sandbox(transport, _telemetry_enabled=False)
+    sandbox = Sandbox(transport)
     await sandbox._connect()
     try:
         async with sandbox.driver.connect() as driver:
@@ -192,7 +192,7 @@ def verification_input(sdk):
 
 async def test_real_canonical_verify_state_serializes_over_fleet(refusal, verification_input):
     transport = NativeTransport(result=refusal)
-    sandbox = Sandbox(transport, _telemetry_enabled=False)
+    sandbox = Sandbox(transport)
     await sandbox._connect()
     try:
         async with sandbox.driver.connect() as driver:
@@ -262,7 +262,7 @@ async def test_real_canonical_verify_state_preserves_structured_outcome(
         "isError": False,
     }
     transport = NativeTransport(result=wire_result)
-    sandbox = Sandbox(transport, _telemetry_enabled=False)
+    sandbox = Sandbox(transport)
     await sandbox._connect()
     try:
         async with sandbox.driver.connect() as driver:
@@ -302,7 +302,7 @@ async def test_real_canonical_verify_state_after_disconnect_does_not_exchange(
     sdk, verification_input
 ):
     transport = NativeTransport()
-    sandbox = Sandbox(transport, _telemetry_enabled=False)
+    sandbox = Sandbox(transport)
     await sandbox._connect()
     try:
         async with sandbox.driver.connect() as driver:

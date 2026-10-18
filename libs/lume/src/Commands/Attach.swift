@@ -45,8 +45,6 @@ struct Attach: AsyncParsableCommand {
 
   @MainActor
   func run() async throws {
-    TelemetryClient.shared.record(event: "lume_attach")
-
     let controller = LumeController()
     let details = try controller.getDetails(name: name, storage: storage)
     guard details.status == "running" else {

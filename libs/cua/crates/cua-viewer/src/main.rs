@@ -2,10 +2,10 @@
 // Copyright (c) 2026 Cua AI, Inc.
 
 #[cfg(any(target_os = "macos", target_os = "windows"))]
+mod metrics;
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 #[path = "macos.rs"]
 mod native;
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-mod telemetry;
 #[cfg_attr(not(any(target_os = "macos", target_os = "windows")), allow(dead_code))]
 mod v2;
 

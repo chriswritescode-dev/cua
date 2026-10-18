@@ -1,6 +1,6 @@
 ---
 title: "Updates"
-description: "Check for, apply and choose the channel of Lume updates."
+description: "Check for Lume updates and choose the update channel."
 ---
 
 {/*
@@ -13,7 +13,7 @@ description: "Check for, apply and choose the channel of Lume updates."
 | Command | Description |
 | --- | --- |
 | [`lume check-update`](#lume-check-update) | Check whether a newer Lume release is available. |
-| [`lume update`](#lume-update) | Check for a Lume update and optionally apply it. |
+| [`lume update`](#lume-update) | Check for a newer Lume release and how to rebuild from source. |
 | [`lume channel`](#lume-channel) | Inspect or change the stable/nightly update channel; selection does not install. |
 | [`lume channel status`](#lume-channel-status) | Show selected and current release channels. |
 | [`lume channel set`](#lume-channel-set) | Save stable or nightly as the update channel. |
@@ -44,9 +44,9 @@ lume check-update --json --no-cache
 
 ## `lume update`
 
-Check for a Lume update and optionally apply it.
+Check for a newer Lume release and how to rebuild from source.
 
-Without --apply, this command only checks for a newer release and prints the command to install it. With --apply, it runs the official Lume installer pinned to the discovered version and exits with the installer's status.
+Checks for a newer release. Lume never installs release builds; update a source checkout by pulling the repository and rebuilding it with `git pull && libs/lume/scripts/build/build-release.sh`.
 
 ```text output
 lume update [OPTIONS]
@@ -54,21 +54,21 @@ lume update [OPTIONS]
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
-| <span id="lume-update--apply"></span>`--apply` | boolean | `false` | Apply the update while preserving the current background-service choice. |
+| <span id="lume-update--apply"></span>`--apply` | boolean | `false` | Removed: installing release builds is disabled. |
 | <span id="lume-update--json"></span>`--json` | boolean | `false` | Emit the structured update-state payload as JSON. |
 
 **Examples**
 
 ```bash test="cli-shape" id="ref-lume-update"
 lume update
-lume update --apply
+lume update --json
 ```
 
 ## `lume channel`
 
 Inspect or change the stable/nightly update channel; selection does not install.
 
-The selection persists but never installs by itself; run `lume update --apply` after changing it. Without a subcommand, prints the status.
+The selection persists but never installs by itself; Lume never installs release builds, so update a source checkout with `git pull && libs/lume/scripts/build/build-release.sh`. Without a subcommand, prints the status.
 
 ```text output
 lume channel <COMMAND>

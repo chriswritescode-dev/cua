@@ -17,7 +17,7 @@
 # updater's feed and key; both architectures. It then launches the app
 # (scripts/check-launch.sh, no window) and runs a Keyvault smoke: the bundled
 # `cua daemon` with a throwaway CUA_HOME (under ~/.cache, deleted afterwards;
-# never ~/.cua, no loopback port, telemetry off) answers the bundled
+# never ~/.cua, no loopback port) answers the bundled
 # `cua keyvault status`, so client and daemon verify each other as Cua. It
 # reads no keychain and creates no vault.
 #
@@ -273,7 +273,7 @@ if [ -n "$swift_dmg" ]; then
     if [ "$launch" = 1 ]; then
       section "launch"
       # Libraries resolve inside the bundle and pass library validation; the
-      # app starts and exits before any window (throwaway HOME, telemetry off).
+      # app starts and exits before any window (throwaway HOME).
       check "the app launches (scripts/check-launch.sh)" "$here/check-launch.sh" "$app"
     fi
 
@@ -290,14 +290,14 @@ if [ -n "$swift_dmg" ]; then
       # Inside the real home: the Keyvault distrusts a CUA_HOME outside it.
       kv_home="$(mktemp -d "$HOME/.cache/cua-verify-release.XXXXXX")"
       chmod 700 "$kv_home"
-      CUA_HOME="$kv_home" CUA_TELEMETRY=0 DO_NOT_TRACK=1 \
+      CUA_HOME="$kv_home" \
         "$cua" daemon start --foreground --socket "$kv_home/cua.sock" --loopback off \
         >"$kv_home/daemon.out" 2>&1 &
       daemon_pid=$!
       for _ in $(seq 1 80); do [ -S "$kv_home/keyvault.sock" ] && break; sleep 0.25; done
       check "the bundled daemon serves the Keyvault socket" test -S "$kv_home/keyvault.sock"
       check "cua keyvault status: client and daemon verify each other as Cua" \
-        env CUA_HOME="$kv_home" CUA_TELEMETRY=0 DO_NOT_TRACK=1 \
+        env CUA_HOME="$kv_home" \
         "$cua" keyvault status --daemon "$kv_home/cua.sock"
       kill "$daemon_pid" 2>/dev/null && wait "$daemon_pid" 2>/dev/null
       daemon_pid=""

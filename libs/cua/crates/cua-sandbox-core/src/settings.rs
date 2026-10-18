@@ -36,7 +36,7 @@ pub struct Key {
 }
 
 /// Every setting, in display order.
-pub const KEYS: [Key; 9] = [
+pub const KEYS: [Key; 8] = [
     Key {
         name: "default.on",
         env: "CUA_DEFAULT_ON",
@@ -74,12 +74,6 @@ pub const KEYS: [Key; 9] = [
         description: "how long a cloud sandbox outlives its process without a keep-alive",
     },
     Key {
-        name: "telemetry.enabled",
-        env: "CUA_TELEMETRY",
-        default: "on",
-        description: "anonymous usage telemetry (on, off; alias `telemetry`); DO_NOT_TRACK=1 also turns it off. See `cua telemetry status`",
-    },
-    Key {
         name: "runtime.lume",
         env: "CUA_RUNTIME_LUME",
         default: "auto",
@@ -93,17 +87,9 @@ pub const KEYS: [Key; 9] = [
     },
 ];
 
-/// Short names `cua config` accepts for a setting.
-const ALIASES: &[(&str, &str)] = &[("telemetry", "telemetry.enabled")];
-
 /// The setting named `name`.
 pub fn key(name: &str) -> Result<Key, SettingsError> {
     let n = name.trim().to_ascii_lowercase();
-    let n = ALIASES
-        .iter()
-        .find(|(a, _)| *a == n)
-        .map(|(_, k)| k.to_string())
-        .unwrap_or(n);
     KEYS.iter().copied().find(|k| k.name == n).ok_or_else(|| {
         SettingsError(format!(
             "unknown setting {name:?}; settings: {}",
@@ -442,15 +428,6 @@ pub fn normalize(key: Key, value: &str) -> Result<String, SettingsError> {
             })?
             .as_str()
             .to_string(),
-        "telemetry.enabled" => match v.to_ascii_lowercase().as_str() {
-            "1" | "true" | "yes" | "on" => "on".into(),
-            "0" | "false" | "no" | "off" => "off".into(),
-            _ => {
-                return Err(SettingsError(format!(
-                    "telemetry: expected on or off, got {v:?}"
-                )));
-            }
-        },
         _ => v.to_string(),
     })
 }
@@ -763,26 +740,5 @@ mod tests {
         let h = cloud_default_hint(&Source::Env("CUA_DEFAULT_ON")).unwrap();
         assert!(h.contains("unset CUA_DEFAULT_ON"));
         assert!(cloud_default_hint(&Source::Explicit).is_none());
-    }
-
-    /// `cua config set telemetry off` writes the `[telemetry] enabled` key
-    /// cua-telemetry reads; `CUA_TELEMETRY` overrides it.
-    #[test]
-    fn telemetry_switch_alias_and_values() {
-        let d = tempfile::tempdir().unwrap();
-        let mut s = settings(d.path(), &[]);
-        let k = key("telemetry").unwrap();
-        assert_eq!(k.name, "telemetry.enabled");
-        assert_eq!(s.entry(k).value, "on");
-        assert_eq!(s.set(k, "OFF").unwrap(), "off");
-        assert_eq!(s.set(k, "false").unwrap(), "off");
-        assert!(s.set(k, "maybe").is_err());
-        let text = std::fs::read_to_string(d.path().join("config.toml")).unwrap();
-        assert!(
-            text.contains("[telemetry]") && text.contains("enabled = \"off\""),
-            "{text}"
-        );
-        let s = settings(d.path(), &[("CUA_TELEMETRY", "1")]);
-        assert_eq!(s.entry(k).source, Source::Env("CUA_TELEMETRY"));
     }
 }

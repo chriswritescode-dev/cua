@@ -48,9 +48,6 @@ struct Push: AsyncParsableCommand {
     func run() async throws {
         if verbose { Logger.setVerbose() }
 
-        // Record telemetry
-        TelemetryClient.shared.record(event: TelemetryEvent.push)
-
         let controller = LumeController()
 
         // Parse primary image name and tag

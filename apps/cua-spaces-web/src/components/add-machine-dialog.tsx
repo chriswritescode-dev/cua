@@ -13,8 +13,8 @@ import { Select } from "@/components/ui/select";
 import { toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
-/** Where Cua Spaces is downloaded (`teleport::flow::CUA_INSTALL_URL`). */
-export const INSTALL_URL = "https://cua.ai/install";
+/** The repository Cua is built from (`teleport::flow::CUA_REPOSITORY_URL`). */
+export const REPOSITORY_URL = "https://github.com/trycua/cua";
 
 /** What each setup choice means for the other machine (the core's toggle help, `host::panel`). */
 const CHOICE_HELP: Record<string, string> = {
@@ -80,7 +80,7 @@ export function AddMachineDialog({
           <DialogDescription className="mt-1 text-[13px] text-muted-foreground">
             {manualOnly
               ? "Any Mac, Linux or Windows computer you own can run Spaces for you. You set it up on that computer, and it shows up here once it is online."
-              : "Open this link on the other computer, scan the code with its camera, or run the command in its terminal. It installs Cua and adds the computer to your account."}
+              : "Open this link on the other computer, scan the code with its camera, or run the command in its terminal. It builds Cua from the repository and adds the computer to your account."}
           </DialogDescription>
 
           {!signedIn ? (
@@ -285,9 +285,13 @@ function ManualSteps({ guide, open }: { guide: HostSetupGuide; open: boolean }) 
 
   const steps = (
     <ol className="mt-4 space-y-5">
-      <Step n={1} title="Install Cua Spaces on the other computer">
-        <Button variant="outline" size="sm" className="mt-2" onClick={() => void openExternal(INSTALL_URL).catch(fail("Couldn't open the page"))}>
-          Open download page <ExternalLinkIcon />
+      <Step n={1} title="Build Cua Spaces on the other computer">
+        <p>
+          Pull the repository, then build the app for its system: <code>apps/cua-spaces-macos/scripts/build-release.sh</code> on macOS, or{" "}
+          <code>pnpm --dir apps/cua-spaces-desktop dist:mac</code> (<code>dist:win</code> on Windows, <code>dist:linux</code> on Linux).
+        </p>
+        <Button variant="outline" size="sm" className="mt-2" onClick={() => void openExternal(REPOSITORY_URL).catch(fail("Couldn't open the repository"))}>
+          Open the repository <ExternalLinkIcon />
         </Button>
       </Step>
 

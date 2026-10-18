@@ -5583,21 +5583,12 @@ pub struct AppOnboardingState {
     /// The bucket form and its test or save
     /// ([`crate::drive_settings`]'s state; its `request` is the shell's).
     pub storage: AppStorageState,
-    /// Done's "Launch at login" checkbox (ticked unless unticked). The
+    /// The launch-at-login checkbox (ticked unless unticked). The
     /// shell applies it when the first run finishes.
     pub launch_at_login: bool,
-    /// The usage-data switch on Welcome: the machine's telemetry setting
-    /// (Settings' "Share anonymous usage data", `cua telemetry off`), none
-    /// until the shell read it (then it shows on).
-    pub telemetry: Option<AppTelemetryInput>,
     /// Settings, Experiments: the Cua Volume page (and its Done line) only
     /// while Cua Volume is on. Off until the shell says otherwise.
     pub experiments: AppExperiments,
-    /// The run's start was counted (`onboarding_shown`, Welcome shown):
-    /// when Welcome showed on a machine whose usage notice was already
-    /// shown, else when Welcome was left. Once per run, however often
-    /// Welcome shows again (Back).
-    pub run_counted: bool,
 }
 
 /// An input.
@@ -5706,21 +5697,6 @@ pub enum AppOnboardingAction {
     },
     /// Back one page (not from Welcome or Done).
     Back,
-    /// The machine's telemetry setting, as the shell read it. Any page.
-    TelemetryLoaded {
-        /// The setting.
-        telemetry: AppTelemetryInput,
-    },
-    /// Welcome is on screen (each time it shows; after `telemetry-loaded`).
-    /// On a machine that already showed the usage notice, with usage data
-    /// on, the run's start counts now rather than when Welcome is left.
-    WelcomeShown,
-    /// Welcome's "Share anonymous usage data" switch (not while the
-    /// environment decides). The shell writes the setting.
-    UsageDataToggled {
-        /// On.
-        on: bool,
-    },
     /// Settings, Experiments, as the shell read them (at the start, and
     /// whenever a switch changes). Any page; turning Cua Volume off on its
     /// page moves on.
@@ -5743,21 +5719,6 @@ pub struct AppStepDot {
 }
 
 /// One answer on the This machine page.
-/// Welcome's "Share anonymous usage data" switch.
-pub type AppUsageToggle = core::onboarding::UsageToggle;
-#[uniffi::remote(Record)]
-pub struct AppUsageToggle {
-    /// "Share anonymous usage data".
-    pub label: String,
-    /// On.
-    pub on: bool,
-    /// It can be changed (the environment does not decide).
-    pub enabled: bool,
-    /// Why it cannot ("Set by env DO_NOT_TRACK").
-    pub help: Option<String>,
-}
-
-/// `onboarding::ModeChoice`.
 pub type AppModeChoice = core::onboarding::ModeChoice;
 #[uniffi::remote(Record)]
 pub struct AppModeChoice {
@@ -5802,17 +5763,6 @@ pub struct AppOnboardingView {
     /// both columns under "Try asking your agent:", to suggest what to ask a
     /// coding agent. Each copies to the clipboard on click.
     pub prompts: Vec<String>,
-    /// The first-run telemetry notice (the Welcome page, so the first run
-    /// itself can be measured): nothing is sent before it has been shown
-    /// once.
-    pub notice: Option<String>,
-    /// Its link: label.
-    pub notice_link_label: Option<String>,
-    /// Its link: URL.
-    pub notice_link_url: Option<String>,
-    /// Welcome's usage-data switch, next to the notice: nothing is sent
-    /// before the user leaves Welcome, and nothing at all while it is off.
-    pub usage: Option<AppUsageToggle>,
     /// The Cua Volume page's card.
     pub drive: Option<AppDriveCard>,
     /// Done's "Launch at login" checkbox.
@@ -6231,8 +6181,6 @@ pub struct AppAboutInput {
     pub updater: bool,
     /// The updater checks on its own.
     pub auto_check: bool,
-    /// The updater downloads and installs on its own.
-    pub auto_install: bool,
     /// The chosen channel.
     pub channel: AppUpdateChannel,
     /// The last check, as the shell formats a date; `None`: never.
@@ -6271,16 +6219,10 @@ pub struct AppAboutLink {
 pub type AppAboutUpdates = core::about::AboutUpdates;
 #[uniffi::remote(Record)]
 pub struct AppAboutUpdates {
-    /// "Check for and download updates automatically".
+    /// "Check for updates automatically".
     pub auto_check_label: String,
     /// Checked.
     pub auto_check: bool,
-    /// "Install a downloaded update when Cua Spaces quits".
-    pub auto_install_label: String,
-    /// Checked.
-    pub auto_install: bool,
-    /// It can be used (only with automatic checks).
-    pub auto_install_enabled: bool,
     /// "Update to:".
     pub channel_label: String,
     /// Stable, Beta.
@@ -6583,10 +6525,6 @@ pub struct AppSettings {
     /// longer shows them, nothing is revoked or wiped
     /// ([`crate::keyvault::view::prune_dismissed`] forgets the gone ones).
     pub dismissed_access: Vec<String>,
-    /// Keyvault rows may load a site's icon from Google's favicon service
-    /// when the source browser had none (Settings, Keyvault; on by default).
-    /// Off, only icons read locally are shown.
-    pub keyvault_site_icons: bool,
     /// The sites the user sent to each Space last time, per app
     /// ([`crate::teleport::review::remember`]): the review starts from them.
     pub teleport_choices: Vec<AppRememberedChoice>,
@@ -6636,20 +6574,6 @@ pub enum AppSignInPhase {
     },
 }
 
-/// The usage-telemetry switch's state.
-pub type AppTelemetryInput = core::settings::TelemetryInput;
-#[uniffi::remote(Record)]
-pub struct AppTelemetryInput {
-    /// Usage data is shared.
-    pub enabled: bool,
-    /// The environment decides (`DO_NOT_TRACK`, `CUA_TELEMETRY`, CI): who.
-    pub locked_by: Option<String>,
-    /// The first-run usage notice was already shown on this machine (by
-    /// `cua`, or an earlier run of the app): events may be sent before
-    /// Welcome is left.
-    pub notice_shown: bool,
-}
-
 /// What the Settings page shows.
 pub type AppSettingsInput = core::settings::SettingsInput;
 #[uniffi::remote(Record)]
@@ -6669,8 +6593,6 @@ pub struct AppSettingsInput {
     pub default_location: AppLocation,
     /// The environment sets the default location: which variable.
     pub location_locked_by: Option<String>,
-    /// The telemetry switch (none until read).
-    pub telemetry: Option<AppTelemetryInput>,
     /// Coding agents (none while detecting).
     pub agents: Option<Vec<AppAgentSettingsRow>>,
     /// "Configure all" is running.
@@ -6693,9 +6615,6 @@ pub struct AppSettingsInput {
     /// The unlock prompt shows (false once the user chose "Never ask
     /// again"); none until the broker told it.
     pub keyvault_unlock_prompt: Option<bool>,
-    /// Load site icons from Google when the browser had none
-    /// ([`AppSettings::keyvault_site_icons`]).
-    pub keyvault_site_icons: bool,
     /// The Keyvault's protection facts (Touch ID, the daemon's signature),
     /// shown in the section.
     pub keyvault_protection: Vec<AppFact>,
@@ -6779,9 +6698,9 @@ pub struct AppSettingsRow {
 pub type AppSettingsSection = core::settings::SettingsSection;
 #[uniffi::remote(Record)]
 pub struct AppSettingsSection {
-    /// `account`, `general`, `privacy`, `agents`.
+    /// `account`, `general`, `agents`.
     pub id: String,
-    /// "Account", "General", "Privacy", "AI agents".
+    /// "Account", "General", "AI agents".
     pub title: String,
     /// A button in the header.
     pub button: Option<String>,
@@ -6799,7 +6718,7 @@ pub type AppSettingsPage = core::settings::SettingsPage;
 pub struct AppSettingsPage {
     /// "Settings".
     pub title: String,
-    /// Account, General, Privacy (once read), AI agents.
+    /// Account, General, AI agents.
     pub sections: Vec<AppSettingsSection>,
 }
 
@@ -9098,139 +9017,6 @@ pub struct AppNotificationsView {
     pub mark_all_label: Option<String>,
 }
 
-/// `telemetry::TelemetrySignal`.
-pub type AppTelemetrySignal = core::telemetry::TelemetrySignal;
-#[uniffi::remote(Enum)]
-pub enum AppTelemetrySignal {
-    /// A Spaces app feature was used (`cua_spaces_feature_used`).
-    Feature {
-        /// A fixed feature name (`space_create_local`, `teleport_drop`, ...).
-        feature: String,
-    },
-    /// An install or activation funnel step (`cua_onboarding_step`;
-    /// `first_*` steps count once per install).
-    Step {
-        /// A fixed step name (`app_launched`, `signed_in`, ...).
-        step: String,
-        /// It worked.
-        ok: bool,
-    },
-    /// The app started (`cua_onboarding_step`, step `app_launched`).
-    Launched {
-        /// The first run was not finished yet at this launch, so the
-        /// app opens it (none: the shell does not know).
-        onboarding_eligible: Option<bool>,
-    },
-    /// A sign-in failed, timed out or was cancelled (`cua_onboarding_step`,
-    /// step `signed_in`, outcome `error`).
-    SignInFailed {
-        /// `timeout`, `cancelled`, `permission_denied`, `transport`,
-        /// `unauthenticated` or `other` (never the message).
-        error_kind: String,
-    },
-    /// A first-run page was shown or left (`cua_onboarding_page`).
-    OnboardingPage {
-        /// `welcome`, `signin`, `agents`, `presentation`, `volume`,
-        /// `this_machine` or `done`.
-        page: String,
-        /// `shown`, `completed`, `skipped` or `back`.
-        action: String,
-        /// The page's answer as a fixed word, or `none`.
-        choice: String,
-    },
-    /// The New Space panel (`cua_space_wizard`).
-    SpaceWizard {
-        /// `opened`, `cancelled` or `submitted`.
-        action: String,
-    },
-    /// A Space create reached ready or failed (`cua_space_create`).
-    SpaceCreate {
-        /// `local`, `cloud`, `direct` or `relay`.
-        location: String,
-        /// `linux`, `windows` or `macos`.
-        guest_os: String,
-        /// `container`, `vm` or `unknown`.
-        kind: String,
-        /// `ok` or `error`.
-        outcome: String,
-        /// The phase it failed in; `none` when it succeeded.
-        failed_phase: String,
-        /// It failed because a phase stopped moving.
-        stalled: bool,
-        /// Milliseconds from Create to ready, the failure, or the cancel
-        /// finishing (bucketed before it is sent).
-        elapsed_ms: u64,
-        /// GPU acceleration was turned on.
-        gpu: bool,
-        /// The error enum's case name, when the shell sent one.
-        error_variant: String,
-    },
-    /// A Space create started (`cua_space_create_started`).
-    SpaceCreateStarted {
-        /// `local`, `cloud`, `direct` or `relay`.
-        location: String,
-        /// `linux`, `windows` or `macos`.
-        guest_os: String,
-        /// `container`, `vm` or `unknown`.
-        kind: String,
-        /// GPU acceleration was turned on.
-        gpu: bool,
-    },
-    /// A Cua Volume setting was saved (`cua_volume_setup`).
-    VolumeSetup {
-        /// `onboarding` or `settings`.
-        surface: String,
-        /// `this_mac`, `s3` or `later`.
-        storage: String,
-        /// Added to Finder (mounted on Linux).
-        add_to_finder: bool,
-        /// `fskit`, `nfs`, `fuse`, `none` or `unknown`.
-        mount_method: String,
-        /// `ok` or `error`.
-        outcome: String,
-    },
-    /// A Space was shared, unshared or its role changed (`cua_share`).
-    Share {
-        /// `share`, `unshare` or `change_role`.
-        action: String,
-        /// `viewer`, `editor` or `none`.
-        role: String,
-        /// `ok` or `error`.
-        outcome: String,
-    },
-    /// An updater step (`cua_app_update`).
-    AppUpdate {
-        /// `checked`, `found`, `not_found`, `installed` or `failed`.
-        action: String,
-        /// `stable` or `beta`.
-        channel: String,
-        /// `user` or `background`.
-        trigger: String,
-    },
-    /// This device enrolled with the relay, or failed to
-    /// (`cua_device_enroll`).
-    DeviceEnroll {
-        /// `sign_in`, `approval` or `rekey`.
-        method: String,
-        /// `ok` or `error`.
-        outcome: String,
-    },
-    /// An experiment was turned on or off in Settings, Experiments
-    /// (`cua_experiment`).
-    Experiment {
-        /// `experiment_on` or `experiment_off`.
-        action: String,
-        /// `cua_volume`, `your_cloud` or `sharing`.
-        experiment: String,
-    },
-    /// Which experiments are on now (no event of its own: the daily
-    /// `cua_app_active` carries them as `experiments_on`).
-    ExperimentsOn {
-        /// Their ids (`cua_volume`, ...); empty: none.
-        experiments: Vec<String>,
-    },
-}
-
 /// One of the account's devices.
 pub type AppDeviceIn = core::machines::DeviceIn;
 #[uniffi::remote(Record)]
@@ -9310,7 +9096,7 @@ pub struct AppMachinePageRow {
 }
 
 /// One step, in the order the checklist lists them
-/// ([`telemetry::CHECKLIST_STEPS`]).
+/// ([`STEPS`]).
 pub type AppChecklistStep = core::checklist::ChecklistStep;
 #[uniffi::remote(Enum)]
 pub enum AppChecklistStep {
@@ -9334,7 +9120,7 @@ pub struct AppChecklistState {
     pub done: Vec<AppChecklistStep>,
     /// Closed with ×; Getting Started opens it again.
     pub dismissed: bool,
-    /// It was on screen once (`checklist_shown` was recorded).
+    /// It was on screen once.
     pub shown: bool,
 }
 
@@ -9362,10 +9148,8 @@ pub enum AppChecklistAction {
         /// An agent exists or has run.
         agent_ran: bool,
     },
-    /// Progress kept elsewhere before (the web UI's own storage, another
-    /// copy of the file): its steps are ticked, and it stays closed or
-    /// shown if it was. Its events were recorded where it was ticked, so
-    /// none are recorded again.
+    /// Another copy of the file: its steps are ticked, and it stays closed or
+    /// shown if it was.
     Merge {
         /// The other copy.
         state: AppChecklistState,
@@ -9386,14 +9170,12 @@ pub struct AppChecklistSeen {
     pub runs: u32,
 }
 
-/// The state after an action and the usage events it means.
+/// The state after an action.
 pub type AppChecklistTransition = core::checklist::ChecklistTransition;
 #[uniffi::remote(Record)]
 pub struct AppChecklistTransition {
     /// The new state (save it when it changed).
     pub state: AppChecklistState,
-    /// `cua_onboarding_step` events to record (`checklist_<event>`).
-    pub signals: Vec<AppTelemetrySignal>,
 }
 
 /// One row of the checklist.

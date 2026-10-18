@@ -246,13 +246,11 @@ const lockedBy = (r: WkSettingsRow | undefined) => (r && !r.enabled && r.help?.s
 export function toSettingsSnapshot(s: WkSettings, page: Pick<SettingsValues, "theme" | "hotkey">): SettingsSnapshot {
   const rows = rowsById(s);
   const location = rows.get("default-location");
-  const telemetry = rows.get("telemetry");
   const loginRow = rows.get("launch-at-login");
   const env = lockedBy(location);
   const defaultLocation: DefaultLocation | null = location
     ? { value: active(location) ?? "local", source: env ? "env" : "config", env, path: "" }
     : null;
-  const telemetryOn = telemetry ? active(telemetry) === "on" : DEFAULT_SETTINGS.telemetry;
   // The rows only this host lays out: what they show now, so the core lays
   // them out again on the page (null: the host has none).
   const source = (id: string) => (rows.has(id) ? (active(rows.get(id)) ?? "auto") : null);
@@ -265,7 +263,6 @@ export function toSettingsSnapshot(s: WkSettings, page: Pick<SettingsValues, "th
       theme: page.theme,
       hotkey: page.hotkey,
       menuBar: active(rows.get("notch")) === "hide",
-      telemetry: telemetryOn,
       defaultLocation: defaultLocation?.value ?? DEFAULT_SETTINGS.defaultLocation,
       // The core lays out `launch-at-login` once the host read the login item.
       launchAtLogin: loginRow && loginRow.enabled ? active(loginRow) === "on" : null,
@@ -274,23 +271,12 @@ export function toSettingsSnapshot(s: WkSettings, page: Pick<SettingsValues, "th
       ...(rows.has("auto-connect") ? { autoConnect: active(rows.get("auto-connect")) === "on" } : {}),
     },
     defaultLocation,
-    telemetry: telemetry
-      ? {
-          enabled: telemetryOn,
-          source: lockedBy(telemetry) ?? "config",
-          sourceKind: lockedBy(telemetry) ? "env" : "config",
-          noticeShown: true,
-          noticeText: "",
-          docsUrl: "",
-        }
-      : null,
     hostSettings: {
       lumeSource: source("macos-runtime"),
       linuxSource: source("linux-runtime"),
       autoConnect: on("auto-connect"),
       keyvaultAutoWipe: on("keyvault-auto-wipe"),
       keyvaultUnlockPrompt: on("keyvault-unlock-prompt"),
-      keyvaultSiteIcons: on("keyvault-site-icons"),
       keyvaultProtection: protection.length ? protection : null,
     },
     globalShortcut: s.globalShortcut ? { label: s.globalShortcut.label, registered: s.globalShortcut.registered } : null,
@@ -555,9 +541,6 @@ export function createWebkitAdapter(
           break;
         case "menuBar":
           await choose("notch", value ? "hide" : "show");
-          break;
-        case "telemetry":
-          await choose("telemetry", value ? "on" : "off");
           break;
         case "defaultLocation":
           if (value !== "local" && value !== "cloud") throw new HostError("New Spaces can start on This Mac or Cua Cloud here", "unsupported");

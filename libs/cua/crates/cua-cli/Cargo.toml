@@ -46,8 +46,6 @@ cua-fleet.workspace = true
 humantime.workspace = true
 # `cua host …` (unattended access) and `cua spaces ls` (registry + relay machines).
 cua-host.workspace = true
-# Anonymous usage telemetry (`cua telemetry`, the first-run notice).
-cua-telemetry.workspace = true
 async-trait.workspace = true
 cua-proto = { workspace = true, features = ["client", "serde"] }
 cua-spaces = { path = "../cua-spaces", default-features = false, features = ["mcp"] }

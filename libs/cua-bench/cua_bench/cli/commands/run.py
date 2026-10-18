@@ -493,7 +493,6 @@ def _cmd_execute(args, kind: str) -> int:
 
     (output_dir / "run.pid").write_text(str(os.getpid()))
     reporter = ConsoleReporter(log_file=output_dir / "run.log")
-    taskset = _telemetry_taskset(args, kind)
     try:
         results = asyncio.run(
             _run_batch(
@@ -501,14 +500,12 @@ def _cmd_execute(args, kind: str) -> int:
             )
         )
     except KeyboardInterrupt:
-        _track_run_completed(taskset, None, len(jobs), "cancelled")
         print(
             f"\n{YELLOW}Interrupted: sandboxes released (cloud claims expire on their TTL "
             f"if a release did not finish).{RESET}"
         )
         return 130
     except BaseException:
-        _track_run_completed(taskset, None, len(jobs), "error")
         raise
     finally:
         try:
@@ -516,38 +513,8 @@ def _cmd_execute(args, kind: str) -> int:
         except OSError:
             pass
     code = _summarize(results, output_dir, kind, args)
-    _track_run_completed(taskset, _aggregate_score(results), len(results), "ok")
     _results_housekeeping(args, output_dir)
     return code
-
-
-def _telemetry_taskset(args, kind: str) -> Optional[str]:
-    """The dataset name (or a task's parent directory name) for telemetry;
-    cua_bench.telemetry maps anything not in the bundled registry to "custom"."""
-    if kind == "dataset":
-        return getattr(args, "dataset_path", None)
-    task_path = getattr(args, "task_path", None)
-    return Path(task_path).resolve().parent.name if task_path else None
-
-
-def _aggregate_score(results) -> Optional[float]:
-    """Mean reward in 0..1 over results that have one, else None."""
-    rewards = [r.reward for r in results if getattr(r, "reward", None) is not None]
-    if not rewards:
-        return None
-    try:
-        return sum(float(x) for x in rewards) / len(rewards)
-    except (TypeError, ValueError):
-        return None
-
-
-def _track_run_completed(taskset, score, task_count, outcome) -> None:
-    try:
-        from cua_bench.telemetry import track_bench_run_completed
-
-        track_bench_run_completed(taskset, score, task_count, outcome)
-    except Exception:
-        pass
 
 
 def _results_housekeeping(args, output_dir: Path) -> None:

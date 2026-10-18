@@ -199,9 +199,6 @@ env:
   CARGO_NET_RETRY: "10"
   CARGO_HTTP_TIMEOUT: "120"
   CARGO_HTTP_MULTIPLEXING: "false"
-  # Cua programs and packages run here never send usage telemetry.
-  CUA_TELEMETRY: "0"
-  DO_NOT_TRACK: "1"
   # The CLI sidecar downloads cua-spacesd from this repository's releases.
   CUA_RELEASE_REPOSITORY: ${{ github.repository }}
   # Fail closed on the canonical repository only (see the header).

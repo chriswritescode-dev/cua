@@ -275,7 +275,7 @@ import Testing
         let model = AppModel(backend: PendingSpacesBackend(gate: gate), keyvault: KeyvaultModel(client: nil),
                              onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
                              settingsPath: dir.appendingPathComponent("settings.json").path,
-                             account: PendingAccount(gate: gate), telemetry: FixtureTelemetry(), startup: startup)
+                             account: PendingAccount(gate: gate), startup: startup)
         #expect(model.identity == nil)
         // The menu says why nothing shows yet.
         #expect(model.menuBar.first?.label == "Starting Cua…")

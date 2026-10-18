@@ -184,7 +184,6 @@ def ephemeral_kwargs(
     kwargs: dict[str, Any] = {
         "on": target.on,
         "time_to_start": TIME_TO_START_S,
-        "telemetry_enabled": False,
     }
     if spec.runtime is not None:
         kwargs["runtime"] = spec.runtime
@@ -230,7 +229,6 @@ async def open_sandbox(
     if spec.pool:
         # `--image pool:<name>`: a claim from an existing Fleet pool.
         kwargs = {"pool": spec.pool, "on": "cloud", "time_to_start": TIME_TO_START_S}
-        kwargs["telemetry_enabled"] = False
         async with sandbox_cls.ephemeral(None, **kwargs) as sb:
             yield sb
         if on_progress is not None:

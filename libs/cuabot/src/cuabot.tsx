@@ -10,15 +10,8 @@ import {
   setSessionName as setServerSessionName,
 } from './cuabotd.js';
 import { ensureServerRunning, setSessionName as setClientSessionName } from './client.js';
-import {
-  getDefaultAgent,
-  AGENTS,
-  AgentId,
-  getAliasIgnored,
-  getTelemetryEnabled,
-} from './settings.js';
+import { getDefaultAgent, AGENTS, AgentId, getAliasIgnored } from './settings.js';
 import { runOnboarding } from './onboarding.js';
-import { cliSubcommandLabel, sendTelemetryToServer } from './telemetry.js';
 import { checkDependencies } from './utils.js';
 import { execSync } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
@@ -65,32 +58,15 @@ function setSessionName(name: string | null): void {
   setClientSessionName(name);
 }
 
-// Track if CLI telemetry was sent this invocation
-let cliTelemetrySent = false;
-
-async function sendCliTelemetry(port: number): Promise<void> {
-  if (cliTelemetrySent || !getTelemetryEnabled()) return;
-  cliTelemetrySent = true;
-
-  // Only the known subcommand word (or "other"); never cwd or raw argv.
-  await sendTelemetryToServer(port, {
-    type: 'cli_invocation',
-    timestamp: Date.now(),
-    subcommand: cliSubcommandLabel(args),
-  });
-}
-
 async function getClient() {
   const { CuaBotClient } = await import('./client.js');
   const port = await ensureServerRunning();
-  sendCliTelemetry(port); // Fire and forget
   return new CuaBotClient(port);
 }
 
 async function runCommand(shellCommand: string) {
   const WebSocket = (await import('ws')).default;
   const port = await ensureServerRunning();
-  sendCliTelemetry(port); // Fire and forget
 
   const cols = process.stdout.columns || 80;
   const rows = process.stdout.rows || 24;
@@ -164,8 +140,7 @@ async function runCommand(shellCommand: string) {
 }
 
 async function runAgent(agentId: string, extraArgs: string[] = []) {
-  const port = await ensureServerRunning();
-  sendCliTelemetry(port); // Fire and forget
+  await ensureServerRunning();
 
   let shellCommand: string;
   if (agentId === 'claude') {

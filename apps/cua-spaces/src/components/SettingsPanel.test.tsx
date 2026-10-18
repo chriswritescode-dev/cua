@@ -6,7 +6,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as appCore from "../core";
-import type { TelemetryBridge, TelemetryView } from "../native/telemetry";
 import { fakeDrive, MOUNT_OFF, MOUNTED, NEEDS_APPROVAL } from "../test/fakeDrive";
 import { SettingsPanel, SIGN_IN_URL } from "./SettingsPanel";
 
@@ -354,93 +353,23 @@ describe("SettingsPanel AI agents", () => {
   });
 });
 
-describe("SettingsPanel Privacy", () => {
-  function fakeTelemetry(over: Partial<TelemetryView> = {}): TelemetryBridge & { calls: string[] } {
-    let view: TelemetryView = {
-      enabled: true,
-      source: "default",
-      sourceKind: "default",
-      noticeShown: true,
-      noticeText: "",
-      docsUrl: "https://cua.ai/docs/cua-sdk/concepts/telemetry",
-      ...over,
-    };
-    const calls: string[] = [];
-    return {
-      isNative: true,
-      calls,
-      status: async () => view,
-      acknowledgeNotice: async () => {
-        calls.push("ack");
-        return view;
-      },
-      setEnabled: async (enabled) => {
-        calls.push(`set:${enabled}`);
-        view = { ...view, enabled, source: "config /tmp/cua/config.toml", sourceKind: "config" };
-        return view;
-      },
-      recordFeature: () => {},
-      recordStep: () => {},
-      recordStream: () => {},
-      recordSignals: () => {},
-      welcomeLeft: async () => view,
-    };
-  }
-
-  it("acknowledges the notice, turns usage telemetry off and links the docs", async () => {
-    const telemetry = fakeTelemetry();
-    const props = renderPanel({ telemetry });
-    await screen.findByText("Share anonymous usage data");
-    expect(telemetry.calls).toEqual(["ack"]);
-    await userEvent.click(screen.getByRole("radio", { name: "Off" }));
-    expect(telemetry.calls).toContain("set:false");
-    expect(await screen.findByRole("radio", { name: "Off" })).toHaveAttribute("aria-checked", "true");
-    await userEvent.click(screen.getByRole("button", { name: "What is collected" }));
-    expect(props.onOpenExternal).toHaveBeenCalledWith("https://cua.ai/docs/cua-sdk/concepts/telemetry");
-  });
-
-  it("locks the switch when the environment decides", async () => {
-    renderPanel({ telemetry: fakeTelemetry({ enabled: false, source: "env DO_NOT_TRACK", sourceKind: "do_not_track" }) });
-    const on = await screen.findByRole("radio", { name: "On" });
-    expect(on).toBeDisabled();
-    expect(screen.getByTitle("Set by env DO_NOT_TRACK")).toBeInTheDocument();
-  });
-
-  it("lists Account, Teams, General, Privacy, AI agents and Experiments in order, with Show again", async () => {
+describe("SettingsPanel sections", () => {
+  it("lists Account, Teams, General, AI agents and Experiments in order, with Show again", async () => {
     const onShowWelcome = vi.fn();
-    renderPanel({ telemetry: fakeTelemetry(), onShowWelcome });
-    await screen.findByText("Share anonymous usage data");
+    renderPanel({ onShowWelcome });
+    await screen.findByText("General");
     const titles = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
-    expect(titles).toEqual(["Account", "Teams", "General", "Privacy", "AI agents", "Experiments"]);
+    expect(titles).toEqual(["Account", "Teams", "General", "AI agents", "Experiments"]);
     await userEvent.click(screen.getByRole("button", { name: "Show again" }));
     expect(onShowWelcome).toHaveBeenCalled();
   });
 });
 
 describe("SettingsPanel Experiments", () => {
-  it("turns Cua Volume on: Storage shows after General, the switch is saved and recorded", async () => {
+  it("turns Cua Volume on: Storage shows after General and the switch is saved", async () => {
     const user = userEvent.setup();
-    const view: TelemetryView = {
-      enabled: true,
-      source: "default",
-      sourceKind: "default",
-      noticeShown: true,
-      noticeText: "",
-      docsUrl: "https://cua.ai/docs/cua-sdk/concepts/telemetry",
-    };
-    const telemetry: TelemetryBridge = {
-      isNative: true,
-      status: async () => view,
-      acknowledgeNotice: async () => view,
-      setEnabled: async () => view,
-      welcomeLeft: async () => view,
-      recordFeature: () => {},
-      recordStep: () => {},
-      recordStream: () => {},
-      recordSignals: vi.fn(),
-    };
-    renderPanel({ telemetry });
-    await screen.findByText("Share anonymous usage data");
+    renderPanel();
+    await screen.findByText("General");
     const experiments = within(screen.getByRole("region", { name: "Experiments" }));
     for (const name of ["Cua Volume", "Your cloud"]) {
       expect(experiments.getByRole("switch", { name })).toHaveAttribute("aria-checked", "false");
@@ -455,10 +384,6 @@ describe("SettingsPanel Experiments", () => {
     expect(JSON.parse(window.localStorage.getItem("cua.settings.experiments") ?? "{}")).toMatchObject({
       cuaVolume: true,
     });
-    expect(telemetry.recordSignals).toHaveBeenCalledWith([
-      { type: "experiment", action: "experiment_on", experiment: "cua_volume" },
-      { type: "experiments-on", experiments: ["cua_volume", "sharing"] },
-    ]);
   });
 });
 

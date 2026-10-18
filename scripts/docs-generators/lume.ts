@@ -92,13 +92,13 @@ export const CLI_GROUPS: CliGroup[] = [
   {
     slug: 'config',
     title: 'Configuration',
-    summary: 'Storage locations, the image cache and telemetry settings',
+    summary: 'Storage locations and the image cache',
     commands: ['config'],
   },
   {
     slug: 'updates',
     title: 'Updates',
-    summary: 'Check for, apply and choose the channel of Lume updates',
+    summary: 'Check for Lume updates and choose the update channel',
     commands: ['check-update', 'update', 'channel'],
   },
 ];
@@ -199,7 +199,6 @@ export function dumpDocs(binary: string): LumeDumpDocs {
     cwd: LUME_DIR,
     encoding: 'utf-8',
     maxBuffer: 64 * 1024 * 1024,
-    env: { ...process.env, LUME_TELEMETRY_ENABLED: 'false' },
   });
   return JSON.parse(json);
 }

@@ -72,8 +72,8 @@ Every arm gets this command. Only the `--mcp-config` file, the server name in
 
 The harness never uses an installed Cua Driver. Each Cua Driver arm has its own
 app copy, bundle id, daemon socket, `HOME` and state, and its MCP config calls
-the binary by absolute path. Telemetry is off. A second daemon records the
-screen and places windows; it is not offered to the agent. The preflight fails
+the binary by absolute path. A second daemon records the screen and places
+windows; it is not offered to the agent. The preflight fails
 unless each binary, skill tree and running daemon report the pinned version
 and sha256.
 

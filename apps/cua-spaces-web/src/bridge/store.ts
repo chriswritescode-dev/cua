@@ -13,9 +13,7 @@ import { isUnsupported, type DataAdapter } from "./adapter";
 import type { AgentRunStatus, AgentSetupRow, PersistentAgent, SpaceAgentRun } from "./contracts/agents";
 import type { CoreClient } from "./core";
 import { withCreateContext } from "./create-context";
-import { passedSteps } from "./onboarding";
-import type { MachineRow, OnboardingMode, SettingsPage, SignInPhase, SignInStart, SpaceCreateConfig, TelemetryView } from "./contracts/host";
-import type { OnboardingAction, OnboardingFlowState } from "./contracts/onboarding";
+import type { MachineRow, OnboardingMode, SettingsPage, SignInPhase, SignInStart, SpaceCreateConfig } from "./contracts/host";
 import type { KeyvaultOverview, KvGrant, KvListView, KvSelection, VaultAction, VaultState } from "./contracts/keyvault";
 import type { KvAccessCommand } from "./ops/keyvault-manage";
 import type { CreateAction, CreatesState, Space, SpaceOs, SpaceRow } from "./contracts/spaces";
@@ -43,16 +41,6 @@ import {
 import type { HostEvent, HostSignIn, SessionSnapshot, SettingKey, SettingsSnapshot, SettingsValues } from "./protocol";
 import { createSettingsFeature, type SettingsFeature } from "./settings-feature";
 import { SpaceDetailStore } from "./space-detail";
-import {
-  HOST_RECORDS_LAUNCH,
-  TelemetryForwarder,
-  telemetryCreates,
-  telemetryLaunched,
-  telemetryOnboarding,
-  telemetryOnboardingFinished,
-  telemetryOnboardingSkipped,
-  telemetrySignInFailed,
-} from "./telemetry";
 import { ThisMachineStore } from "./this-machine";
 import { Transcript, type TranscriptItem } from "./transcript";
 
@@ -219,8 +207,6 @@ export class BridgeStore {
   readonly details: SpaceDetailStore;
   /** This machine's setup form and buttons (`this-machine.ts`). */
   readonly thisMachine: ThisMachineStore;
-  /** Usage events to the host, while the machine's setting allows (`telemetry.ts`). */
-  readonly telemetry: TelemetryForwarder;
   private readonly now: () => number;
   private readonly tickMs: number;
   private readonly eventsPollMs: { live: number; idle: number };
@@ -278,57 +264,6 @@ export class BridgeStore {
     this.extras = createSettingsFeature(this, this.now);
     this.details = new SpaceDetailStore(adapter, core);
     this.thisMachine = new ThisMachineStore(adapter, core, () => this.refresh("machines"));
-    this.telemetry = new TelemetryForwarder(adapter, () => this.telemetryView());
-  }
-
-  /* ---- usage events (telemetry.ts) ---- */
-
-  /** Records `app_launched` where the host doesn't (BridgeProvider, once per page). */
-  launched(): void {
-    if (HOST_RECORDS_LAUNCH[this.adapter.mode]) return;
-    // With whether the first run is still to finish (the session says).
-    void this.launchEligible().then((eligible) => this.telemetry.track(telemetryLaunched(this.core, eligible)));
-  }
-
-  private async launchEligible(): Promise<boolean | null> {
-    try {
-      if (!this.sessionSnap) {
-        this.ensure("session");
-        await this.inflight.get("session");
-      }
-      const done = this.sessionSnap?.onboarding?.completed;
-      return typeof done === "boolean" ? !done : null;
-    } catch {
-      return null;
-    }
-  }
-
-  /** The events a first-run step means, from the state before it. */
-  trackOnboarding(before: OnboardingFlowState, action: OnboardingAction): void {
-    // The pages this host passes through unseen (Menu bar off a Mac) are not reported.
-    const unseen: readonly string[] = passedSteps();
-    const seen = telemetryOnboarding(this.core, before, action).filter(
-      (s) => s.type !== "onboarding-page" || !unseen.includes(s.page),
-    );
-    void this.telemetry.track(seen);
-  }
-
-  /** "Set up later": the first run left for now, on its current page. */
-  trackOnboardingSkipped(state: OnboardingFlowState): void {
-    void this.telemetry.track(telemetryOnboardingSkipped(this.core, state));
-  }
-
-  trackOnboardingFinished(state: OnboardingFlowState): void {
-    void this.telemetry.track(telemetryOnboardingFinished(this.core, state));
-  }
-
-  /** The machine's usage-data setting now, loading it first if needed. */
-  private async telemetryView(): Promise<TelemetryView | null> {
-    if (!this.settingsSnap) {
-      this.ensure("settings");
-      await this.inflight.get("settings");
-    }
-    return this.settingsSnap?.telemetry ?? null;
   }
 
   /* ---- subscription (useSyncExternalStore) ---- */
@@ -467,7 +402,6 @@ export class BridgeStore {
   }
 
   private dispatch(action: CreateAction): void {
-    void this.telemetry.track(telemetryCreates(this.core, this.creates, action, this.now()));
     const before = this.creates;
     this.creates = reduceCreates(this.core, this.creates, action);
     this.publishSpaces();
@@ -862,14 +796,12 @@ export class BridgeStore {
   cancelSignIn(): void {
     if (this.signInPhase.kind !== "starting" && this.signInPhase.kind !== "waiting") return;
     this.stopSignInTimer();
-    void this.telemetry.track(telemetrySignInFailed(this.core, null));
     this.setSignIn({ kind: "idle" });
   }
 
-  /** A sign-in failed: shown, and counted by its kind (never its words). */
+  /** A sign-in failed: shown, by its message. */
   private signInFailed(message: string): void {
     this.stopSignInTimer();
-    void this.telemetry.track(telemetrySignInFailed(this.core, message));
     this.setSignIn({ kind: "failed", message });
   }
 

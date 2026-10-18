@@ -15,7 +15,7 @@
 //!
 //! The real `~/Library` paths are only stat'ed (names, sizes, modification
 //! times); no file there is opened or read. `PATH` has no `cua`, so no
-//! daemon starts, and telemetry is off.
+//! daemon starts.
 #![cfg(target_os = "macos")]
 
 use std::collections::BTreeMap;
@@ -121,8 +121,6 @@ fn a_temp_home_run_writes_nothing_under_the_real_library() {
         .env("CUA_HOME", home.path().join(".cua"))
         .env("PATH", "/usr/bin:/bin")
         .env("TMPDIR", home.path())
-        .env("DO_NOT_TRACK", "1")
-        .env("CUA_TELEMETRY", "0")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()

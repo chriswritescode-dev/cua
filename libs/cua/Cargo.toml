@@ -58,8 +58,6 @@ members = [
     "crates/cua-media-codec",
     "crates/cua-media-client",
     "crates/cua-logging",
-    # Anonymous product telemetry.
-    "crates/cua-telemetry",
     "crates/cua-viewer",
     # The HTML5 viewer (embedded in cua-spacesd at /viewer; standalone server).
     "crates/cua-spacesd-html5",
@@ -175,7 +173,6 @@ cua-keyvault = { path = "crates/cua-keyvault", version = "0.1.0" }
 cua-spaces-app-core = { path = "crates/cua-spaces-app-core", version = "0.1.0" }
 cua-spaces-ext = { path = "crates/cua-spaces-ext", version = "0.1.0" }
 cua-byoc = { path = "crates/cua-byoc", version = "0.1.0", default-features = false }
-cua-telemetry = { path = "crates/cua-telemetry", version = "0.1.0" }
 cua-media-protocol = { path = "crates/cua-media-protocol" }
 cua-media-transport = { path = "crates/cua-media-transport" }
 cua-media-codec = { path = "crates/cua-media-codec", default-features = false }

@@ -135,7 +135,7 @@ class Transport(FleetTransport):
 
 @pytest.fixture
 async def sandbox(native):
-    sb = Sandbox(Transport(), _telemetry_enabled=False)
+    sb = Sandbox(Transport())
     await sb._connect()
     yield sb
     await sb.disconnect()
@@ -341,14 +341,14 @@ async def test_bind_session_is_unsupported_without_dispatch(sandbox):
 
 async def test_unsupported_transport_and_missing_service_do_not_load_native(monkeypatch):
     monkeypatch.setitem(sys.modules, "cua_driver", None)
-    sb = Sandbox(PlainTransport(), _telemetry_enabled=False)
+    sb = Sandbox(PlainTransport())
     with pytest.raises(DriverConnectionError, match="Fleet"):
         async with sb.driver.connect():
             pass
     transport = Transport()
     await transport.connect()
     transport._bound.services = ["server"]
-    sb = Sandbox(transport, _telemetry_enabled=False)
+    sb = Sandbox(transport)
     with pytest.raises(DriverConnectionError, match="expose"):
         async with sb.driver.connect():
             pass

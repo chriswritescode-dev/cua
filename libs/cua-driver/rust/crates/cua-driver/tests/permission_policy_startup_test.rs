@@ -30,7 +30,6 @@ fn rejected_serve(socket: &str, extra_args: &[&str]) -> std::process::Output {
     command.args(extra_args);
     command
         .env("CUA_DRIVER_RS_PERMISSIONS_GATE", "0")
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .output()
         .expect("run rejected cua-driver serve configuration")
 }
@@ -69,7 +68,6 @@ fn mcp_rejects_serve_only_authorization_flags() {
         let output = Command::new(env!("CARGO_BIN_EXE_cua-driver"))
             .args(*args)
             .stdin(Stdio::null())
-            .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
             .output()
             .expect("run cua-driver mcp with a serve-only authorization flag");
         assert_eq!(output.status.code(), Some(64), "args={args:?}");
@@ -95,7 +93,6 @@ fn direct_mcp_still_reads_permission_profile_from_environment() {
         .args(["mcp", "--direct"])
         .stdin(Stdio::null())
         .env("CUA_DRIVER_PERMISSION_MODE", "bounded")
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .output()
         .expect("run direct MCP with bounded profile from the environment");
 
@@ -119,7 +116,6 @@ fn missing_configured_policy_prevents_daemon_startup() {
         ])
         .env("CUA_DRIVER_POLICY_FILE", &missing_policy)
         .env("CUA_DRIVER_RS_PERMISSIONS_GATE", "0")
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .output()
         .expect("run cua-driver serve with a missing configured policy");
 
@@ -155,7 +151,6 @@ fn missing_managed_policy_prevents_daemon_startup() {
         ])
         .env("CUA_DRIVER_MANAGED_POLICY_FILE", &missing_policy)
         .env("CUA_DRIVER_RS_PERMISSIONS_GATE", "0")
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .output()
         .expect("run cua-driver serve with a missing managed policy");
 
@@ -224,7 +219,6 @@ fn danger_flag_alone_selects_unrestricted_and_managed_config_can_disable_it() {
         ])
         .env("CUA_DRIVER_DISABLE_UNRESTRICTED", "1")
         .env("CUA_DRIVER_RS_PERMISSIONS_GATE", "0")
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .output()
         .expect("run administratively disabled unrestricted mode");
 

@@ -25,8 +25,6 @@ use std::sync::{
 };
 use std::time::{Duration, Instant};
 
-use cua_driver_contract::{CaptureScope, EscalationReason};
-
 pub const DEFAULT_SESSION_IDLE_TTL: Duration = Duration::from_secs(u32::MAX as u64);
 
 type SessionEndHook = Arc<dyn Fn(&str) -> Result<(), String> + Send + Sync>;
@@ -59,23 +57,11 @@ struct SessionCleanupProgress {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SessionDeclaration {
-    StartSession,
-    ImplicitFirstAction,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SessionEndReason {
     Explicit,
     IdleTimeout,
     ProcessExit,
     Unknown,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CaptureModality {
-    Window,
-    Desktop,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -108,21 +94,6 @@ pub fn infer_transport_metadata(owner: &str) -> (SessionTransport, SessionClient
     } else {
         (SessionTransport::Daemon, SessionClientKind::Direct)
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SessionStartObservation {
-    pub declaration: SessionDeclaration,
-    pub revived: bool,
-    pub transport: SessionTransport,
-    pub client_kind: SessionClientKind,
-    pub capture_scope: CaptureScope,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SessionObservationState {
-    pub ended: bool,
-    pub capture_scope: CaptureScope,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -174,32 +145,6 @@ pub fn bounded_cursor_outcome(
     }
 }
 
-/// Process-local sink for bounded session telemetry.
-///
-/// `session_id` is supplied only so an observer can update private in-memory
-/// state. Implementations must never serialize, hash, log, or otherwise export
-/// it. The observation structs and completion outcome contain the complete
-/// allowlisted telemetry boundary.
-pub trait SessionObserver: Send + Sync + 'static {
-    fn on_session_started(&self, session_id: &str, observation: SessionStartObservation);
-    fn on_tool_completed(
-        &self,
-        session_id: &str,
-        transport: SessionTransport,
-        computer_action: bool,
-        capture_modality: Option<CaptureModality>,
-        escalation_reason: Option<EscalationReason>,
-        outcome: &crate::server::ToolCompletionObservation,
-    );
-    fn on_session_ended(
-        &self,
-        session_id: &str,
-        reason: SessionEndReason,
-        cursor: Option<CursorOutcomeObservation>,
-    );
-}
-
-static SESSION_OBSERVER: OnceLock<Arc<dyn SessionObserver>> = OnceLock::new();
 type CursorOutcomeReader = Arc<dyn Fn(&str) -> CursorOutcomeObservation + Send + Sync>;
 static CURSOR_OUTCOME_READERS: OnceLock<Mutex<HashMap<u64, CursorOutcomeReader>>> = OnceLock::new();
 static NEXT_CURSOR_OUTCOME_READER_ID: AtomicU64 = AtomicU64::new(1);
@@ -207,22 +152,6 @@ type RecordingStateReader = Arc<dyn Fn(&str) -> bool + Send + Sync>;
 static RECORDING_STATE_READERS: OnceLock<Mutex<HashMap<u64, RecordingStateReader>>> =
     OnceLock::new();
 static NEXT_RECORDING_STATE_READER_ID: AtomicU64 = AtomicU64::new(1);
-
-pub fn set_session_observer(observer: Arc<dyn SessionObserver>) -> bool {
-    SESSION_OBSERVER.set(observer).is_ok()
-}
-
-/// Register the platform's bounded cursor-state reader. The raw session key is
-/// used only for the synchronous process-local lookup; the callback returns a
-/// struct that cannot contain raw cursor values.
-pub fn set_cursor_outcome_reader(reader: CursorOutcomeReader) -> bool {
-    CURSOR_OUTCOME_READERS
-        .get_or_init(|| Mutex::new(HashMap::new()))
-        .lock()
-        .unwrap()
-        .insert(0, reader);
-    true
-}
 
 pub fn register_scoped_cursor_outcome_reader(
     reader: CursorOutcomeReader,
@@ -295,32 +224,6 @@ pub fn recording_active(session_id: &str) -> bool {
                 .any(|reader| reader(session_id))
         })
         .unwrap_or(false)
-}
-
-/// Private per-call context. The raw caller session id never crosses into a
-/// serialized observation; it is retained only until the bounded completion
-/// callback updates the process-local aggregate.
-pub struct SessionToolContext {
-    session_id: String,
-    transport: SessionTransport,
-    computer_action: bool,
-    capture_modality: Option<CaptureModality>,
-    escalation_reason: Option<EscalationReason>,
-}
-
-impl SessionToolContext {
-    pub fn complete(self, outcome: &crate::server::ToolCompletionObservation) {
-        if let Some(observer) = SESSION_OBSERVER.get() {
-            observer.on_tool_completed(
-                &self.session_id,
-                self.transport,
-                self.computer_action,
-                self.capture_modality,
-                self.escalation_reason,
-                outcome,
-            );
-        }
-    }
 }
 
 static SESSION_END_HOOKS: OnceLock<Mutex<HashMap<u64, RegisteredSessionEndHook>>> = OnceLock::new();
@@ -858,132 +761,6 @@ fn activity() -> &'static Mutex<HashMap<String, Instant>> {
 /// Whether `id` is a real, trackable session id (not the anonymous fallback).
 fn is_trackable(id: &str) -> bool {
     !id.is_empty() && id != "default"
-}
-
-/// Begin bounded observation for a known tool call carrying a public,
-/// caller-declared `session`. Reserved `_session_id` fallbacks and anonymous
-/// identities are deliberately ignored.
-pub fn begin_tool_call(
-    tool_name: &str,
-    args: &serde_json::Value,
-    known_tool: bool,
-    transport: SessionTransport,
-    client_kind: SessionClientKind,
-) -> Option<SessionToolContext> {
-    begin_tool_call_with_state(tool_name, args, known_tool, transport, client_kind, None)
-}
-
-/// Begin observation with a runtime-owner-provided view of session
-/// state. Runtime owners use this seam because their mutable scope and
-/// tombstone state is keyed by a private runtime generation, while telemetry
-/// must continue to report the caller's stable public session label.
-pub fn begin_tool_call_with_state(
-    tool_name: &str,
-    args: &serde_json::Value,
-    known_tool: bool,
-    transport: SessionTransport,
-    client_kind: SessionClientKind,
-    observed_state: Option<SessionObservationState>,
-) -> Option<SessionToolContext> {
-    if !known_tool {
-        return None;
-    }
-    let session_id = ["session", "_session_id"].into_iter().find_map(|key| {
-        args.get(key)
-            .and_then(serde_json::Value::as_str)
-            .filter(|id| is_trackable(id))
-    })?;
-    let is_start = tool_name == "start_session";
-    let is_end = tool_name == "end_session";
-    let ended = observed_state
-        .map(|state| state.ended)
-        .unwrap_or_else(|| is_session_ended(session_id));
-    let revived = is_start && ended;
-    if ended && !is_start {
-        return None;
-    }
-
-    let capture_scope = if is_start {
-        args.get("capture_scope")
-            .cloned()
-            .and_then(|value| serde_json::from_value(value).ok())
-            .unwrap_or_default()
-    } else {
-        observed_state
-            .map(|state| state.capture_scope)
-            .or_else(|| crate::capture_scope::get_session(session_id).map(|state| state.policy))
-            .unwrap_or_default()
-    };
-    let escalation_reason = (tool_name == "escalate_session")
-        .then(|| args.get("reason").cloned())
-        .flatten()
-        .and_then(|value| serde_json::from_value(value).ok());
-    let capture_modality = capture_modality_for(tool_name, args);
-    if !is_end {
-        if let Some(observer) = SESSION_OBSERVER.get() {
-            observer.on_session_started(
-                session_id,
-                SessionStartObservation {
-                    declaration: if is_start {
-                        SessionDeclaration::StartSession
-                    } else {
-                        SessionDeclaration::ImplicitFirstAction
-                    },
-                    revived,
-                    transport,
-                    client_kind,
-                    capture_scope,
-                },
-            );
-        }
-    }
-
-    SESSION_OBSERVER.get().map(|_| SessionToolContext {
-        session_id: session_id.to_owned(),
-        transport,
-        computer_action: crate::server::is_computer_action(
-            tool_name,
-            crate::server::tool_operation(tool_name, Some(args)),
-        ),
-        capture_modality,
-        escalation_reason,
-    })
-}
-
-fn capture_modality_for(tool_name: &str, args: &serde_json::Value) -> Option<CaptureModality> {
-    if let Some(kind) = args
-        .get("target")
-        .and_then(serde_json::Value::as_object)
-        .and_then(|target| target.get("kind"))
-        .and_then(serde_json::Value::as_str)
-    {
-        return match kind {
-            "window" => Some(CaptureModality::Window),
-            "desktop" => Some(CaptureModality::Desktop),
-            _ => None,
-        };
-    }
-    if let Some(scope) = args.get("scope").and_then(serde_json::Value::as_str) {
-        return match scope {
-            "window" => Some(CaptureModality::Window),
-            "desktop" => Some(CaptureModality::Desktop),
-            _ => None,
-        };
-    }
-    if args.get("pid").is_some_and(serde_json::Value::is_number)
-        || args
-            .get("window_id")
-            .is_some_and(serde_json::Value::is_number)
-    {
-        return Some(CaptureModality::Window);
-    }
-    match tool_name {
-        "get_window_state" => Some(CaptureModality::Window),
-        "get_desktop_state" | "get_screen_size" | "get_cursor_position" => {
-            Some(CaptureModality::Desktop)
-        }
-        _ => None,
-    }
 }
 
 /// Session ids that have already had their `session_end` fired. Dedupes the
@@ -1654,38 +1431,10 @@ fn end_session_with_reason(session_id: &str, reason: SessionEndReason) {
 
 fn finish_session_end(session_id: &str, reason: SessionEndReason) {
     let first_fire = mark_session_ended(session_id, None, reason);
-    let mut cursor_readers = CURSOR_OUTCOME_READERS
-        .get()
-        .map(|readers| {
-            readers
-                .lock()
-                .unwrap()
-                .iter()
-                .map(|(id, reader)| (*id, reader.clone()))
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
-    cursor_readers.sort_by_key(|(id, _)| *id);
-    let mut fallback = None;
-    let cursor = cursor_readers.into_iter().find_map(|(_, reader)| {
-        let outcome = reader(session_id);
-        if outcome.observed {
-            Some(outcome)
-        } else {
-            fallback.get_or_insert(outcome);
-            None
-        }
-    });
-    let cursor = cursor.or(fallback);
     if first_fire {
         initialize_session_cleanup(session_id);
     }
     let _ = retry_session_cleanup(session_id);
-    if first_fire {
-        if let Some(observer) = SESSION_OBSERVER.get() {
-            observer.on_session_ended(public_session_label(session_id), reason, cursor);
-        }
-    }
 }
 
 /// End every session whose last activity is older than `ttl`, returning the ids
@@ -1756,93 +1505,6 @@ mod tests {
     use super::*;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::{Arc, Barrier};
-
-    #[derive(Default)]
-    struct ProbeObserver {
-        starts: Mutex<Vec<(String, SessionStartObservation)>>,
-        ends: Mutex<Vec<(String, SessionEndReason, Option<CursorOutcomeObservation>)>>,
-    }
-
-    impl SessionObserver for ProbeObserver {
-        fn on_session_started(&self, id: &str, observation: SessionStartObservation) {
-            self.starts
-                .lock()
-                .unwrap()
-                .push((id.to_owned(), observation));
-        }
-        fn on_tool_completed(
-            &self,
-            _: &str,
-            _: SessionTransport,
-            _: bool,
-            _: Option<CaptureModality>,
-            _: Option<EscalationReason>,
-            _: &crate::server::ToolCompletionObservation,
-        ) {
-        }
-        fn on_session_ended(
-            &self,
-            id: &str,
-            reason: SessionEndReason,
-            cursor: Option<CursorOutcomeObservation>,
-        ) {
-            self.ends
-                .lock()
-                .unwrap()
-                .push((id.to_owned(), reason, cursor));
-        }
-    }
-
-    fn probe_observer() -> Arc<ProbeObserver> {
-        static PROBE: OnceLock<Arc<ProbeObserver>> = OnceLock::new();
-        PROBE
-            .get_or_init(|| {
-                let probe = Arc::new(ProbeObserver::default());
-                let _ = set_session_observer(probe.clone());
-                probe
-            })
-            .clone()
-    }
-
-    #[test]
-    fn browser_mutations_are_computer_actions_but_reads_and_prepare_are_not() {
-        let args = serde_json::json!({"session": "test-session"});
-        for tool_name in [
-            "browser_navigate",
-            "browser_click",
-            "browser_type",
-            "browser_set_input_files",
-            "browser_download",
-            "browser_pointer",
-        ] {
-            let operation = crate::server::tool_operation(tool_name, Some(&args));
-            assert!(
-                crate::server::is_computer_action(tool_name, operation),
-                "tool={tool_name}"
-            );
-        }
-        for tool_name in ["get_browser_state", "browser_prepare"] {
-            let operation = crate::server::tool_operation(tool_name, Some(&args));
-            assert!(
-                !crate::server::is_computer_action(tool_name, operation),
-                "tool={tool_name}"
-            );
-        }
-        for action in ["accept", "dismiss"] {
-            let args = serde_json::json!({"action": action});
-            let operation = crate::server::tool_operation("browser_dialog", Some(&args));
-            assert!(crate::server::is_computer_action(
-                "browser_dialog",
-                operation
-            ));
-        }
-        let inspect = serde_json::json!({"action": "inspect"});
-        let operation = crate::server::tool_operation("browser_dialog", Some(&inspect));
-        assert!(!crate::server::is_computer_action(
-            "browser_dialog",
-            operation
-        ));
-    }
 
     #[test]
     fn fire_session_end_is_idempotent_per_id() {
@@ -2352,214 +2014,6 @@ mod tests {
         // The anonymous fallback is never tracked, so there is nothing to revive.
         assert!(!revive_session("default"));
         assert!(!revive_session(""));
-    }
-
-    #[test]
-    fn tool_context_accepts_trusted_implicit_session_and_uses_fixed_action_classes() {
-        let _ = probe_observer();
-        assert!(begin_tool_call(
-            "click",
-            &serde_json::json!({"_session_id": "private-fallback"}),
-            true,
-            SessionTransport::McpStdio,
-            SessionClientKind::Mcp,
-        )
-        .is_some());
-        assert!(begin_tool_call(
-            "click",
-            &serde_json::json!({"session": "default"}),
-            true,
-            SessionTransport::McpStdio,
-            SessionClientKind::Mcp,
-        )
-        .is_none());
-
-        let pointer = begin_tool_call(
-            "click",
-            &serde_json::json!({"session": "test-action-pointer-AB12"}),
-            true,
-            SessionTransport::McpStdio,
-            SessionClientKind::Mcp,
-        )
-        .unwrap();
-        assert!(pointer.computer_action);
-
-        let page_write = begin_tool_call(
-            "page",
-            &serde_json::json!({
-                "session": "test-action-page-write-CD34",
-                "action": "insert_text",
-                "text": "not retained"
-            }),
-            true,
-            SessionTransport::McpHttp,
-            SessionClientKind::Mcp,
-        )
-        .unwrap();
-        assert!(page_write.computer_action);
-        assert!(!format!("{}", page_write.computer_action).contains("not retained"));
-
-        let page_read = begin_tool_call(
-            "page",
-            &serde_json::json!({
-                "session": "test-action-page-read-EF56",
-                "action": "query_dom",
-                "selector": "private selector"
-            }),
-            true,
-            SessionTransport::McpHttp,
-            SessionClientKind::Mcp,
-        )
-        .unwrap();
-        assert!(!page_read.computer_action);
-
-        let state_read = begin_tool_call(
-            "get_window_state",
-            &serde_json::json!({"session": "test-action-read-GH78"}),
-            true,
-            SessionTransport::Daemon,
-            SessionClientKind::Direct,
-        )
-        .unwrap();
-        assert!(!state_read.computer_action);
-
-        let escalation = begin_tool_call(
-            "escalate_session",
-            &serde_json::json!({
-                "session": "test-action-escalate-IJ90",
-                "reason": "no_window_target",
-                "detail": "private free-form detail is not observed"
-            }),
-            true,
-            SessionTransport::Daemon,
-            SessionClientKind::TypescriptSdk,
-        )
-        .unwrap();
-        assert_eq!(
-            escalation.escalation_reason,
-            Some(EscalationReason::NoWindowTarget)
-        );
-
-        assert_eq!(
-            capture_modality_for(
-                "click",
-                &serde_json::json!({
-                    "target": {"kind": "window", "pid": 7, "window_id": 9}
-                }),
-            ),
-            Some(CaptureModality::Window)
-        );
-        assert_eq!(
-            capture_modality_for(
-                "click",
-                &serde_json::json!({
-                    "target": {"kind": "desktop", "display_id": "primary"}
-                }),
-            ),
-            Some(CaptureModality::Desktop)
-        );
-    }
-
-    #[test]
-    fn observer_distinguishes_explicit_idle_revival_and_control_cleanup() {
-        let probe = probe_observer();
-        let _ = set_cursor_outcome_reader(Arc::new(|_| {
-            bounded_cursor_outcome(true, true, true, Some("cua.default"), false, 2)
-        }));
-        let explicit = "test-observer-explicit-IJ90";
-        begin_tool_call(
-            "start_session",
-            &serde_json::json!({"session": explicit, "capture_scope": "desktop"}),
-            true,
-            SessionTransport::McpStdio,
-            SessionClientKind::Mcp,
-        )
-        .unwrap();
-        end_session(explicit);
-
-        let idle = "test-observer-idle-KL12";
-        begin_tool_call(
-            "click",
-            &serde_json::json!({"session": idle}),
-            true,
-            SessionTransport::McpHttp,
-            SessionClientKind::Mcp,
-        )
-        .unwrap();
-        end_session_with_reason(idle, SessionEndReason::IdleTimeout);
-
-        let revived = "test-observer-revived-MN34";
-        touch_session(revived);
-        end_session(revived);
-        begin_tool_call(
-            "start_session",
-            &serde_json::json!({"session": revived}),
-            true,
-            SessionTransport::Daemon,
-            SessionClientKind::PythonSdk,
-        )
-        .unwrap();
-
-        let control = "test-observer-control-OP56";
-        begin_tool_call(
-            "click",
-            &serde_json::json!({"session": control}),
-            true,
-            SessionTransport::McpStdio,
-            SessionClientKind::Mcp,
-        )
-        .unwrap();
-        fire_session_end(control);
-
-        let runtime_owned = "test-observer-runtime-owned-QR78";
-        begin_tool_call_with_state(
-            "click",
-            &serde_json::json!({"session": runtime_owned}),
-            true,
-            SessionTransport::Daemon,
-            SessionClientKind::Direct,
-            Some(SessionObservationState {
-                ended: false,
-                capture_scope: CaptureScope::Window,
-            }),
-        )
-        .unwrap();
-
-        let starts = probe.starts.lock().unwrap();
-        assert!(starts.iter().any(|(id, observation)| {
-            id == explicit
-                && observation.declaration == SessionDeclaration::StartSession
-                && !observation.revived
-                && observation.client_kind == SessionClientKind::Mcp
-                && observation.capture_scope == CaptureScope::Desktop
-        }));
-        assert!(starts.iter().any(|(id, observation)| {
-            id == idle
-                && observation.declaration == SessionDeclaration::ImplicitFirstAction
-                && observation.transport == SessionTransport::McpHttp
-        }));
-        assert!(starts
-            .iter()
-            .any(|(id, observation)| id == revived && observation.revived));
-        assert!(starts.iter().any(|(id, observation)| {
-            id == runtime_owned
-                && observation.declaration == SessionDeclaration::ImplicitFirstAction
-                && observation.capture_scope == CaptureScope::Window
-        }));
-        drop(starts);
-
-        let ends = probe.ends.lock().unwrap();
-        assert!(ends.iter().any(|(id, reason, cursor)| {
-            id == explicit
-                && *reason == SessionEndReason::Explicit
-                && cursor.is_some_and(|value| {
-                    value.theme == CursorThemeCategory::Default && value.active_cursor_count == 2
-                })
-        }));
-        assert!(ends
-            .iter()
-            .any(|(id, reason, _)| { id == idle && *reason == SessionEndReason::IdleTimeout }));
-        assert!(!ends.iter().any(|(id, _, _)| id == control));
     }
 
     /// cua-spacesd's `/mcp` ends a run by its public transport id, while the

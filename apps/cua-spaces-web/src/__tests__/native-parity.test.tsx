@@ -81,7 +81,7 @@ describe.skipIf(!wasmBuilt)("as the SwiftUI app (real routes, wasm core)", () =>
     await waitFor(() => expect(document.querySelector("[data-devices-read-error]")?.textContent).toBe("relay: timed out"));
   });
 
-  it("General is the core's page: Teams, Welcome, the notch's words and the privacy line with its link", async () => {
+  it("General is the core's page: Teams, Welcome and the notch's words", async () => {
     const { router, calls } = await mount("/settings");
     const teams = await waitFor(() => {
       const r = document.querySelector<HTMLElement>('[data-setting-row="teams-manage"]');
@@ -92,10 +92,6 @@ describe.skipIf(!wasmBuilt)("as the SwiftUI app (real routes, wasm core)", () =>
     expect(document.body.textContent).not.toContain("Coming soon");
     expect(document.body.textContent).not.toContain("waitlist");
     expect(within(teams).getByText("Manage team")).toBeTruthy();
-    const note = document.querySelector<HTMLElement>('[data-setting-row="telemetry-note"]')!;
-    expect(note.textContent).toMatch(/^Features used, sandbox types, durations and error categories/);
-    expect(within(note).getByText("What is collected")).toBeTruthy();
-    expect(document.body.textContent).not.toContain("Crash reports and feature counts");
     // Manage team opens the account app in the browser.
     fireEvent.click(within(teams).getByText("Manage team"));
     await waitFor(() =>
@@ -108,9 +104,12 @@ describe.skipIf(!wasmBuilt)("as the SwiftUI app (real routes, wasm core)", () =>
   });
 
   it("the runtime choices never wrap", async () => {
-    await mount("/settings");
-    await waitFor(() => expect(document.querySelector('[data-setting-row="telemetry"]')).toBeTruthy());
-    const toggle = document.querySelector<HTMLElement>('[data-setting-row="telemetry"] button');
+    // A host that reports its runtimes gets the core's Runtimes section.
+    await mount("/settings", (op, _args, base) =>
+      op === "settings.get" ? base(op, {}).then((s) => ({ ...(s as object), hostSettings: { lumeSource: "system" } })) : undefined,
+    );
+    await waitFor(() => expect(document.querySelector('[data-setting-row="macos-runtime"]')).toBeTruthy());
+    const toggle = document.querySelector<HTMLElement>('[data-setting-row="macos-runtime"] button');
     expect(toggle?.className).toContain("whitespace-nowrap");
   });
 

@@ -49,8 +49,7 @@ struct WebUIHostTests {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("cua-webui-\(UUID().uuidString)")
         let model = AppModel(backend: FixtureSpacesBackend(), keyvault: KeyvaultModel(client: nil),
                              onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
-                             settingsPath: dir.appendingPathComponent("settings.json").path,
-                             telemetry: FixtureTelemetry())
+                             settingsPath: dir.appendingPathComponent("settings.json").path)
         let bridge = WebUIBridge(model: model, allowedOrigins: [])
         do {
             _ = try await bridge.handle("spaces.teleport", [:])
@@ -78,7 +77,7 @@ struct WebUIHostTests {
         let model = AppModel(backend: backend, keyvault: KeyvaultModel(client: kv, clock: { fixtureNow }),
                              onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
                              settingsPath: dir.appendingPathComponent("settings.json").path,
-                             host: host, telemetry: FixtureTelemetry(), agentSetup: agentSetup)
+                             host: host, agentSetup: agentSetup)
         return (WebUIBridge(model: model, allowedOrigins: []), model)
     }
 
@@ -366,8 +365,8 @@ struct WebUIHostTests {
 
     @Test func everyPageOperationIsRouted() {
         for m in ["spaces.add", "clouds.status", "teleport.catalog", "teleport.run", "sharing.share", "volume.overview",
-                  "agents.setupDriver", "about.set", "update.get", "update.install", "loginItem.set", "devices.approve", "storage.run",
-                  "notifications.list", "telemetry.track", "spaces.windows", "stream.pip", "spaces.thumbnail", "spaces.sendFiles", "host.setUp", "host.action",
+                  "agents.setupDriver", "about.set", "update.get", "loginItem.set", "devices.approve", "storage.run",
+                  "notifications.list", "spaces.windows", "stream.pip", "spaces.thumbnail", "spaces.sendFiles", "host.setUp", "host.action",
                   "host.openSettings"] {
             #expect(WebUIBridge.methods.contains(m), "\(m)")
         }
@@ -431,23 +430,6 @@ struct WebUIHostTests {
         await model.openNewSpace(on: "host:m1")
         #expect(asked == [nil, "host:m1"])
         #expect(!model.showingNewSpace)
-    }
-
-    @Test func usageEventsRespectTheSwitchAndCarryOnlyFixedWords() async throws {
-        let (bridge, model) = bridge()
-        let telemetry = try #require(model.telemetrySink as? FixtureTelemetry)
-        let before = telemetry.recorded.count
-        let signals: [Any] = [["type": "feature", "feature": "space_open"],
-                              ["type": "feature", "feature": "/Users/ada"],
-                              ["type": "step", "step": "signed_in", "ok": "yes"],
-                              ["type": "nope"],
-                              ["type": "space-create", "location": "local", "guestOs": "linux", "kind": "vm",
-                               "outcome": "ready", "failedPhase": "none", "stalled": false, "elapsedMs": 10, "gpu": false]]
-        _ = try await bridge.handle("telemetry.track", ["signals": signals])
-        #expect(Array(telemetry.recorded.dropFirst(before)) == [.feature(feature: "space_open")])
-        _ = try telemetry.setEnabled(false)
-        _ = try await bridge.handle("telemetry.track", ["signals": signals])
-        #expect(telemetry.recorded.count == before + 1)
     }
 
     @Test func pagesWithoutTheirServiceSayUnsupported() async {
@@ -540,7 +522,7 @@ struct WebUIHostTests {
         let model = AppModel(backend: FixtureSpacesBackend(), keyvault: KeyvaultModel(client: nil),
                              onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
                              settingsPath: dir.appendingPathComponent("settings.json").path,
-                             telemetry: FixtureTelemetry(), devices: relay)
+                             devices: relay)
         model.devices.signedIn = true
         let bridge = WebUIBridge(model: model, allowedOrigins: [])
         // The page still draws (this device "Needs enrollment", Enroll…),
@@ -570,24 +552,14 @@ struct WebUIHostTests {
         #expect(updater.checks == 1)
     }
 
-    @Test func updateInstallRestartsOnlyAfterADownload() async throws {
+    @Test func updateGetReportsAFoundReleaseAndOffersNoInstall() async throws {
         let (bridge, model) = bridge()
         let updater = FixtureUpdater()
         model.updates = UpdatesModel(updater: updater, channel: .stable)
         updater.simulateFound(version: "0.9.3")
         let a = try #require(try await bridge.handle("update.get", [:]) as? [String: Any])
         #expect(a["status"] as? String == "available" && a["version"] as? String == "0.9.3")
-        let b = try #require(try await bridge.handle("update.install", [:]) as? [String: Any])
-        #expect(b["status"] as? String == "available")
-        await withCheckedContinuation { k in DispatchQueue.main.async { k.resume() } }
-        #expect(updater.installs == 0)
-        updater.simulateDownloaded()
-        let c = try #require(try await bridge.handle("update.install", [:]) as? [String: Any])
-        // The answer comes before the install starts.
-        #expect(c["status"] as? String == "downloaded")
-        #expect(updater.installs == 0)
-        await withCheckedContinuation { k in DispatchQueue.main.async { k.resume() } }
-        #expect(updater.installs == 1)
+        #expect((a["instructions"] as? String)?.contains("git pull && apps/cua-spaces-macos/scripts/build-release.sh") == true)
     }
 
     @Test func showWelcomeAgainRestartsTheFirstRun() async throws {

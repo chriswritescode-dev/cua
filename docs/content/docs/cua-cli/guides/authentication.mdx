@@ -110,10 +110,6 @@ session, and the other way round. Fleet has no staging deployment: under
 `https://run.cua.ai`, so cloud sandboxes need `CUA_FLEET_BASE_URL` set to a
 non-production Fleet, or an API key.
 
-Usage telemetry follows the environment too: staging events go to the staging
-PostHog project, never to production's. `CUA_POSTHOG_KEY` overrides the
-project key; `CUA_TELEMETRY_ENDPOINT` overrides the ingest URL.
-
 Beta channel builds talk to staging by default. A `cua` compiled with
 `CUA_DEFAULT_ENV=staging` treats an unset `CUA_ENV` as `staging`, and the macOS
 app built with `scripts/build-release.sh --channel beta` carries `CuaEnv=staging`

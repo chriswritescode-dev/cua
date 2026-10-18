@@ -74,8 +74,6 @@ export function updatesModel(ctx: BridgeContext): UpdatesModel {
     },
     platform,
   );
-  // Read when an event is recorded: the app model is given its telemetry after the bridge starts.
-  updates.telemetry = { record: (signals) => model.telemetry?.record(signals) };
   updates.subscribe(() => model.changed("update"));
   updatesModels.set(ctx.model, updates);
   return updates;
@@ -88,7 +86,6 @@ export function hostParts(ctx: BridgeContext): HostParts {
   const native = model.native;
   const system = ctx.system ?? null;
   const tool = () => (model.servicesIn ? (name: string, args: Record<string, unknown> = {}) => model.backend.tool(name, args) : null);
-  const telemetry = model.telemetry;
 
   const updates = updatesModel(ctx);
 
@@ -103,14 +100,12 @@ export function hostParts(ctx: BridgeContext): HostParts {
       },
     },
     { providesSpaces: () => Boolean(model.host.state?.configured && model.host.state.provideSpaces), runsAgents: () => runsAgents(model) },
-    (feature) => model.recordFeature(feature),
   );
 
   const storage = new StorageModel(native, (name, args) => {
     const t = tool();
     return t ? t(name, args) : Promise.reject(new Error("No cua daemon"));
   }, platform, system?.home ?? userHome(ctx.env));
-  storage.telemetry = telemetry;
 
   const notifications = new NotificationsModel(native, tool, {
     get: () => model.settings.notificationsSeenMs,

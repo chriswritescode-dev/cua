@@ -1,10 +1,9 @@
 # Real-process regression for the installer's shared daemon cleanup
 # (_install-common.psm1; #2803, #4388).
 #
-# `cua-driver update --apply` launches the installer from cua-driver.exe and
-# waits for its exit code. Like the shipped CLI, which runs finite commands in
-# a wrapped cua-driver.exe child, the stand-in updater is two cua-driver.exe
-# processes deep. It runs a Windows PowerShell "installer" that calls
+# A launcher runs the installer from cua-driver.exe and waits for its exit
+# code. The stand-in launcher is two cua-driver.exe processes deep. It runs a
+# Windows PowerShell "installer" that calls
 # Stop-CuaDriverDaemonsWithHealth, next to an unrelated cua-driver.exe daemon
 # with a child process and a cua-driver-uia.exe worker. Cleanup must stop the
 # daemon, its child, and the worker, report no survivors, and leave the
@@ -39,9 +38,9 @@ New-Item -ItemType Directory -Path $root | Out-Null
 #   (no arguments)  idle, like a daemon
 #   spawn <exe>     start <exe>, then idle (a daemon with a child)
 #   run <script>    run <script> in Windows PowerShell, wait, and return its
-#                   exit code, as `cua-driver update --apply` does
+#                   exit code, as an installer launcher does
 #   wrap <args>     run itself with <args>, wait, and return its exit code,
-#                   as the CLI's telemetry wrapper does
+#                   as a finite CLI wrapper does
 $source = @'
 using System;
 using System.Diagnostics;

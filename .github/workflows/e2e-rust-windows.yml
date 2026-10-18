@@ -52,9 +52,6 @@ env:
   # Failed cases are rerun once inside the gate; a pass on the rerun is
   # reported as flaky, two failures fail. See scripts/ci/lib/e2e-retry-once.sh.
   CUA_E2E_RETRY_ONCE: "1"
-  # Cua programs and packages run here never send usage telemetry.
-  CUA_TELEMETRY: "0"
-  DO_NOT_TRACK: "1"
 
 # Identical dispatches queue behind the running certification instead of
 # racing it. In-progress runs are never cancelled.
@@ -281,7 +278,7 @@ jobs:
             $env:USERPROFILE = $savedUserProfile
             $env:LOCALAPPDATA = $savedLocalAppData
           }
-      - name: Verify update --apply from the previous release
+      - name: Verify update --apply refuses release installation
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}

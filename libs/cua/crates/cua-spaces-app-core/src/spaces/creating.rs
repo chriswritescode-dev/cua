@@ -769,24 +769,6 @@ pub enum FailureCause {
     RuntimeMissing,
 }
 
-impl FailureCause {
-    /// The error enum case name telemetry records for it (`error_kind`
-    /// `insufficient_disk`, `local_network`, `vm_limit`, ...): a fixed word,
-    /// never the message.
-    pub fn variant(self) -> &'static str {
-        match self {
-            Self::Disk => "InsufficientDisk",
-            Self::LocalNetwork => "LocalNetwork",
-            Self::VmLimit => "VmLimit",
-            Self::Gpu => "Unsupported",
-            Self::Unauthenticated => "Unauthenticated",
-            Self::ServiceTimeout | Self::PullTimeout => "Timeout",
-            Self::PullStopped => "ImagePull",
-            Self::RuntimeMissing => "RuntimeMissing",
-        }
-    }
-}
-
 /// The SDK's words for an image download that stopped partway
 /// (`VmmError::PullStopped`), lowercased.
 const PULL_STOPPED: &str = "the image download stopped before it finished";
@@ -847,17 +829,6 @@ pub fn failure_cause(raw: &str, phase: Option<&str>, gpu: bool) -> Option<Failur
         Some("pulling") if timed_out => Some(FailureCause::PullTimeout),
         _ => None,
     }
-}
-
-/// The error enum case name a failed create records in telemetry: what
-/// the shell sent, unless that is none or a generic case (`Runtime`,
-/// `Other`, as most are) and the text names a known cause
-/// ([`failure_cause`]).
-pub fn failure_variant<'a>(raw: &str, phase: Option<&str>, gpu: bool, shell: &'a str) -> &'a str {
-    if !matches!(shell.trim(), "" | "Runtime" | "Other") {
-        return shell;
-    }
-    failure_cause(raw, phase, gpu).map_or(shell, |c| c.variant())
 }
 
 /// [`failure_text`] for a create on one of your machines named `host_name`:
@@ -2541,11 +2512,11 @@ mod tests {
              Try again; it picks up where it stopped."
         );
         assert_eq!(
-            failure_variant(stopped, Some("pulling"), false, "Runtime"),
-            "ImagePull"
+            failure_cause(stopped, Some("pulling"), false),
+            Some(FailureCause::PullStopped)
         );
         // QEMU missing on a Windows PC: 0.9.2's after the pull, and the
-        // refusal before it. Not `other` in telemetry, and the SDK's words.
+        // refusal before it, and the SDK's words.
         for raw in [
             "local runtime: [local] qemu-img is not available: install QEMU (macOS: `brew \
              install qemu`; Debian/Ubuntu: `apt install qemu-utils`)",
@@ -2556,10 +2527,6 @@ mod tests {
                 failure_cause(raw, Some("pulling"), false),
                 Some(FailureCause::RuntimeMissing),
                 "{raw}"
-            );
-            assert_eq!(
-                failure_variant(raw, Some("pulling"), false, "Other"),
-                "RuntimeMissing"
             );
         }
         // Local Network privacy on the Mac that runs the VM.

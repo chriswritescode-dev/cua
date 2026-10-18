@@ -28,7 +28,6 @@ export function UpsellPrompt({ surface, active, className }: { surface: "share" 
         variant="outline"
         data-upsell-cta=""
         onClick={() => {
-          gate.click();
           void openExternal(prompt.cta.url).catch(() => {});
         }}
       >

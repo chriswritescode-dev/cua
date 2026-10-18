@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: FSL-1.1-MIT
 // Copyright (c) 2026 Cua AI, Inc.
 
-// Synthetic Spaces, host, devices, account and telemetry for the bridge's
-// tests on the real app core (the SwiftUI app's FixtureSpacesBackend,
-// FixtureHost, FixtureDevices, FixtureAccount and FixtureTelemetry). Never
-// contacts anything.
+// Synthetic Spaces, host, devices and account for the bridge's tests on the
+// real app core (the SwiftUI app's FixtureSpacesBackend, FixtureHost,
+// FixtureDevices and FixtureAccount). Never contacts anything.
 import type { Native } from "../src/native/load";
 import type {
   AppCreateSpaceArgs,
-  AppTelemetryInput,
-  AppTelemetrySignal,
   AppSpaceRow,
   DevicesLike,
   DevicesSnapshot,
@@ -23,7 +20,7 @@ import type {
 } from "../src/native/generated/index";
 import type { LocalRuntimes, SpaceThumbnailData, SpacesBackend } from "../src/model/backend";
 import type { StreamWindow } from "../src/model/streams";
-import type { AccountProfile, AccountRunning, SignInAttempt, TelemetryRunning } from "../src/model/services";
+import type { AccountProfile, AccountRunning, SignInAttempt } from "../src/model/services";
 
 export function sampleRows(n: Native): AppSpaceRow[] {
   const row = (r: Partial<AppSpaceRow> & Pick<AppSpaceRow, "id" | "name" | "provider">): AppSpaceRow => ({
@@ -370,25 +367,5 @@ export class FixtureAccount implements AccountRunning {
   }
   async accessToken() {
     return this.current ? "token" : null;
-  }
-}
-
-export class FixtureTelemetry implements TelemetryRunning {
-  current: AppTelemetryInput = { enabled: true, lockedBy: undefined, noticeShown: false };
-  readonly recorded: AppTelemetrySignal[] = [];
-  status() {
-    return this.current;
-  }
-  setEnabled(on: boolean) {
-    this.current = { ...this.current, enabled: on };
-    return this.current;
-  }
-  record(signals: AppTelemetrySignal[]) {
-    if (this.current.enabled) this.recorded.push(...signals);
-  }
-  acknowledged = 0;
-  acknowledgeNotice() {
-    this.acknowledged += 1;
-    this.current = { ...this.current, noticeShown: true };
   }
 }

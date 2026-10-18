@@ -38,7 +38,6 @@ import {
 } from "./derive";
 import type { HostFormState } from "./ops/host-setup";
 import type { SpaceDetailView, SpaceUsage, StreamSection, StreamSectionInput } from "./ops/space-detail";
-import type { TelemetrySignal } from "./ops/telemetry";
 import { detailCopy, pipClick, pipReduce, spaceDetail, streamSection } from "./space-detail";
 import { newSpaceParityHandle, newSpaceParityMethods, type NewSpaceCheckpoint, type NewSpaceParityHandle } from "./new-space";
 import { teleportParityHandle, teleportParityMethods, type TeleportCheckpoint, type TeleportParityHandle } from "./parity-teleport";
@@ -46,15 +45,6 @@ import { settingsParityHandle, settingsParityMethods, type SettingsCheckpoint, t
 import { agentKeysParityHandle, agentKeysParityMethods, type AgentKeysCheckpoint, type AgentKeysParityHandle } from "./parity-agent-keys";
 import type { BridgeStore } from "./store";
 import { volumeBridgeMethods, volumeParityHandle, type VolumeCheckpoint, type VolumeParityHandle } from "./parity-volume";
-import {
-  telemetryCreates,
-  telemetryEnroll,
-  telemetryLaunched,
-  telemetryOnboarding,
-  telemetryOnboardingFinished,
-  telemetryShare,
-  telemetryStorage,
-} from "./telemetry";
 import { hostFormInitial, hostFormReduce, hostFormView, type HostFormView } from "./this-machine";
 
 type Args = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -87,9 +77,7 @@ export type ParityCheckpoint =
   /** The Agents page's rows for these agents. */
   | { kind: "agents"; agents: PersistentAgent[]; nowMs: number; rows: AgentRowView[] }
   /** The Machines page for these host rows at `now` (Unix seconds). */
-  | { kind: "machines"; rows: MachineRow[]; now: number; merged: MergedMachine[] }
-  /** Usage events a step means (empty: none). */
-  | { kind: "telemetry"; method: string; signals: TelemetrySignal[] };
+  | { kind: "machines"; rows: MachineRow[]; now: number; merged: MergedMachine[] };
 
 export interface ParityReplay {
   name: string;
@@ -182,9 +170,6 @@ function bridgeMethods(core: CoreClient, record: (c: ParityCheckpoint) => void):
       record({ kind: "agents", agents: a.input.agents ?? [], nowMs: a.nowMs, rows: view.rows });
       return view;
     },
-
-    // Usage events (telemetry.ts).
-    ...telemetryMethods(core, (method, signals) => record({ kind: "telemetry", method, signals })),
   };
 }
 
@@ -219,22 +204,6 @@ function machineRowsOf(input: MachinesInput): MachineRow[] {
       }),
     ),
   ];
-}
-
-function telemetryMethods(core: CoreClient, rec: (method: string, s: TelemetrySignal[]) => void): Record<string, (a: Args) => unknown> {
-  const out = (method: string, signals: TelemetrySignal[]) => {
-    rec(method, signals);
-    return signals;
-  };
-  return {
-    "telemetry.launched": (a) => out("telemetry.launched", telemetryLaunched(core, (a.onboardingEligible as boolean | null | undefined) ?? null)),
-    "telemetry.onboarding": (a) => out("telemetry.onboarding", telemetryOnboarding(core, a.state, a.action)),
-    "telemetry.onboardingFinished": (a) => out("telemetry.onboardingFinished", telemetryOnboardingFinished(core, a.state)),
-    "telemetry.creates": (a) => out("telemetry.creates", telemetryCreates(core, a.state, a.action, a.now)),
-    "telemetry.storage": (a) => out("telemetry.storage", telemetryStorage(core, a.input, a.state, a.action)),
-    "telemetry.share": (a) => out("telemetry.share", telemetryShare(core, a.input, a.state, a.action)),
-    "telemetry.enroll": (a) => out("telemetry.enroll", telemetryEnroll(core, a.state, a.action)),
-  };
 }
 
 /** Replays one flow through the bridge. Throws when the core lacks the harness. */
@@ -290,12 +259,6 @@ export interface ParityHandle extends NewSpaceParityHandle, TeleportParityHandle
   showMachines(rows: MachineRow[], now: number): void;
   /** These persistent agents on the Agents page. */
   showAgents(agents: PersistentAgent[], nowMs: number): void;
-  /** Sends usage events through the bridge; resolves once sent or dropped. */
-  track(signals: TelemetrySignal[]): Promise<void>;
-  /** What the demo host's telemetry recorded, in order. */
-  tracked(): TelemetrySignal[];
-  /** The machine's usage-data setting, through the bridge. */
-  setTelemetry(on: boolean): Promise<void>;
   /** Client-side navigation (the store and what it shows stay). */
   navigate(path: string): void;
 }
@@ -352,11 +315,6 @@ export function installParityHandle(store: BridgeStore): () => void {
     showHostForm: (state, identity) => store.thisMachine.show(state, identity),
     showMachines: (rows, now) => store.showMachines(rows, now),
     showAgents: (agents, nowMs) => store.showAgents(agents, nowMs),
-    track: async (signals) => {
-      await store.telemetry.track(signals);
-    },
-    tracked: () => [...((store.adapter as { state?: { telemetry?: TelemetrySignal[] } }).state?.telemetry ?? [])],
-    setTelemetry: (on) => store.updateSetting("telemetry", on),
     navigate: (path) => {
       window.history.pushState(window.history.state, "", path);
       window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));

@@ -26,7 +26,6 @@ import type {
   SpacePowerReport,
   CancelOutcome,
   CreateProgress,
-  TelemetryView,
 } from "./contracts/host";
 import type { AgentEventsPage, AgentSetupRow, PersistentAgent, SpaceAgentRun } from "./contracts/agents";
 import type { KeyvaultOverview, KvGrant, KvItem } from "./contracts/keyvault";
@@ -48,7 +47,6 @@ import { RELAY_USAGE_OPERATIONS, type RelayUsageOps } from "./ops/relay-usage";
 import { CHECKLIST_OPERATIONS, type ChecklistOps } from "./ops/checklist";
 import { PRESENCE_OPERATIONS, type PresenceOps } from "./ops/presence";
 import { RUNTIME_FIX_OPERATIONS, type RuntimeFixOps } from "./ops/runtime-fix";
-import type { TelemetryOps } from "./ops/telemetry";
 import { STARTUP_EVENTS, STARTUP_OPERATIONS, type StartupHostEvent, type StartupOps } from "./ops/startup";
 
 /* ---- Settings the web UI reads and writes -------------------------------- */
@@ -63,8 +61,6 @@ export interface SettingsValues {
   menuBar: boolean;
   /** The global hotkey, as glyphs (`⌘⇧Space`). */
   hotkey: string;
-  /** Anonymous usage telemetry (`$CUA_HOME/config.toml`, same as `cua telemetry`). */
-  telemetry: boolean;
   /** Where New Space starts: `local`, `cloud`, `host:<id>`, or a cloud word. */
   defaultLocation: string;
   /** The app opens at login, as the system reports it (`login_item::LoginItemStatus`
@@ -94,8 +90,6 @@ export interface SettingsSnapshot {
   values: SettingsValues;
   /** Where `defaultLocation` comes from (env-locked or not), when known. */
   defaultLocation: DefaultLocation | null;
-  /** The telemetry switch with its source, when known. */
-  telemetry: TelemetryView | null;
   /** Settings only some hosts have (the SwiftUI app), as its Settings page
    * laid them out; each absent or null one is not this host's, and the page
    * leaves its row out. Changed with `settings.choose`. */
@@ -128,8 +122,6 @@ export interface HostSettings {
   keyvaultAutoWipe?: boolean | null;
   /** The Keyvault explains unattended access before allowing it (off after "Never ask again"). */
   keyvaultUnlockPrompt?: boolean | null;
-  /** The Keyvault loads site icons the browser had none for. */
-  keyvaultSiteIcons?: boolean | null;
   /** The Keyvault's protection facts, as the host's Settings lists them. */
   keyvaultProtection?: { label: string; value: string }[] | null;
 }
@@ -138,7 +130,6 @@ export const DEFAULT_SETTINGS: SettingsValues = {
   theme: "system",
   menuBar: false,
   hotkey: "⌘⇧Space",
-  telemetry: true,
   defaultLocation: "local",
   launchAtLogin: null,
   updateChannel: null,
@@ -180,7 +171,6 @@ export interface HostOperations
     ShareOperations,
     SettingsOperations,
     NotificationsOperations,
-    TelemetryOps,
     SpaceDetailOps,
     HostSetupOps,
     StartupOps,
@@ -295,7 +285,6 @@ export const OPERATIONS = [
   ...RUNTIME_FIX_OPERATIONS,
   ...SETTINGS_OPERATIONS,
   ...NOTIFICATIONS_OPERATIONS,
-  "telemetry.track",
   "spaces.usage",
   "spaces.windows",
   "stream.pip",
@@ -319,7 +308,7 @@ export type HostEvent =
   | { type: "spaces.createProgress"; progress: CreateProgress }
   | { type: "machines.changed" }
   | { type: "settings.changed" }
-  /** The host's updater moved on (found, downloading, ready): ask `update.get` again. */
+  /** The host's updater moved on (a release found, or a failed check): ask `update.get` again. */
   | { type: "update.changed" }
   | { type: "keyvault.changed" }
   /** Tauri `auth:signed-in`. */

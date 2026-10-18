@@ -61,7 +61,7 @@ describe("Add a machine by link or QR code", () => {
     expect(calls[0]).toBe("devices.createPairingCode");
     expect(document.querySelector("[data-pairing-qr] path")?.getAttribute("d")).toMatch(/^M\d/);
     expect(screen.getByText(/^https:\/\/cua\.ai\/add\/K7QM-4XPB-/)).toBeTruthy();
-    expect(screen.getByText(/sh -s -- --pair K7QM-4XPB-/)).toBeTruthy();
+    expect(screen.getByText(/cargo build --release -p cua-cli .* host setup --pair K7QM-4XPB-/)).toBeTruthy();
     // The bare code too, for Join with a code on a computer that has the app.
     expect(document.querySelector("[data-pairing-code] code")?.textContent).toMatch(/^K7QM-4XPB-[0-9A-Z]{4}$/);
     expect(screen.getByLabelText("Copy code")).toBeTruthy();
@@ -69,7 +69,7 @@ describe("Add a machine by link or QR code", () => {
     expect(document.querySelector("[data-pairing-expires]")?.textContent).toBe("Works once. Expires in 30 min");
 
     fireEvent.click(screen.getByText("Windows (preview)"));
-    await waitFor(() => expect(screen.getByText(/install\.ps1\)\)\) -Pair K7QM-4XPB-/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/cargo build --release -p cua-cli .*cua\.exe host setup --pair K7QM-4XPB-/)).toBeTruthy());
     // The by-hand steps stay one click away.
     expect(document.querySelector("details[data-manual-steps] summary")?.textContent?.trim()).toBe("Set it up by hand instead");
   });
@@ -188,7 +188,7 @@ describe("Add a machine by link or QR code", () => {
     await waitFor(() => expect(phase()).toBe("error"));
     expect(screen.getByText(/Your Cua relay can't make links yet/)).toBeTruthy();
     expect(document.querySelector("[data-manual-steps]")?.tagName).toBe("DIV");
-    expect(screen.getByText("Install Cua Spaces on the other computer")).toBeTruthy();
+    expect(screen.getByText("Build Cua Spaces on the other computer")).toBeTruthy();
   });
 
   it("says what failed otherwise, and tries again", async () => {

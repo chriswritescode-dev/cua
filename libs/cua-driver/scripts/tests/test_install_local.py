@@ -13,7 +13,9 @@ LOCAL_SIGNING = INSTALL_LOCAL.with_name("_local-signing.sh")
 DISPATCHER = INSTALL_LOCAL.with_name("install-local.sh")
 WINDOWS_INSTALL_LOCAL = INSTALL_LOCAL.with_name("install-local.ps1")
 POST_INSTALL_HINTS = INSTALL_LOCAL.with_name("post-install-hints.txt")
-MIGRATION_WARNING = "Existing MCP clients configured for 'cua-driver' will not use this local build."
+MIGRATION_WARNING = (
+    "Existing MCP clients configured for 'cua-driver' will not use this local build."
+)
 SKILL_PACK = INSTALL_LOCAL.parents[1] / "rust/Skills/cua-driver"
 
 
@@ -42,7 +44,7 @@ def test_windows_local_install_reports_missing_release_cli_without_aliasing_it()
     assert hints < warning
     assert MIGRATION_WARNING in installer[warning:]
     assert "$installedBinary mcp-config --client codex" in installer[warning:]
-    assert "irm https://cua.ai/driver/install.ps1 | iex" in installer[warning:]
+    assert "libs\\cua-driver\\scripts\\install-local.ps1" in installer[warning:]
     assert "New-Item -ItemType SymbolicLink" not in installer[warning:]
 
 
@@ -242,7 +244,7 @@ esac
     migration = output[note:]
     assert MIGRATION_WARNING in migration
     assert f"{install_bin}/cua-driver-local mcp-config --client codex" in migration
-    assert "https://cua.ai/driver/install.sh" in migration
+    assert "libs/cua-driver/scripts/install-local.sh" in migration
 
 
 def _linux_fixture(tmp_path: Path) -> tuple[Path, Path, dict[str, str]]:
@@ -350,9 +352,7 @@ def test_reinstall_over_a_running_driver(tmp_path: Path) -> None:
     dies mid-stage. Reproduce that with a real running executable.
     """
     scripts_dir, _, env = _linux_fixture(tmp_path)
-    versioned = (
-        tmp_path / "local-home/packages/releases/0.0.0-local-debug-x86_64-unknown-linux-gnu"
-    )
+    versioned = tmp_path / "local-home/packages/releases/0.0.0-local-debug-x86_64-unknown-linux-gnu"
     versioned.mkdir(parents=True)
     busy = versioned / "cua-driver-local"
     shutil.copy2("/bin/sleep", busy)

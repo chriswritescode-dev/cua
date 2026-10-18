@@ -48,9 +48,9 @@ Renamed members: in Kotlin, objects implement `AutoCloseable`, whose `close()` f
 
 ## All items
 
-292 items. Methods are listed on their object.
+276 items. Methods are listed on their object.
 
-The 781 items of the Cua Spaces app export (source-available, FSL-1.1-MIT, Swift only) are listed on their pages: [Decoded media](/cua-sdk/reference/spaces/decoded-media), [Host teleport](/cua-sdk/reference/spaces/teleport-host), [Teleport an app](/cua-sdk/reference/spaces/teleport-apps), [Spaces app core](/cua-sdk/reference/spaces/app-core#all-items), [App core: Cua Volume storage, mount and sync](/cua-sdk/reference/spaces/volume-app-core#all-items), [App core: agents, drive, notifications](/cua-sdk/reference/spaces/agents-app-core#all-items), [App core: billing, relay usage and Teams](/cua-sdk/reference/spaces/account-app-core#all-items), [Machines page](/cua-sdk/reference/spaces/machines-app-core), [Getting started and the command palette](/cua-sdk/reference/spaces/app-checklist-palette).
+The 764 items of the Cua Spaces app export (source-available, FSL-1.1-MIT, Swift only) are listed on their pages: [Decoded media](/cua-sdk/reference/spaces/decoded-media), [Host teleport](/cua-sdk/reference/spaces/teleport-host), [Teleport an app](/cua-sdk/reference/spaces/teleport-apps), [Spaces app core](/cua-sdk/reference/spaces/app-core#all-items), [App core: Cua Volume storage, mount and sync](/cua-sdk/reference/spaces/volume-app-core#all-items), [App core: agents, drive, notifications](/cua-sdk/reference/spaces/agents-app-core#all-items), [App core: billing, relay usage and Teams](/cua-sdk/reference/spaces/account-app-core#all-items), [Machines page](/cua-sdk/reference/spaces/machines-app-core), [Getting started and the command palette](/cua-sdk/reference/spaces/app-checklist-palette).
 
 | Item | Kind | Summary |
 | --- | --- | --- |
@@ -320,22 +320,6 @@ The 781 items of the Cua Spaces app export (source-available, FSL-1.1-MIT, Swift
 | [`SpaceWindow`](/cua-sdk/reference/spaces/space#spacewindow-record) | record | A streamable window. |
 | [`SpaceWriteReport`](/cua-sdk/reference/spaces/space#spacewritereport-record) | record | Result of `Space.write`. |
 | [`StorageVolume`](/cua-sdk/reference/local#storagevolume-record) | record | Space on the volume a local engine writes to. |
-| [`StreamStatsReport`](/cua-sdk/reference/telemetry#streamstatsreport-record) | record | One stream session's aggregate stats (sampled). |
-| [`telemetry_acknowledge_notice`](/cua-sdk/reference/telemetry#telemetry_acknowledge_notice) | function | Records that the first-run notice was shown in the app's UI (nothing is sent from a machine before that). |
-| [`telemetry_flush`](/cua-sdk/reference/telemetry#telemetry_flush) | function | Sends queued events now, waiting at most `timeout_ms`; anything left is kept on disk for a later process. |
-| [`telemetry_notice_text`](/cua-sdk/reference/telemetry#telemetry_notice_text) | function | The first-run notice text (an app shows it in its own UI, then calls `telemetry_acknowledge_notice`). |
-| [`telemetry_record_bench_run`](/cua-sdk/reference/telemetry#telemetry_record_bench_run) | function | Records a finished cua-bench run: the taskset (catalog name, else `custom`), the aggregate success rate (0 to 1, bucketed), the task count (bucketed) and the outcome (`ok`, `error`, `cancelled`). |
-| [`telemetry_record_feature`](/cua-sdk/reference/telemetry#telemetry_record_feature) | function | Records use of a Spaces app feature (fixed names: `space_create_local`, `teleport_drop`, ... see the docs). |
-| [`telemetry_record_onboarding_step`](/cua-sdk/reference/telemetry#telemetry_record_onboarding_step) | function | Records an install or onboarding funnel step (fixed names: `onboarding_shown`, `signed_in`, `first_space_created`, ...; `first_*` steps count once per install). |
-| [`telemetry_record_stream_stats`](/cua-sdk/reference/telemetry#telemetry_record_stream_stats) | function | Records one stream session's aggregate stats (bucketed and sampled). |
-| [`telemetry_reset_id`](/cua-sdk/reference/telemetry#telemetry_reset_id) | function | Deletes the anonymous install id and its salt. |
-| [`telemetry_schema_json`](/cua-sdk/reference/telemetry#telemetry_schema_json) | function | Every event and property that may be sent, as JSON. |
-| [`telemetry_set_enabled`](/cua-sdk/reference/telemetry#telemetry_set_enabled) | function | Turns usage telemetry on or off for this machine (`$CUA_HOME/config.toml`, the same switch as `cua telemetry off` and the Spaces app setting). |
-| [`telemetry_set_surface`](/cua-sdk/reference/telemetry#telemetry_set_surface) | function | Names the SDK surface events are attributed to. |
-| [`telemetry_show_last`](/cua-sdk/reference/telemetry#telemetry_show_last) | function | The last `limit` events queued or sent from this machine, exactly as sent, as JSON (`[{status, payload}]`). |
-| [`telemetry_status`](/cua-sdk/reference/telemetry#telemetry_status) | function | Telemetry state, and exactly what every event carries. |
-| [`telemetry_use_app_notice`](/cua-sdk/reference/telemetry#telemetry_use_app_notice) | function | The host app shows the first-run notice itself (no stderr notice). |
-| [`TelemetryStatus`](/cua-sdk/reference/telemetry#telemetrystatus-record) | record | Telemetry state. |
 | [`TeleportApprover`](/cua-sdk/reference/spaces/teleport#teleportapprover) | object | The consent gate of `Space.teleport`: shown the manifest, returns the human's decision, or `None` to cancel. |
 | [`TeleportDecision`](/cua-sdk/reference/spaces/teleport#teleportdecision-record) | record | A human's answer to a teleport manifest. |
 | [`TeleportItem`](/cua-sdk/reference/spaces/teleport#teleportitem-record) | record | One item a teleport would move. |

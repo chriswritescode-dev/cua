@@ -811,27 +811,7 @@ impl HostSpacesServer {
         caller: &HostCaller,
         req: pb::CreateHostSpaceRequest,
     ) -> Result<pb::HostSpace> {
-        // Host Spaces use: the kind and guest family only, never the name,
-        // image, caller or machine.
-        let kind = req.kind.clone();
-        let image = req.image.to_ascii_lowercase();
-        // Empty is the canonical Linux image.
-        let guest = ["macos", "windows", "android", "linux"]
-            .into_iter()
-            .find(|os| image.contains(os))
-            .unwrap_or(if image.is_empty() { "linux" } else { "unknown" });
-        let r = self.create_provided(caller, req).await;
-        cua_telemetry::capture(cua_telemetry::events::host_space_provided(
-            &kind,
-            guest,
-            if r.is_ok() {
-                cua_telemetry::Outcome::Ok
-            } else {
-                cua_telemetry::Outcome::Error
-            },
-            r.is_err().then_some("other"),
-        ));
-        r
+        self.create_provided(caller, req).await
     }
 
     async fn create_provided(

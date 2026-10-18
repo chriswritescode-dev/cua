@@ -53,7 +53,6 @@ def fleet(monkeypatch, tmp_path):
         monkeypatch.setattr(_autopool, "CUA_DIR", tmp_path / "cua")
         monkeypatch.setattr(sandbox_state, "SANDBOX_STATE_DIR", tmp_path / "sandboxes")
         monkeypatch.setattr(Sandbox, "_uses_fleet", staticmethod(lambda api_key: api_key is None))
-        monkeypatch.setattr(sandbox_module, "_TELEMETRY_AVAILABLE", False)
         yield _FleetClient
     finally:
         proc.stdin.close()

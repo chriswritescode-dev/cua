@@ -116,7 +116,7 @@ class McpTransport(Transport):
 
 
 async def sandbox(transport):
-    sb = Sandbox(transport, _telemetry_enabled=False)
+    sb = Sandbox(transport)
     await sb._connect()
     return sb
 

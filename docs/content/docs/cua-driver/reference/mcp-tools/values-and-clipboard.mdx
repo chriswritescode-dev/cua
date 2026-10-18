@@ -91,13 +91,13 @@ For free-form text entry that the target accepts via keystrokes only, prefer `ty
 
 ## `clipboard_read`
 
-List available system clipboard types and optionally return privacy-sensitive plain text. Clipboard content is never retained in telemetry.
+List available system clipboard types and optionally return privacy-sensitive plain text. Clipboard content is never retained beyond the response.
 
 Effect: read-only. Platforms: macOS, Linux, Windows.
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| <span id="clipboard_read--include_text"></span>`include_text` | `boolean` | `false` | Return plain-text clipboard content in addition to the available types. Clipboard content is privacy-sensitive and is never retained in telemetry. |
+| <span id="clipboard_read--include_text"></span>`include_text` | `boolean` | `false` | Return plain-text clipboard content in addition to the available types. Clipboard content is privacy-sensitive and is never retained beyond the response. |
 | <span id="clipboard_read--session"></span>`session` | `string` |  | For multi-call work, prefer a short public session label and repeat it on every call that accepts it. Omit it to use the authenticated transport's implicit lifecycle session. |
 
 ## `clipboard_write`

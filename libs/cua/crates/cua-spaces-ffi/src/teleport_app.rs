@@ -840,22 +840,7 @@ mod space_side {
         ) -> Result<TeleportRunReport> {
             let core: ux::TeleportPlan = serde_json::from_str(&plan.json)
                 .map_err(|e| CuaError::InvalidArgument(format!("not a plan from this SDK: {e}")))?;
-            let started = std::time::Instant::now();
-            let (app_id, capability, move_kind) = (
-                core.app.id.clone(),
-                core.app.capability.as_str(),
-                core.moves.as_str(),
-            );
-            let r = self.run_approved(core, space, consent, listener).await;
-            cua_sdk::support::record_teleport(
-                &app_id,
-                capability,
-                move_kind,
-                started,
-                &r,
-                r.as_ref().map(|r| r.sent.len() as u64).unwrap_or(0),
-            );
-            r
+            self.run_approved(core, space, consent, listener).await
         }
     }
 

@@ -56,8 +56,7 @@
     "public.ecr.aws/example/*": "placeholder namespace in tests",
     "registry.example.com/*": "placeholder registry in tests",
     "123456789012.dkr.ecr.*": "placeholder AWS account in docs and tests (private ECR)",
-    "123.dkr.ecr.*": "placeholder AWS account in tests",
-    "ghcr.io/acme-corp/*": "fictional private registry ref in the cua-telemetry privacy test (proves image refs are redacted)"
+    "123.dkr.ecr.*": "placeholder AWS account in tests"
   },
   "refs": {
     "docker.io/trycua/cua-qemu-linux:latest": {

@@ -22,7 +22,9 @@ app, in the background.
   <Tab value="macOS">
 
 ```bash test="cli-shape" id="cua-driver-permissions-grant"
-/bin/bash -c "$(curl -fsSL https://cua.ai/driver/install.sh)"
+git clone https://github.com/trycua/cua
+cd cua
+libs/cua-driver/scripts/install-local.sh
 open -n -g -a CuaDriver --args serve
 cua-driver permissions grant
 ```
@@ -38,7 +40,9 @@ Rerun `cua-driver permissions grant` if only one prompt appeared.
   <Tab value="Windows">
 
 ```powershell test="cli-shape" id="cua-driver-autostart-kick"
-irm https://cua.ai/driver/install.ps1 | iex
+git clone https://github.com/trycua/cua
+cd cua
+libs\cua-driver\scripts\install-local.ps1
 cua-driver autostart kick
 ```
 
@@ -49,7 +53,9 @@ Run it from your desktop session. Over SSH, see
   <Tab value="Linux">
 
 ```bash test="cli-shape" id="cua-driver-serve"
-/bin/bash -c "$(curl -fsSL https://cua.ai/driver/install.sh)"
+git clone https://github.com/trycua/cua
+cd cua
+libs/cua-driver/scripts/install-local.sh
 cua-driver serve
 ```
 

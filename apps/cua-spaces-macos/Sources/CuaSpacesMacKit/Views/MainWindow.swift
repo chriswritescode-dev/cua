@@ -121,7 +121,6 @@ public struct MainWindow: View {
                 openSettings()
             })
                 .onAppear {
-                    model.recordFeature("agents_page_open")
                     let id = model.sidebar.thisMachine?.id
                     model.persistent.thisMachine = id?.hasPrefix("relay:") == true ? id : nil
                 }

@@ -34,15 +34,7 @@ public final class OnboardingModel {
         get { host.accountToken }
         set { host.accountToken = newValue }
     }
-    /// Welcome was left with its usage-data switch at this value (live:
-    /// writes the machine's setting when it changed, then records that the
-    /// notice was shown; nothing is sent before).
-    public var onWelcomeLeft: ((Bool) -> Void)?
-    /// Where the first run's usage events go (the app core derives them;
-    /// the Tauri app sends the same ones for the same steps), and the
-    /// machine's telemetry setting Welcome's switch starts from.
-    public var telemetry: TelemetryRunning?
-    /// The setting was read for this run.
+    /// The first page showed once.
     private var shownOnce = false
     /// The fixed words.
     public let copy = appOnboardingCopy()
@@ -85,32 +77,16 @@ public final class OnboardingModel {
     public var view: AppOnboardingView { appOnboardingView(state: state) }
 
     public func send(_ action: AppOnboardingAction) {
-        let before = state
-        state = appOnboardingReduce(state: before, action: action)
-        // Leaving Welcome: its usage-data switch decides before anything
-        // is sent (the core derives nothing while Welcome shows).
-        if before.step == .welcome, state.step != .welcome {
-            onWelcomeLeft?(appOnboardingView(state: before).usage?.on ?? true)
-        }
-        telemetry?.record(appTelemetryOnboarding(state: before, action: action))
+        state = appOnboardingReduce(state: state, action: action)
     }
 
-    /// The first page showed: Welcome's usage-data switch starts from the
-    /// machine's setting (Settings, Privacy; `cua telemetry off`).
-    /// Each time Welcome shows (Back included), `welcome-shown`: on a
-    /// machine that already showed the usage notice, the core counts the
-    /// run now (once per run), not only when Welcome is left.
+    /// The first page showed: the Experiments settings, read once.
     public func shown() {
         if !shownOnce {
             shownOnce = true
             if let x = currentExperiments?() { send(.experimentsLoaded(experiments: x)) }
-            if let t = telemetry?.status() { send(.telemetryLoaded(telemetry: t)) }
         }
-        if state.step == .welcome { send(.welcomeShown) }
     }
-
-    /// Welcome's "Share anonymous usage data" switch.
-    public func setShareUsage(_ on: Bool) { send(.usageDataToggled(on: on)) }
 
     // MARK: - The cua command
 
@@ -346,7 +322,6 @@ public final class OnboardingModel {
 
     /// "Start using Cua Spaces".
     public func finish() {
-        telemetry?.record(appTelemetryOnboardingFinished(state: state))
         completed = true
         onLaunchAtLogin?(state.launchAtLogin)
         guard let statePath else { return }

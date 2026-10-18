@@ -134,7 +134,6 @@ def _capture(monkeypatch) -> list:
 
     monkeypatch.setattr(_autopool, "_native_cua", lambda: _Cua())
     monkeypatch.setattr(Sandbox, "_uses_fleet", staticmethod(lambda api_key: api_key is None))
-    monkeypatch.setattr(sandbox_module, "_TELEMETRY_AVAILABLE", False)
     monkeypatch.delenv("CUA_FLEET_WARM", raising=False)
     return seen
 
@@ -254,7 +253,6 @@ def test_local_runc_opt_in_reaches_the_sdk(monkeypatch, tmp_path):
             return _Sandboxes()
 
     monkeypatch.setattr(native_rt, "local_runtime", lambda: _Cua())
-    monkeypatch.setattr(sandbox_module, "_TELEMETRY_AVAILABLE", False)
     img = Image.from_registry("python:3.12-slim", kind="container")
     with pytest.raises(_Captured):
         asyncio.run(Sandbox.create(img, local=True, runtime="runc", sidecars=["redis:7-alpine"]))

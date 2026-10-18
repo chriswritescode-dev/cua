@@ -47,7 +47,6 @@ def test_sdk_handles_alive_at_exit_print_nothing(tmp_path):
         "CUA_HOME": str(home / ".cua"),
         "CUA_CREDENTIAL_STORE": "file",
         "CUA_FLEET_SESSION": "0",
-        "CUA_TELEMETRY_ENABLED": "false",
     }
     for var in ("FLEETS_TOKEN", "CUA_CLIENT_ID", "CUA_CLIENT_SECRET"):
         env.pop(var, None)

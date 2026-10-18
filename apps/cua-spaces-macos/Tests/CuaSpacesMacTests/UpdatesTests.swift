@@ -17,32 +17,6 @@ import Testing
 struct UpdatesTests {
     static let info = AboutBundleInfo(version: "0.2.0-staging.5", build: "0.2.0.105", os: "macOS 26.0 (arm64)")
 
-    /// Do people update: each check, what it found and installs, with the
-    /// channel and who started it (the Tauri app records the same words).
-    @Test func updaterStepsAreRecordedAsFixedWords() {
-        let updater = FixtureUpdater()
-        let telemetry = FixtureTelemetry()
-        let model = UpdatesModel(updater: updater, channel: .stable, info: Self.info)
-        model.telemetry = telemetry
-        model.checkNow()
-        updater.nextResult = "found"
-        model.choose(channel: "beta")
-        model.checkNow()
-        // Sparkle installs what it found on its own schedule.
-        updater.onUpdateEvent?("installed")
-        let got = telemetry.recorded.map { ParityTests.signalFrame($0) }
-            .map { "\($0["action"]!) \($0["channel"]!) \($0["trigger"]!)" }
-        #expect(got == [
-            "checked stable user", "not_found stable user",
-            "checked beta user", "found beta user", "installed beta user",
-        ])
-        // A scheduled check is the background's.
-        updater.nextResult = "not_found"
-        updater.onUpdateEvent?("not_found")
-        #expect(telemetry.recorded.suffix(2).map { ParityTests.signalFrame($0)["trigger"] as! String }
-            == ["background", "background"])
-    }
-
     @Test func theAboutPaneFollowsTheUpdater() {
         let updater = FixtureUpdater()
         let model = UpdatesModel(updater: updater, channel: .stable, info: Self.info)
@@ -51,13 +25,12 @@ struct UpdatesTests {
         #expect(v.versionLine == "Version 0.2.0-staging.5 (0.2.0.105)")
         #expect(v.links.map(\.label) == ["Acknowledgements", "Privacy Policy", "Terms of Service", "Report an Issue\u{2026}"])
         #expect(v.updates?.lastCheck == "Last check: Never")
-        #expect(v.updates?.autoInstallEnabled == true)
+        #expect(v.updates?.autoCheckLabel == "Check for updates automatically")
 
         model.setAutoCheck(false)
         #expect(!updater.automaticallyChecks)
-        #expect(model.view.updates?.autoInstallEnabled == false)
-        model.setAutoInstall(true)
-        #expect(updater.automaticallyInstalls)
+        model.setAutoCheck(true)
+        #expect(updater.automaticallyChecks)
 
         model.checkNow()
         #expect(updater.checks == 1)
@@ -66,15 +39,15 @@ struct UpdatesTests {
         #expect(v.updates?.lastCheck != "Last check: Never")
     }
 
-    /// Updates check and download in the background out of the box, like
-    /// Windows and Linux; only a click on "Restart to update" restarts.
-    @Test func updatesDownloadInTheBackgroundByDefault() throws {
+    /// Updates are a notification: the app checks on its own and never
+    /// downloads or installs a release.
+    @Test func updatesAreCheckedButNeverDownloaded() throws {
         let plist = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("Support/Info.plist")
         let info = try #require(try PropertyListSerialization.propertyList(from: Data(contentsOf: plist), format: nil) as? [String: Any])
         #expect(info["SUEnableAutomaticChecks"] as? Bool == true)
-        #expect(info["SUAutomaticallyUpdate"] as? Bool == true)
+        #expect(info["SUAutomaticallyUpdate"] as? Bool == false)
     }
 
     @Test func noUpdaterNoControls() {
@@ -98,125 +71,74 @@ struct UpdatesTests {
         #expect(saved == [.beta, .stable])
     }
 
-    // MARK: - The in-app update flow
+    // MARK: - The in-app update notice
 
-    @Test func aFoundUpdateDownloadsThenWaitsForRestart() {
+    @Test func aFoundUpdateIsReportedAndNeverInstalled() {
         let updater = FixtureUpdater()
-        let telemetry = FixtureTelemetry()
         let model = UpdatesModel(updater: updater, channel: .stable, info: Self.info)
-        model.telemetry = telemetry
+        var announced: [String] = []
+        model.onAvailable = { announced.append($0) }
         #expect(model.updateState.status == .idle)
         #expect(model.updateState.currentVersion == "0.2.0-staging.5")
         updater.simulateFound(version: "0.2.0-staging.6")
         #expect(model.updateState.status == .available)
+        #expect(model.updateState.version == "0.2.0-staging.6")
         #expect(model.updateState.notesUrl == "https://github.com/trycua/cua/releases/tag/cua-spaces-v0.2.0-staging.6")
-        updater.simulateProgress(percent: 40)
-        #expect(model.updateState.status == .downloading && model.updateState.percent == 40)
-        #expect(!(model.input.checking))
-        updater.simulateDownloaded()
-        #expect(model.updateState.status == .downloaded && model.updateState.percent == nil)
-        // Nothing restarts until the user asks.
-        #expect(updater.installs == 0)
-        model.installUpdate()
-        #expect(updater.installs == 1)
-        #expect(model.updateState.status == .idle)
-        let words = telemetry.recorded.map { ParityTests.signalFrame($0)["action"] as! String }
-        #expect(words.contains("downloaded") && words.contains("installed"))
-    }
-
-    @Test func installingWithNothingDownloadedChangesNothing() {
-        let updater = FixtureUpdater()
-        let model = UpdatesModel(updater: updater, channel: .stable, info: Self.info)
-        model.installUpdate()
+        let instructions = "A newer Cua Spaces release (0.2.0-staging.6) is available. "
+            + "Update by pulling the repository and rebuilding: git pull && apps/cua-spaces-macos/scripts/build-release.sh"
+        #expect(model.updateState.instructions == instructions)
+        #expect(model.updateState.message == nil)
+        #expect(announced == [instructions])
+        // The same release is announced once.
         updater.simulateFound(version: "0.2.0-staging.6")
-        model.installUpdate()
-        #expect(updater.installs == 0)
-        #expect(model.updateState.status == .available)
+        #expect(announced == [instructions])
     }
 
     @Test func theStateJSONHasTheContractsKeys() {
         let idle = UpdateState.idle(currentVersion: "0.9.2").json
-        #expect(Set(idle.keys) == ["status", "currentVersion", "version", "percent", "notesUrl", "message"])
+        #expect(Set(idle.keys) == ["status", "currentVersion", "version", "notesUrl", "instructions", "message"])
         #expect(idle["status"] as? String == "idle")
-        #expect(idle["version"] is NSNull && idle["percent"] is NSNull && idle["notesUrl"] is NSNull && idle["message"] is NSNull)
-        let busy = UpdateState(status: .downloading, currentVersion: "0.9.2", version: "0.9.3", percent: 12,
-                               notesUrl: UpdateState.notesURL(version: "0.9.3")).json
-        #expect(busy["percent"] as? Int == 12)
-        #expect(busy["notesUrl"] as? String == "https://github.com/trycua/cua/releases/tag/cua-spaces-v0.9.3")
+        #expect(idle["version"] is NSNull && idle["notesUrl"] is NSNull && idle["instructions"] is NSNull && idle["message"] is NSNull)
+        let found = UpdateState(status: .available, currentVersion: "0.9.2", version: "0.9.3",
+                                notesUrl: UpdateState.notesURL(version: "0.9.3"),
+                                instructions: UpdateState.manualUpdateMessage(version: "0.9.3")).json
+        #expect(found["status"] as? String == "available")
+        #expect(found["notesUrl"] as? String == "https://github.com/trycua/cua/releases/tag/cua-spaces-v0.9.3")
+        #expect(found["instructions"] as? String == UpdateState.manualUpdateMessage(version: "0.9.3"))
+        #expect(found["message"] is NSNull)
     }
 
-    @Test func aFlowReducesSparklesStepsToPercent() {
+    @Test func aFlowReducesSparklesSteps() {
         var flow = UpdateFlow(currentVersion: "0.9.2")
         flow.userCheckStarted()
         #expect(flow.state.status == .checking)
         flow.found(version: "0.9.3")
-        flow.downloadStarted()
-        flow.expectedLength(1000)
-        flow.receivedData(500)
-        #expect(flow.state.percent == 45)
-        flow.receivedData(500)
-        #expect(flow.state.percent == 90)
-        flow.extractionStarted()
-        flow.extractionProgress(0.5)
-        #expect(flow.state.percent == 95)
-        flow.downloaded()
-        #expect(flow.state.status == .downloaded && flow.state.percent == nil && flow.state.version == "0.9.3")
+        #expect(flow.state.status == .available && flow.state.version == "0.9.3")
+        #expect(flow.state.instructions == UpdateState.manualUpdateMessage(version: "0.9.3"))
+        flow.dismissed()
+        #expect(flow.state.status == .available && flow.state.version == "0.9.3")
+        flow.userCheckStarted()
         flow.dismissed()
         #expect(flow.state.status == .idle && flow.state.version == nil)
-        // Unknown length stays at 0, never past 100.
-        flow.found(version: "0.9.4")
-        flow.receivedData(10)
-        #expect(flow.state.percent == 0)
     }
 
     final class Replies {
         var choices: [SPUUserUpdateChoice] = []
-        var acks = 0
     }
 
-    @Test func theDriverHoldsTheInstallReplyUntilTheUserRestarts() {
+    @Test func theDriverReportsAFoundUpdateAndDeclinesTheDownload() {
         let driver = UpdateUserDriver(currentVersion: "0.9.2")
         let replies = Replies()
-        var events: [String] = []
         var changes = 0
-        driver.onEvent = { events.append($0) }
         driver.onChange = { changes += 1 }
-        // A background check finds an update: download at once.
         driver.handleFound(version: "0.9.3", informationOnly: false) { replies.choices.append($0) }
-        #expect(replies.choices == [.install])
-        #expect(driver.state.status == .available)
-        driver.showDownloadInitiated {}
-        driver.showDownloadDidReceiveExpectedContentLength(100)
-        driver.showDownloadDidReceiveData(ofLength: 50)
-        #expect(driver.state.status == .downloading && driver.state.percent == 45)
-        driver.showDownloadDidStartExtractingUpdate()
-        driver.showExtractionReceivedProgress(1)
-        #expect(driver.state.percent == 100)
-        // Ready to install: held, not replied.
-        driver.showReady(toInstallAndRelaunch: { replies.choices.append($0) })
-        #expect(driver.state.status == .downloaded)
-        #expect(events == ["downloaded"])
-        #expect(replies.choices == [.install])
+        #expect(replies.choices == [.dismiss])
+        #expect(driver.state.status == .available && driver.state.version == "0.9.3")
+        #expect(driver.state.instructions?.contains("git pull && apps/cua-spaces-macos/scripts/build-release.sh") == true)
         #expect(changes > 0)
-        #expect(driver.installNow())
-        #expect(replies.choices == [.install, .install])
-        // Once is enough.
-        #expect(!driver.installNow() || replies.choices.count == 2)
-        driver.dismissUpdateInstallation()
-        #expect(driver.state.status == .idle)
-    }
-
-    @Test func theSilentPathReachesDownloadedWithItsImmediateInstall() {
-        let driver = UpdateUserDriver(currentVersion: "0.9.2")
-        var events: [String] = []
-        var installs = 0
-        driver.onEvent = { events.append($0) }
-        driver.silentlyDownloaded(version: "0.9.3") { installs += 1 }
-        #expect(driver.state.status == .downloaded && driver.state.version == "0.9.3")
-        #expect(events == ["downloaded"])
-        #expect(installs == 0)
-        #expect(driver.installNow())
-        #expect(installs == 1)
+        // Nothing is ever ready to install.
+        driver.showReady(toInstallAndRelaunch: { replies.choices.append($0) })
+        #expect(replies.choices == [.dismiss, .dismiss])
     }
 
     @Test func nothingFoundAndBackgroundErrorsStayQuiet() {
@@ -408,50 +330,5 @@ struct UpdatesTests {
         let blocks = NoticeBlock.parse(try String(contentsOf: file, encoding: .utf8))
         #expect(blocks.contains(.heading(2, "Sparkle")))
         #expect(blocks.contains { if case .verbatim(let t) = $0 { t.contains("Andy Matuschak") } else { false } })
-    }
-}
-
-/// A copy installed over the running app: Sparkle cannot authorize its
-/// installer for a process whose files are gone, so the app asks to relaunch.
-@Suite("Launched bundle")
-struct LaunchedBundleTests {
-    static func bundle(version: String) throws -> (URL, URL) {
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent("launched-\(UUID().uuidString)")
-        let app = root.appendingPathComponent("Cua Spaces.app")
-        try write(app, version: version)
-        return (app, app.appendingPathComponent("Contents/MacOS/CuaSpacesMac"))
-    }
-
-    static func write(_ app: URL, version: String) throws {
-        let macos = app.appendingPathComponent("Contents/MacOS")
-        try FileManager.default.createDirectory(at: macos, withIntermediateDirectories: true)
-        try Data("binary \(version)".utf8).write(to: macos.appendingPathComponent("CuaSpacesMac"))
-        let info: NSDictionary = ["CFBundleShortVersionString": version, "CuaVersion": version]
-        try info.write(to: app.appendingPathComponent("Contents/Info.plist"))
-    }
-
-    @Test func theLaunchedCopyIsNotAReplacement() throws {
-        let (app, exe) = try Self.bundle(version: "0.5.0")
-        defer { try? FileManager.default.removeItem(at: app.deletingLastPathComponent()) }
-        #expect(LaunchedBundle(url: app, executable: exe).replacement() == nil)
-    }
-
-    @Test func aCopyInstalledOverTheRunningOneIsAReplacement() throws {
-        let (app, exe) = try Self.bundle(version: "0.5.0")
-        defer { try? FileManager.default.removeItem(at: app.deletingLastPathComponent()) }
-        let launched = LaunchedBundle(url: app, executable: exe)
-        // What dragging the new copy from the disk image does: the old
-        // bundle goes, the new one's files arrive.
-        try FileManager.default.removeItem(at: app)
-        try Self.write(app, version: "0.6.0")
-        #expect(launched.replacement() == LaunchedBundle.Replacement(version: "0.6.0"))
-    }
-
-    @Test func aDeletedCopyHasNoVersion() throws {
-        let (app, exe) = try Self.bundle(version: "0.5.0")
-        defer { try? FileManager.default.removeItem(at: app.deletingLastPathComponent()) }
-        let launched = LaunchedBundle(url: app, executable: exe)
-        try FileManager.default.removeItem(at: app)
-        #expect(launched.replacement() == LaunchedBundle.Replacement(version: nil))
     }
 }

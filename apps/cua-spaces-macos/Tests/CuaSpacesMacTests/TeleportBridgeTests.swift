@@ -21,8 +21,7 @@ struct TeleportBridgeTests {
         let kv = KeyvaultModel(client: keyvault, clock: { Date(timeIntervalSince1970: Double(KeyvaultFixtures.now) / 1000) })
         let model = AppModel(backend: FixtureSpacesBackend(), keyvault: kv,
                              onboarding: OnboardingModel(statePath: dir.appendingPathComponent("onboarding.json").path),
-                             settingsPath: dir.appendingPathComponent("settings.json").path,
-                             telemetry: FixtureTelemetry())
+                             settingsPath: dir.appendingPathComponent("settings.json").path)
         await model.refresh()
         let bridge = WebUIBridge(model: model, allowedOrigins: [])
         bridge.actions = WebUIActions(openSpace: { _ in }, openMain: {})

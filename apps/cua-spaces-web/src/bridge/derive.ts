@@ -599,19 +599,10 @@ export function settingsPage(
     menuBar: settings.values.menuBar,
     defaultLocation: loc === "cloud" ? "cloud" : loc === "local" ? "local" : loc.startsWith("host:") ? "host" : "yours",
     locationLockedBy: settings.defaultLocation?.source === "env" ? (settings.defaultLocation.env ?? null) : null,
-    telemetry: settings.telemetry
-      ? {
-          enabled: settings.telemetry.enabled,
-          lockedBy: ["do_not_track", "env", "legacy_env", "ci"].includes(settings.telemetry.sourceKind)
-            ? settings.telemetry.source
-            : null,
-        }
-      : null,
     // The host's own settings (the SwiftUI app's): the core lays out the
     // Runtimes section, auto-connect and the Keyvault's auto-wipe as there.
     keyvaultAutoWipe: settings.hostSettings?.keyvaultAutoWipe ?? null,
     keyvaultUnlockPrompt: settings.hostSettings?.keyvaultUnlockPrompt ?? null,
-    keyvaultSiteIcons: settings.hostSettings?.keyvaultSiteIcons ?? true,
     keyvaultProtection: settings.hostSettings?.keyvaultProtection ?? [],
     autoConnect: settings.hostSettings?.autoConnect ?? null,
     lumeSource: settings.hostSettings?.lumeSource ?? null,

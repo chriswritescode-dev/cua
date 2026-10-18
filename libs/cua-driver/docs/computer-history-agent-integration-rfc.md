@@ -461,7 +461,7 @@ the existing authorization error envelope.
 
 Clients must use the structured code. Human-readable text may change.
 
-## Security, privacy, and telemetry
+## Security and privacy
 
 The first preview stores only allowlisted structured metadata:
 
@@ -523,10 +523,8 @@ Sequence framing. The namespace root key is protected by the operating
 system's native credential store, and each chunk uses a separate HKDF-derived
 key.
 
-History tools are excluded from per-tool product telemetry and agent-session
-aggregate telemetry. Product telemetry may contain a fixed CLI command counter
-showing that a local history command ran. It never contains history events,
-query filters, counts, identifiers, paths, or results.
+History tools emit no product telemetry. The driver never transmits history
+events, query filters, counts, identifiers, paths, or results.
 
 ## Compatibility and versioning
 

@@ -27,7 +27,6 @@ final class LumeMCPServer {
 
         let transport = StdioTransport()
         try await mcpServer?.start(transport: transport)
-        TelemetryClient.shared.recordMCPSessionStarted()
         await mcpServer?.waitUntilCompleted()
     }
 
@@ -578,7 +577,6 @@ final class LumeMCPServer {
     // MARK: - Tool Call Handler
 
     private func handleToolCall(_ params: CallTool.Parameters) async -> CallTool.Result {
-        let startedAt = Date()
         let result: CallTool.Result
         do {
             switch params.name {
@@ -614,13 +612,6 @@ final class LumeMCPServer {
                 isError: true
             )
         }
-        let success = result.isError != true
-        TelemetryClient.shared.recordMCPToolCompleted(
-            toolName: params.name,
-            success: success,
-            errorClass: success ? .none : (params.name == "check_for_update" ? .unavailable : .operationError),
-            elapsed: Date().timeIntervalSince(startedAt)
-        )
         return result
     }
 
@@ -628,12 +619,6 @@ final class LumeMCPServer {
 
     private func handleCheckForUpdate(_ args: [String: Value]?) async throws -> CallTool.Result {
         let state = await LumeVersionCheck.checkUpdateState(noCache: false)
-        TelemetryClient.shared.recordUpdateChecked(
-            source: "mcp",
-            outcome: state.error != nil ? "unavailable" : (state.updateAvailable ? "available" : "up_to_date"),
-            targetVersion: state.latestVersion,
-            cacheHit: state.cacheHit
-        )
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -643,7 +628,9 @@ final class LumeMCPServer {
         if let error = state.error {
             summary = "Update check failed: \(error)"
         } else if state.updateAvailable, let latest = state.latestVersion {
-            summary = "Update available: Lume \(latest) (you have \(state.currentVersion))."
+            summary =
+                "Update available: Lume \(latest) (you have \(state.currentVersion))."
+                + " Update by pulling the repository and rebuilding: \(LumeVersionCheck.rebuildInstruction)"
         } else {
             summary = "Up to date (Lume \(state.currentVersion))."
         }
@@ -725,8 +712,7 @@ final class LumeMCPServer {
                     sharedDirectories: sharedDirectories,
                     storage: storage,
                     clipboard: clipboard,
-                    vncPolicy: vncPolicy,
-                    telemetryTransport: .mcpStdio
+                    vncPolicy: vncPolicy
                 )
             } catch {
                 Logger.error(
@@ -904,8 +890,7 @@ final class LumeMCPServer {
             display: "1920x1080",
             ipsw: ipsw,
             storage: storage,
-            unattendedConfig: unattendedConfig,
-            telemetryTransport: .mcpStdio
+            unattendedConfig: unattendedConfig
         )
 
         var response = "VM '\(name)' creation started. Status: provisioning."

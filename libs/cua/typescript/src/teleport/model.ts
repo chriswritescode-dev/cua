@@ -159,7 +159,7 @@ export interface PickerState {
   report: RunReport | null
   error: string | null
   /** Set when the error is the Keyvault's "needs the Cua app" refusal:
-   * show this prompt (install button) instead of the raw error. */
+   * show this prompt (a button to the repository) instead of the raw error. */
   installPrompt: InstallCuaPrompt | null
   /** Where "back" from an error goes. */
   errorBack: Step

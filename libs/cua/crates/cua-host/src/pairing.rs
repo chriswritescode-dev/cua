@@ -97,21 +97,30 @@ pub fn add_machine_url(code: &str, relay: &str) -> String {
     }
 }
 
-/// The one-line command that installs `cua` and adds the machine:
-/// `os` is `windows` for PowerShell, anything else for sh.
+/// The one-line command that builds `cua` from the repository and adds the
+/// machine: `os` is `windows` for PowerShell, anything else for sh.
 pub fn install_command(code: &str, relay: &str, os: &str) -> String {
     let code = display_pairing_code(code);
     let relay = relay.trim().trim_end_matches('/');
     let custom = !relay.is_empty() && relay != DEFAULT_RELAY_URL;
     if os.eq_ignore_ascii_case("windows") {
-        let mut cmd =
-            format!("& ([scriptblock]::Create((irm https://cua.ai/install.ps1))) -Pair {code}");
+        let mut cmd = format!(
+            "git clone https://github.com/trycua/cua.git $HOME\\.cua\\cua 2>$null; \
+             git -C $HOME\\.cua\\cua pull --ff-only; \
+             cargo build --release -p cua-cli --manifest-path $HOME\\.cua\\cua\\libs\\cua\\Cargo.toml; \
+             & $HOME\\.cua\\cua\\libs\\cua\\target\\release\\cua.exe host setup --pair {code}"
+        );
         if custom {
-            cmd.push_str(&format!(" -Relay {relay}"));
+            cmd.push_str(&format!(" --relay {relay}"));
         }
         cmd
     } else {
-        let mut cmd = format!("curl -fsSL https://cua.ai/install.sh | sh -s -- --pair {code}");
+        let mut cmd = format!(
+            "git clone https://github.com/trycua/cua.git ~/.cua/cua 2>/dev/null; \
+             git -C ~/.cua/cua pull --ff-only; \
+             cargo build --release -p cua-cli --manifest-path ~/.cua/cua/libs/cua/Cargo.toml && \
+             ~/.cua/cua/libs/cua/target/release/cua host setup --pair {code}"
+        );
         if custom {
             cmd.push_str(&format!(" --relay {relay}"));
         }
@@ -389,11 +398,11 @@ mod tests {
         );
         assert_eq!(
             install_command("K7QM4XPB2RHD", DEFAULT_RELAY_URL, "linux"),
-            "curl -fsSL https://cua.ai/install.sh | sh -s -- --pair K7QM-4XPB-2RHD"
+            "git clone https://github.com/trycua/cua.git ~/.cua/cua 2>/dev/null; git -C ~/.cua/cua pull --ff-only; cargo build --release -p cua-cli --manifest-path ~/.cua/cua/libs/cua/Cargo.toml && ~/.cua/cua/libs/cua/target/release/cua host setup --pair K7QM-4XPB-2RHD"
         );
         assert_eq!(
             install_command("K7QM4XPB2RHD", "https://r.example", "windows"),
-            "& ([scriptblock]::Create((irm https://cua.ai/install.ps1))) -Pair K7QM-4XPB-2RHD -Relay https://r.example"
+            "git clone https://github.com/trycua/cua.git $HOME\\.cua\\cua 2>$null; git -C $HOME\\.cua\\cua pull --ff-only; cargo build --release -p cua-cli --manifest-path $HOME\\.cua\\cua\\libs\\cua\\Cargo.toml; & $HOME\\.cua\\cua\\libs\\cua\\target\\release\\cua.exe host setup --pair K7QM-4XPB-2RHD --relay https://r.example"
         );
     }
 

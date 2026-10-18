@@ -68,7 +68,6 @@ export function RelayAllowanceNotice() {
           variant="outline"
           data-relay-upgrade=""
           onClick={() => {
-            gate.click();
             void openExternal(upgradeUrl).catch(() => {});
           }}
         >

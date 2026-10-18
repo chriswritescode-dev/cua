@@ -29,8 +29,6 @@ import type { DriveMountInput } from "../model/persistent";
 import type { SpaceOs } from "../model/types";
 import { answerOrNull, createDriveBridge, type DriveBridge } from "../native/drive";
 import type { DefaultLocation, SignInStart } from "../native/fleet";
-import { storageSignals } from "../model/telemetry";
-import { telemetryBridge, type TelemetryBridge, type TelemetryView } from "../native/telemetry";
 import { createLoginItemBridge, type LoginItemBridge } from "../native/loginItem";
 import { writeLaunchChoice, type LoginItemStatus } from "../model/loginItem";
 import type { Location } from "../model/types";
@@ -108,8 +106,6 @@ interface SettingsPanelProps {
   /** Cua Cloud billing (the Billing row): the account's status. "Manage
    * billing" opens the website's billing page with `onOpenExternal`. */
   billingStatus?: () => Promise<import("../native/fleet").BillingStatus | null>;
-  /** Usage telemetry (the shell's; a fallback outside it). */
-  telemetry?: TelemetryBridge;
   /** The Cua Volume's storage, mount and cache (the daemon's `drive_*` tools). */
   drive?: DriveBridge;
   /** This machine's system (the platform the app runs on). */
@@ -142,7 +138,6 @@ export function SettingsPanel({
   onDefaultLocation,
   onShowWelcome,
   billingStatus: readBilling,
-  telemetry: telemetryProp,
   drive: driveProp,
   os,
   loginItem: loginItemProp,
@@ -150,7 +145,6 @@ export function SettingsPanel({
   onClose,
 }: SettingsPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
-  const telemetry = useMemo(() => telemetryProp ?? telemetryBridge(), [telemetryProp]);
   const experiments = useExperiments();
   const drive = useMemo(() => driveProp ?? createDriveBridge(), [driveProp]);
   const storage = useStorage(drive, os ?? hostOs());
@@ -167,35 +161,6 @@ export function SettingsPanel({
         .finally(() => setLocationBusy(false));
     },
     [onDefaultLocation, locationBusy, defaultLocation?.value],
-  );
-
-  // Privacy: the usage-telemetry switch (the same setting as `cua telemetry
-  // off`). Opening Settings also counts as seeing the first-run notice.
-  const [telemetryView, setTelemetryView] = useState<TelemetryView | null>(null);
-  const [telemetryError, setTelemetryError] = useState<string | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    void telemetry
-      .acknowledgeNotice()
-      .then((v) => {
-        if (!cancelled) setTelemetryView(v);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) setTelemetryError(String(e));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [telemetry]);
-  const setTelemetry = useCallback(
-    (on: boolean) => {
-      setTelemetryError(null);
-      telemetry
-        .setEnabled(on)
-        .then(setTelemetryView)
-        .catch((e: unknown) => setTelemetryError(e instanceof Error ? e.message : String(e)));
-    },
-    [telemetry],
   );
 
   // General: launch at login. The toggle shows what the system holds, read
@@ -386,13 +351,6 @@ export function SettingsPanel({
     menuBar,
     defaultLocation: defaultLocation?.value === "cloud" ? "cloud" : "local",
     locationLockedBy: defaultLocation?.source === "env" ? (defaultLocation.env ?? "CUA_DEFAULT_ON") : null,
-    telemetry: telemetryView
-      ? {
-          enabled: telemetryView.enabled,
-          lockedBy:
-            telemetryView.sourceKind !== "config" && telemetryView.sourceKind !== "default" ? telemetryView.source : null,
-        }
-      : null,
     agents: agentRows,
     agentsBusy,
     agentsPending: agentPending,
@@ -436,10 +394,9 @@ export function SettingsPanel({
   };
 
   const choose = (row: SettingsRow, id: string) => {
-    if (row.id.startsWith("experiment:")) chooseExperimentRow(row.id, id, telemetry);
+    if (row.id.startsWith("experiment:")) chooseExperimentRow(row.id, id);
     else if (row.id === "notch") onMenuBarMode(id === "hide");
     else if (row.id === "default-location") chooseLocation(id as Location);
-    else if (row.id === "telemetry") setTelemetry(id === "on");
     else if (row.id === "launch-at-login") setLaunchAtLogin(id === "on");
   };
 
@@ -452,7 +409,7 @@ export function SettingsPanel({
   ];
 
   const sectionError = (id: string) =>
-    id === "general" ? locationError : id === "privacy" ? telemetryError : id === "agents" ? agentsError : null;
+    id === "general" ? locationError : id === "agents" ? agentsError : null;
 
   return (
     <div
@@ -735,9 +692,6 @@ function useStorage(drive: DriveBridge, os: SpaceOs) {
     async (request: StorageRequest) => {
       // Through the ref, so a reload right after sees this answer.
       const settle = (action: StorageAction) => {
-        // A storage choice saved, the Finder volume on or off, Open in
-        // Finder: the usage events the app core derives.
-        telemetryBridge().recordSignals(storageSignals(inputRef.current, stateRef.current, action));
         const n = reduceStorage(stateRef.current, action);
         stateRef.current = n;
         setState(n);

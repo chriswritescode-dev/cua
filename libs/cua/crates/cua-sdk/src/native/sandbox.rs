@@ -1055,19 +1055,7 @@ impl Sandboxes {
         options: SandboxCreateOptions,
         progress: Option<cua_sandbox_core::progress::Sink>,
     ) -> Result<Arc<Sandbox>> {
-        let facts = super::telemetry::CreateFacts::of(&options);
-        let mut options = options;
-        // A local sandbox's cua-spacesd reports aggregate health counts only
-        // when the host's telemetry is on (and the caller did not decide).
-        if facts.is_local() && cua_telemetry::global().is_enabled() {
-            options
-                .env
-                .entry("CUA_SPACESD_TELEMETRY".into())
-                .or_insert_with(|| "1".into());
-        }
-        let r = self.create_recorded(options, progress).await;
-        facts.record(&r);
-        r
+        self.create_recorded(options, progress).await
     }
 
     async fn create_recorded(
@@ -1123,7 +1111,6 @@ impl Sandboxes {
     /// `direct:<host:port>`, a legacy id) or by a name that is unique across
     /// locations (else `AmbiguousSandbox`, listing the qualified refs).
     pub async fn connect(&self, name: String) -> Result<Arc<Sandbox>> {
-        let started = std::time::Instant::now();
         let backend = self.backend.clone();
         let rec = run(async move {
             Ok(match &backend {
@@ -1132,7 +1119,6 @@ impl Sandboxes {
             })
         })
         .await;
-        super::telemetry::api("sandbox.connect", started, &rec);
         Ok(self.handle(rec?.into()))
     }
 
@@ -1209,14 +1195,7 @@ impl Sandboxes {
     /// Deletes a sandbox by ref or unique name.
     pub async fn delete(&self, name: String) -> Result<()> {
         let backend = self.backend.clone();
-        // The location word of a ref (`cloud:box`); a bare name is `other`.
-        let location = name
-            .split_once(':')
-            .map(|(l, _)| l.to_string())
-            .unwrap_or_default();
-        let r = run(async move { delete(&backend, &name).await }).await;
-        super::telemetry::sandbox_deleted(&location, &r);
-        r
+        run(async move { delete(&backend, &name).await }).await
     }
 }
 
@@ -1346,14 +1325,13 @@ impl Sandbox {
     pub async fn spacesd(&self, probe_timeout_ms: Option<u32>) -> Result<Arc<SpacesdClient>> {
         let backend = self.backend.clone();
         let name = self.info.id.clone();
-        let location = self.info.location.clone();
         let timeout = probe_timeout_ms.map(super::millis);
         run(async move {
             match &backend {
                 Backend::Embedded(rt) => {
                     let a = rt.env(&name, timeout).await?;
                     let fleet = !a.ws_headers.is_empty();
-                    let client = SpacesdClient::new(a.client, a.ws_headers).at(&location);
+                    let client = SpacesdClient::new(a.client, a.ws_headers);
                     if !fleet {
                         return Ok(Arc::new(client));
                     }
@@ -1374,13 +1352,10 @@ impl Sandbox {
                         .probe(false);
                     o.token = Some(ep.token.clone());
                     let client = cua_spacesd_client::SpacesdClient::connect(o).await?;
-                    Ok(Arc::new(
-                        SpacesdClient::new(
-                            client,
-                            vec![("authorization".into(), format!("Bearer {}", ep.token))],
-                        )
-                        .at(&location),
-                    ))
+                    Ok(Arc::new(SpacesdClient::new(
+                        client,
+                        vec![("authorization".into(), format!("Bearer {}", ep.token))],
+                    )))
                 }
             }
         })
@@ -1394,7 +1369,6 @@ impl Sandbox {
     /// cua-spacesd in the sandbox.
     #[uniffi::method(default(options = None))]
     pub async fn viewer_url(&self, options: Option<ViewerOptions>) -> Result<ViewerLink> {
-        let started = std::time::Instant::now();
         let r: Result<ViewerLink> = async move {
             let o = options.unwrap_or_default();
             let ttl = o.ttl_seconds.unwrap_or(3600);
@@ -1441,7 +1415,6 @@ impl Sandbox {
             .await
         }
         .await;
-        super::telemetry::api("sandbox.viewer_url", started, &r);
         r
     }
 
@@ -1450,7 +1423,7 @@ impl Sandbox {
     /// results; runs outlive this handle.
     pub async fn agents(&self) -> Result<Arc<super::Agents>> {
         let guest = self.spacesd(None).await?;
-        super::Agents::over(guest.client.clone(), &self.info.location).await
+        super::Agents::over(guest.client.clone()).await
     }
 
     /// A named service (for example `"server"` or `"env"`).
@@ -1540,7 +1513,6 @@ impl Sandbox {
     /// without cua-spacesd, a loopback HTTP/WebSocket proxy through the
     /// Fleet gateway. Either way `url()` is a loopback URL.
     pub async fn forward(&self, port: u16) -> Result<Arc<PortForward>> {
-        let started = std::time::Instant::now();
         let r: Result<Arc<PortForward>> = async move {
             let backend = self.backend.clone();
             let name = self.info.id.clone();
@@ -1561,7 +1533,6 @@ impl Sandbox {
             }))
         }
         .await;
-        super::telemetry::api("sandbox.forward", started, &r);
         r
     }
 
@@ -1632,9 +1603,7 @@ impl Sandbox {
     pub async fn delete(&self) -> Result<()> {
         let backend = self.backend.clone();
         let name = self.info.id.clone();
-        let r = run(async move { delete(&backend, &name).await }).await;
-        super::telemetry::sandbox_deleted(&self.info.location, &r);
-        r
+        run(async move { delete(&backend, &name).await }).await
     }
 
     /// Opens a media session and returns a loopback WebSocket bridge for a

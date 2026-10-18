@@ -61,7 +61,6 @@ async with Sandbox.ephemeral(Image.linux()) as sb:
 | Attribute | Type | Description |
 | --- | --- | --- |
 | `name` | `Optional[str]` | The sandbox name (`None` until a cloud sandbox is bound). |
-| `telemetry_enabled` | `bool` | Whether this sandbox records anonymous usage events. |
 | `screen` | `Screen` | Screenshots and screen size (cua-spacesd). |
 | `mouse` | `Mouse` | Pointer input in screen pixels (cua-spacesd). |
 | `keyboard` | `Keyboard` | Typing and key presses (cua-spacesd). |
@@ -340,7 +339,6 @@ async def create(
     time_to_start: Optional[float] = None,
     request_timeout: Optional[float] = None,
     server_port: Optional[int] = None,
-    telemetry_enabled: bool = True,
     warm: Optional[bool] = None,
     max_pool_size: Optional[int] = None,
     claim_ttl: 'float | timedelta | None' = None,
@@ -483,7 +481,6 @@ def connect(
     memory_mb: Optional[int] = None,
     disk_gb: Optional[int] = None,
     region: str = 'us-east-1',
-    telemetry_enabled: bool = True,
 ) -> '_ConnectResult'
 ```
 
@@ -560,7 +557,6 @@ async def ephemeral(
     time_to_start: Optional[float] = None,
     request_timeout: Optional[float] = None,
     server_port: Optional[int] = None,
-    telemetry_enabled: bool = True,
     warm: Optional[bool] = None,
     max_pool_size: Optional[int] = None,
     claim_ttl: 'float | timedelta | None' = None,

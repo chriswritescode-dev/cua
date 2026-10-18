@@ -8,23 +8,22 @@
 //! The host app keeps the [`ChecklistState`] in one place
 //! (`checklist.json` beside its settings; the web UI asks the host for it
 //! with `checklist.get` and `checklist.send`), sends a [`ChecklistAction`]
-//! for each thing that happens and records the usage events the
-//! [`ChecklistTransition`] carries. [`observe_from`] turns what the app
+//! for each thing that happens and saves the state
+//! [`reduce`] answers. [`observe_from`] turns what the app
 //! knows (its machines, its Spaces, its agents) into the
 //! [`ChecklistAction::Observe`] that ticks steps off, the same for every
 //! UI; Teleport and Share tick themselves off where they finish.
 //! [`ChecklistAction::Merge`] takes in progress kept elsewhere before (the
-//! web UI's own storage) without recording its events again.
+//! web UI's own storage).
 
 use serde::{Deserialize, Serialize};
 
 use crate::machines::MachinePageRow;
 use crate::model::{Space, SpaceStatus};
 use crate::spaces::{creating, is_machine_desktop};
-use crate::telemetry::{self, TelemetrySignal};
 
 /// One step, in the order the checklist lists them
-/// ([`telemetry::CHECKLIST_STEPS`]).
+/// ([`STEPS`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ChecklistStep {
@@ -50,7 +49,7 @@ pub const STEPS: [ChecklistStep; 5] = [
 ];
 
 impl ChecklistStep {
-    /// The step's word (`add_machine`), as stored and as its usage event says.
+    /// The step's word (`add_machine`), as stored.
     pub fn word(self) -> &'static str {
         match self {
             ChecklistStep::AddMachine => "add_machine",
@@ -102,7 +101,7 @@ pub struct ChecklistState {
     /// Closed with ×; Getting Started opens it again.
     #[serde(default)]
     pub dismissed: bool,
-    /// It was on screen once (`checklist_shown` was recorded).
+    /// It was on screen once.
     #[serde(default)]
     pub shown: bool,
 }
@@ -135,10 +134,8 @@ pub enum ChecklistAction {
         /// An agent exists or has run.
         agent_ran: bool,
     },
-    /// Progress kept elsewhere before (the web UI's own storage, another
-    /// copy of the file): its steps are ticked, and it stays closed or
-    /// shown if it was. Its events were recorded where it was ticked, so
-    /// none are recorded again.
+    /// Another copy of the file: its steps are ticked, and it stays closed or
+    /// shown if it was.
     Merge {
         /// The other copy.
         state: ChecklistState,
@@ -187,14 +184,12 @@ pub fn observe_from(seen: &ChecklistSeen) -> ChecklistAction {
     }
 }
 
-/// The state after an action and the usage events it means.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// The state after an action.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChecklistTransition {
     /// The new state (save it when it changed).
     pub state: ChecklistState,
-    /// `cua_onboarding_step` events to record (`checklist_<event>`).
-    pub signals: Vec<TelemetrySignal>,
 }
 
 /// One row of the checklist.
@@ -242,15 +237,8 @@ pub fn complete(state: &ChecklistState) -> bool {
     STEPS.iter().all(|s| is_done(state, *s))
 }
 
-fn signals(events: &[&str]) -> Vec<TelemetrySignal> {
-    events
-        .iter()
-        .flat_map(|e| telemetry::checklist(e))
-        .collect()
-}
-
 /// Ticks `steps` off (each once, kept in checklist order) and answers the
-/// events: each new step, then `completed` with the last one.
+/// state after them.
 fn tick(state: &ChecklistState, steps: &[ChecklistStep]) -> ChecklistTransition {
     let new: Vec<ChecklistStep> = STEPS
         .iter()
@@ -260,7 +248,6 @@ fn tick(state: &ChecklistState, steps: &[ChecklistStep]) -> ChecklistTransition 
     if new.is_empty() {
         return ChecklistTransition {
             state: state.clone(),
-            signals: vec![],
         };
     }
     let mut next = state.clone();
@@ -269,21 +256,13 @@ fn tick(state: &ChecklistState, steps: &[ChecklistStep]) -> ChecklistTransition 
         .copied()
         .filter(|s| is_done(state, *s) || new.contains(s))
         .collect();
-    let mut events: Vec<&str> = new.iter().map(|s| s.word()).collect();
-    if complete(&next) {
-        events.push("completed");
-    }
-    ChecklistTransition {
-        signals: signals(&events),
-        state: next,
-    }
+    ChecklistTransition { state: next }
 }
 
-/// The checklist after `action`, and the usage events it means.
+/// The checklist after `action`.
 pub fn reduce(state: &ChecklistState, action: &ChecklistAction) -> ChecklistTransition {
     let same = || ChecklistTransition {
         state: state.clone(),
-        signals: vec![],
     };
     match action {
         ChecklistAction::Done { step } => tick(state, &[*step]),
@@ -312,14 +291,12 @@ pub fn reduce(state: &ChecklistState, action: &ChecklistAction) -> ChecklistTran
                 dismissed: state.dismissed || other.dismissed,
                 shown: state.shown || other.shown,
             },
-            signals: vec![],
         },
         ChecklistAction::Shown if !state.shown => ChecklistTransition {
             state: ChecklistState {
                 shown: true,
                 ..state.clone()
             },
-            signals: signals(&["shown"]),
         },
         ChecklistAction::Dismiss | ChecklistAction::Reopen => {
             let dismissed = matches!(action, ChecklistAction::Dismiss);
@@ -331,7 +308,6 @@ pub fn reduce(state: &ChecklistState, action: &ChecklistAction) -> ChecklistTran
                     dismissed,
                     ..state.clone()
                 },
-                signals: signals(&[if dismissed { "dismissed" } else { "reopened" }]),
             }
         }
         ChecklistAction::Shown => same(),
@@ -379,20 +355,19 @@ pub fn view(state: &ChecklistState) -> ChecklistView {
 mod tests {
     use super::*;
 
-    fn events(t: &ChecklistTransition) -> Vec<String> {
-        t.signals
-            .iter()
-            .map(|s| match s {
-                TelemetrySignal::Step { step, ok: true } => step.clone(),
-                other => panic!("unexpected {other:?}"),
-            })
-            .collect()
-    }
-
     #[test]
-    fn steps_match_the_usage_vocabulary() {
+    fn steps_are_their_stored_words() {
         let words: Vec<&str> = STEPS.iter().map(|s| s.word()).collect();
-        assert_eq!(words, telemetry::CHECKLIST_STEPS);
+        assert_eq!(
+            words,
+            [
+                "add_machine",
+                "create_space",
+                "teleport",
+                "share",
+                "run_agent"
+            ]
+        );
         for s in STEPS {
             assert_eq!(serde_json::to_value(s).unwrap(), s.word());
         }
@@ -401,25 +376,11 @@ mod tests {
     #[test]
     fn each_step_counts_once_and_the_last_completes_it() {
         let mut state = ChecklistState::default();
-        let mut seen = vec![];
         for step in STEPS.iter().rev() {
             for _ in 0..2 {
-                let t = reduce(&state, &ChecklistAction::Done { step: *step });
-                seen.extend(events(&t));
-                state = t.state;
+                state = reduce(&state, &ChecklistAction::Done { step: *step }).state;
             }
         }
-        assert_eq!(
-            seen,
-            [
-                "checklist_run_agent",
-                "checklist_share",
-                "checklist_teleport",
-                "checklist_create_space",
-                "checklist_add_machine",
-                "checklist_completed",
-            ]
-        );
         assert_eq!(state.done, STEPS, "kept in checklist order");
         let v = view(&state);
         assert!(v.complete);
@@ -438,8 +399,8 @@ mod tests {
             },
         );
         assert_eq!(
-            events(&t),
-            ["checklist_add_machine", "checklist_create_space"]
+            t.state.done,
+            [ChecklistStep::AddMachine, ChecklistStep::CreateSpace]
         );
         let again = reduce(
             &t.state,
@@ -449,7 +410,6 @@ mod tests {
                 agent_ran: false,
             },
         );
-        assert!(again.signals.is_empty());
         assert_eq!(again.state, t.state, "nothing is unticked");
         assert_eq!(view(&again.state).progress, "2 of 5");
     }
@@ -458,29 +418,26 @@ mod tests {
     fn shown_once_and_closing_and_reopening() {
         let s = ChecklistState::default();
         let shown = reduce(&s, &ChecklistAction::Shown);
-        assert_eq!(events(&shown), ["checklist_shown"]);
-        assert!(
-            reduce(&shown.state, &ChecklistAction::Shown)
-                .signals
-                .is_empty()
+        assert!(shown.state.shown);
+        assert_eq!(
+            reduce(&shown.state, &ChecklistAction::Shown).state,
+            shown.state
         );
 
         let closed = reduce(&shown.state, &ChecklistAction::Dismiss);
-        assert_eq!(events(&closed), ["checklist_dismissed"]);
+        assert!(closed.state.dismissed);
         assert!(!view(&closed.state).visible);
-        assert!(
-            reduce(&closed.state, &ChecklistAction::Dismiss)
-                .signals
-                .is_empty()
+        assert_eq!(
+            reduce(&closed.state, &ChecklistAction::Dismiss).state,
+            closed.state
         );
 
         let open = reduce(&closed.state, &ChecklistAction::Reopen);
-        assert_eq!(events(&open), ["checklist_reopened"]);
+        assert!(!open.state.dismissed);
         assert!(view(&open.state).visible);
-        assert!(
-            reduce(&open.state, &ChecklistAction::Reopen)
-                .signals
-                .is_empty()
+        assert_eq!(
+            reduce(&open.state, &ChecklistAction::Reopen).state,
+            open.state
         );
     }
 
@@ -511,7 +468,7 @@ mod tests {
     }
 
     #[test]
-    fn merging_another_copy_ticks_its_steps_without_events() {
+    fn merging_another_copy_ticks_its_steps() {
         let here = ChecklistState {
             done: vec![ChecklistStep::CreateSpace, ChecklistStep::AddMachine],
             ..Default::default()
@@ -522,7 +479,6 @@ mod tests {
             ..Default::default()
         };
         let t = reduce(&here, &ChecklistAction::Merge { state: there });
-        assert!(t.signals.is_empty(), "recorded where they were ticked");
         assert_eq!(
             t.state.done,
             [

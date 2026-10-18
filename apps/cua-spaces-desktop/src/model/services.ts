@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: FSL-1.1-MIT
 // Copyright (c) 2026 Cua AI, Inc.
 
-// The account and the usage-telemetry switch (the SwiftUI app's
-// AppServices.swift), behind small interfaces so tests never touch the real
-// session or telemetry config. Words and rows are the core's.
-import type { Native } from "../native/load";
-import type { AppHostAccount, AppTelemetryInput, AppTelemetrySignal, AuthIdentity, AuthLike, TelemetryStatus } from "../native/generated/index";
+// The account (the SwiftUI app's AppServices.swift), behind small
+// interfaces so tests never touch the real session. Words and rows are the
+// core's.
+import type { AppHostAccount, AuthIdentity, AuthLike } from "../native/generated/index";
 
 /** A started sign-in: the code to confirm (device flow), then the identity. */
 export interface SignInAttempt {
@@ -102,80 +101,4 @@ export function hostAccount(account: AccountRunning): AppHostAccount | null {
   const p = account.profile();
   const name = p?.name?.trim() ? p.name : undefined;
   return { id: p?.subject, email: p?.email, display: name ?? who };
-}
-
-/** The usage-telemetry switch, and where the app's usage events go. */
-export interface TelemetryRunning {
-  status(): AppTelemetryInput;
-  setEnabled(on: boolean): AppTelemetryInput;
-  /** Records signals the app core derived (`appTelemetry*`). */
-  record(signals: AppTelemetrySignal[]): void;
-  /** The first-run notice was on screen and the person moved on (left
-   * Welcome, finished the first run, or used the switch beside the note):
-   * from here usage events may be sent (the SwiftUI app's
-   * `appTelemetryWelcomeLeft`). */
-  acknowledgeNotice(): void;
-}
-
-/** Signals held while the first-run notice is still on screen. */
-const MAX_HELD = 200;
-
-/** The SDK's telemetry setting (`$CUA_HOME/config.toml`, the same switch as
- * `cua telemetry off`); the environment wins and locks it.
- *
- * The SDK sends nothing from a machine before the app showed its first-run
- * notice (`acknowledgeNotice`). Until then signals wait here, in order, so
- * the first session's run start, sign-in and first Space still count once
- * Welcome is left; turning usage data off drops them. */
-export class LiveTelemetry implements TelemetryRunning {
-  private held: AppTelemetrySignal[] = [];
-  private noticeShown = false;
-
-  constructor(private readonly native: Native) {}
-
-  static input(s: TelemetryStatus): AppTelemetryInput {
-    const locked = s.sourceKind !== "config" && s.sourceKind !== "default";
-    return { enabled: s.enabled, lockedBy: locked ? s.source : undefined, noticeShown: s.noticeShown };
-  }
-
-  status(): AppTelemetryInput {
-    return LiveTelemetry.input(this.native.telemetryStatus());
-  }
-
-  setEnabled(on: boolean): AppTelemetryInput {
-    if (!on) this.held = [];
-    return LiveTelemetry.input(this.native.telemetrySetEnabled(on));
-  }
-
-  record(signals: AppTelemetrySignal[]): void {
-    if (!signals.length) return;
-    if (this.shown()) {
-      this.native.appTelemetryRecord(signals);
-      return;
-    }
-    this.held.push(...signals);
-    if (this.held.length > MAX_HELD) this.held.splice(0, this.held.length - MAX_HELD);
-  }
-
-  acknowledgeNotice(): void {
-    const s = this.native.telemetryStatus();
-    if (!s.noticeShown) {
-      try {
-        // Keeps the switch as it is, writes the notice marker, then records
-        // the `app_launched` that waited for it.
-        this.native.appTelemetryWelcomeLeft(s.enabled);
-      } catch (error) {
-        console.warn(`[cua-spaces] usage notice not recorded: ${error instanceof Error ? error.message : String(error)}`);
-        return;
-      }
-    }
-    this.noticeShown = true;
-    const held = this.held.splice(0);
-    if (held.length && s.enabled) this.native.appTelemetryRecord(held);
-  }
-
-  private shown(): boolean {
-    if (!this.noticeShown) this.noticeShown = this.native.telemetryStatus().noticeShown;
-    return this.noticeShown;
-  }
 }

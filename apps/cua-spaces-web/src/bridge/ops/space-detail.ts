@@ -324,7 +324,6 @@ export const SPACE_DETAIL_COVERAGE = {
 
 /** Arguments that take each W5 operation down its usual path in the demo host (coverage tests). */
 export const DETAIL_ARGS = {
-  "telemetry.track": { signals: [{ type: "step" as const, step: "app_launched", ok: true }] },
   "spaces.usage": { spaceId: "local:design-review" },
   "spaces.windows": { spaceId: "local:design-review" },
   "stream.pip": { spaceId: "local:design-review", command: { type: "open" as const, row: "desktop" } },

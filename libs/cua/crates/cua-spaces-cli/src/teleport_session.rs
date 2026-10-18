@@ -257,7 +257,7 @@ mod tests {
         ] {
             let mapped = connect_error(e);
             assert_eq!(mapped.kind(), "requires_cua_app");
-            assert!(mapped.message().contains("https://cua.ai/download"));
+            assert!(mapped.message().contains("https://github.com/trycua/cua"));
         }
         match kv_error(cua_keyvault::Error::Denied("the user declined".into())) {
             BrokerError::Keyvault { code, .. } => assert_eq!(code, "denied"),

@@ -128,7 +128,6 @@ async def run_live_test(args: argparse.Namespace) -> None:
             image,
             local=True,
             name=name,
-            telemetry_enabled=False,
         ) as sandbox:
             try:
                 architecture = await sandbox.shell.run("uname -m")

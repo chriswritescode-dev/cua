@@ -65,7 +65,6 @@ export function BridgeProvider({ children, mode, adapter, core, storeOptions }: 
       if (!live) return;
       store = new BridgeStore(data, c, storeOptions);
       uninstallParity = installParityHandle(store);
-      store.launched();
       setValue({ mode: data.mode, core: c, adapter: data, store, ready: d.promise });
       d.resolve(store);
     });

@@ -49,7 +49,6 @@ fn embedded_mcp_does_not_fall_back_without_daemon() {
     let (socket, _directory) = missing_socket();
     let output = Command::new(env!("CARGO_BIN_EXE_cua-driver"))
         .args(["mcp", "--embedded", "--socket", &socket])
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .output()
         .expect("run cua-driver mcp");
 
@@ -66,7 +65,6 @@ fn embedded_mcp_does_not_fall_back_without_daemon() {
 fn default_mcp_owns_a_runtime_without_a_daemon() {
     let mut child = Command::new(env!("CARGO_BIN_EXE_cua-driver"))
         .arg("mcp")
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -107,7 +105,6 @@ fn direct_mcp_rejects_admin_disabled_unrestricted_mode_before_requests() {
         .env("CUA_DRIVER_PERMISSION_MODE", "unrestricted")
         .env("CUA_DRIVER_DANGEROUSLY_BYPASS_APPROVALS", "1")
         .env("CUA_DRIVER_DISABLE_UNRESTRICTED", "1")
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .stdin(std::process::Stdio::null())
         .output()
         .expect("run direct MCP with managed lock");
@@ -127,7 +124,6 @@ fn direct_mcp_rejects_admin_disabled_unrestricted_mode_before_requests() {
 fn embedded_mcp_without_private_endpoint_fails_closed() {
     let output = Command::new(env!("CARGO_BIN_EXE_cua-driver"))
         .args(["mcp", "--embedded"])
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .output()
         .expect("run embedded MCP without endpoint");
     assert!(!output.status.success());

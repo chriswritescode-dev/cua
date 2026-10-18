@@ -1633,7 +1633,7 @@ pub const DEFAULT_PATH: &str = "/mcp";
 
 // mod settings
 /// Every setting, in display order.
-pub const KEYS: [Key; 9] = _;
+pub const KEYS: [Key; 8] = _;
 
 // mod state
 /// State-file key: why a local sandbox ...
@@ -1665,4 +1665,4 @@ pub type RouteFuture = Pin<Box<dyn Future<Output = RouteDecision> + Send>>;
 
 ## Re-exports
 
-`sandbox::BuildFile`, `sandbox::BuildSpec`, `tokio_util::sync::CancellationToken`, `cua_vmm::cleanup`, `cua_fleet`, `cua_spacesd_client`, `cua_vmm::gpu`, `sandbox::ImageLayer`, `rmcp`, `cua_vmm::progress`, `sandbox::RegistryCredentials`, `cua_vmm::error::failure_kind`, `sandbox::Sidecar`.
+`sandbox::BuildFile`, `sandbox::BuildSpec`, `tokio_util::sync::CancellationToken`, `cua_vmm::cleanup`, `cua_fleet`, `cua_spacesd_client`, `cua_vmm::gpu`, `sandbox::ImageLayer`, `rmcp`, `cua_vmm::progress`, `sandbox::RegistryCredentials`, `sandbox::Sidecar`.

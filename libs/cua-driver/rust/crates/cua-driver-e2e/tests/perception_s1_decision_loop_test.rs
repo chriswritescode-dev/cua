@@ -183,8 +183,6 @@ fn run_driver_cli(home: &Path, args: &[&str]) -> std::process::Output {
     Command::new(driver_binary())
         .args(args)
         .env("CUA_DRIVER_RS_HOME", home)
-        .env("CUA_DRIVER_CLI_TELEMETRY_CHILD", "1")
-        .env("CUA_DRIVER_RS_TELEMETRY_ENABLED", "false")
         .stdin(Stdio::null())
         .output()
         .expect("run cua-driver")

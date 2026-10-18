@@ -18,23 +18,30 @@ performed through Cua Driver. It does not watch unrelated desktop activity.
 
 ## Install or switch to the nightly channel
 
-For a fresh macOS or Linux installation, run:
+Preview 0 ships in nightly builds. Build from a repository checkout:
+
+macOS or Linux:
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://cua.ai/driver/install.sh)" -- --channel nightly
+git clone https://github.com/trycua/cua
+cd cua
+libs/cua-driver/scripts/install-local.sh
 ```
 
-For a fresh Windows installation, run in PowerShell:
+Windows PowerShell:
 
 ```powershell
-& ([scriptblock]::Create((irm https://cua.ai/driver/install.ps1))) -Channel nightly
+git clone https://github.com/trycua/cua
+cd cua
+libs\cua-driver\scripts\install-local.ps1
 ```
 
-To switch an existing installation, run:
+To follow the nightly release stream, select it and rebuild:
 
 ```bash
 cua-driver channel set nightly
-cua-driver update --apply
+git pull
+libs/cua-driver/scripts/install-local.sh
 ```
 
 Confirm the selected and installed channels:
@@ -162,7 +169,8 @@ Disable capture before switching binaries:
 ```bash
 cua-driver history disable
 cua-driver channel set stable
-cua-driver update --apply
+git pull
+libs/cua-driver/scripts/install-local.sh
 ```
 
 Switching channels does not delete encrypted history. A stable build that does

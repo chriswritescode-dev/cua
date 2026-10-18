@@ -75,7 +75,7 @@ Run the HTTP API and MCP server, read its logs, and dump the CLI and API definit
 
 ### Configuration
 
-Storage locations, the image cache and telemetry settings. [Reference](/lume/reference/cli/config).
+Storage locations and the image cache. [Reference](/lume/reference/cli/config).
 
 | Command | Description |
 | --- | --- |
@@ -91,11 +91,6 @@ Storage locations, the image cache and telemetry settings. [Reference](/lume/ref
 | <span id="lume-config-cache-enable"></span>[`lume config cache enable`](/lume/reference/cli/config#lume-config-cache-enable) | Enable image caching. |
 | <span id="lume-config-cache-disable"></span>[`lume config cache disable`](/lume/reference/cli/config#lume-config-cache-disable) | Disable image caching. |
 | <span id="lume-config-cache-status"></span>[`lume config cache status`](/lume/reference/cli/config#lume-config-cache-status) | Show cache status and directory. |
-| <span id="lume-config-telemetry"></span>[`lume config telemetry`](/lume/reference/cli/config#lume-config-telemetry) | Manage pseudonymous telemetry settings. |
-| <span id="lume-config-telemetry-status"></span>[`lume config telemetry status`](/lume/reference/cli/config#lume-config-telemetry-status) | Show current telemetry status. |
-| <span id="lume-config-telemetry-enable"></span>[`lume config telemetry enable`](/lume/reference/cli/config#lume-config-telemetry-enable) | Enable pseudonymous telemetry. |
-| <span id="lume-config-telemetry-disable"></span>[`lume config telemetry disable`](/lume/reference/cli/config#lume-config-telemetry-disable) | Disable pseudonymous telemetry. |
-| <span id="lume-config-telemetry-reset-id"></span>[`lume config telemetry reset-id`](/lume/reference/cli/config#lume-config-telemetry-reset-id) | Delete the pseudonymous installation ID and registration markers. |
 | <span id="lume-config-registry"></span>[`lume config registry`](/lume/reference/cli/config#lume-config-registry) | Manage container registry settings. |
 | <span id="lume-config-registry-status"></span>[`lume config registry status`](/lume/reference/cli/config#lume-config-registry-status) | Show current registry configuration. |
 | <span id="lume-config-registry-type"></span>[`lume config registry type`](/lume/reference/cli/config#lume-config-registry-type) | Get or set registry type. |
@@ -106,12 +101,12 @@ Storage locations, the image cache and telemetry settings. [Reference](/lume/ref
 
 ### Updates
 
-Check for, apply and choose the channel of Lume updates. [Reference](/lume/reference/cli/updates).
+Check for Lume updates and choose the update channel. [Reference](/lume/reference/cli/updates).
 
 | Command | Description |
 | --- | --- |
 | <span id="lume-check-update"></span>[`lume check-update`](/lume/reference/cli/updates#lume-check-update) | Check whether a newer Lume release is available. |
-| <span id="lume-update"></span>[`lume update`](/lume/reference/cli/updates#lume-update) | Check for a Lume update and optionally apply it. |
+| <span id="lume-update"></span>[`lume update`](/lume/reference/cli/updates#lume-update) | Check for a newer Lume release and how to rebuild from source. |
 | <span id="lume-channel"></span>[`lume channel`](/lume/reference/cli/updates#lume-channel) | Inspect or change the stable/nightly update channel; selection does not install. |
 | <span id="lume-channel-status"></span>[`lume channel status`](/lume/reference/cli/updates#lume-channel-status) | Show selected and current release channels. |
 | <span id="lume-channel-set"></span>[`lume channel set`](/lume/reference/cli/updates#lume-channel-set) | Save stable or nightly as the update channel. |

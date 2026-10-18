@@ -33,8 +33,6 @@ import { answerOrNull, createDriveBridge, type DriveBridge } from "../native/dri
 import type { SignInStart } from "../native/fleet";
 import type { HostBridge, HostStatus, OnboardingMode } from "../native/host";
 import type { AgentDetectReport, AgentSetupReport, InstallerBridge } from "../native/installer";
-import { onboardingFinishedSignals, onboardingSignals } from "../model/telemetry";
-import { telemetryBridge, type TelemetryBridge } from "../native/telemetry";
 import { readMenuBar, writeMenuBar } from "../state/settings";
 import { currentExperiments } from "../state/experiments";
 import { writeLaunchChoice } from "../model/loginItem";
@@ -97,7 +95,6 @@ export function InstallerFlow({
   drive: driveProp,
   os: osProp,
   loginItem: loginItemProp,
-  telemetry: telemetryProp,
   onDone,
 }: {
   installer: InstallerBridge;
@@ -114,8 +111,6 @@ export function InstallerFlow({
   initialStep?: InstallerStep;
   /** Opens a website page in the browser (the Teams page). */
   onOpenExternal?: (url: string) => void;
-  /** Usage telemetry (the shell's; nothing outside it). */
-  telemetry?: TelemetryBridge;
   onDone: (mode: OnboardingMode) => void;
 }) {
   // Settings, Experiments decide the pages (Cua Volume's only with it on).
@@ -126,26 +121,11 @@ export function InstallerFlow({
     ),
   );
   const [hostStatus, setHostStatus] = useState<HostStatus | null>(null);
-  const telemetry = useMemo(() => telemetryProp ?? telemetryBridge(), [telemetryProp]);
-  // Every step goes through here: the core's reducer, and the usage events
-  // the core says the step means (the SwiftUI app sends the same ones).
+  // Every step goes through here: the core's reducer.
   const stateRef = useRef(state);
   const send = (action: OnboardingAction) => {
-    const before = stateRef.current;
-    stateRef.current = reduceOnboarding(before, action);
+    stateRef.current = reduceOnboarding(stateRef.current, action);
     setState(stateRef.current);
-    const signals = onboardingSignals(before, action);
-    if (before.step === "welcome" && stateRef.current.step !== "welcome") {
-      // Leaving Welcome: its usage-data switch decides before anything is
-      // sent (the core derives nothing while Welcome shows).
-      const on = onboardingView(before).usage?.on ?? true;
-      void telemetry
-        .welcomeLeft(on)
-        .catch(() => undefined)
-        .then(() => telemetry.recordSignals(signals));
-    } else {
-      telemetry.recordSignals(signals);
-    }
   };
   useEffect(() => {
     if (initialIdentity) send({ type: "signed-in", identity: initialIdentity });
@@ -153,19 +133,6 @@ export function InstallerFlow({
   }, [initialIdentity]);
 
   const view = onboardingView(state);
-  // Welcome's usage-data switch starts from the machine's setting (the
-  // same one as Settings, Privacy and `cua telemetry off`).
-  useEffect(() => {
-    void telemetry
-      .status()
-      .then((t) => {
-        const locked = t.sourceKind !== "config" && t.sourceKind !== "default";
-        send({ type: "telemetry-loaded", telemetry: { enabled: t.enabled, lockedBy: locked ? t.source : null } });
-      })
-      .catch(() => {});
-    // Once per flow.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const copy = useMemo(() => onboardingCopy(), []);
   const drive = useMemo(() => driveProp ?? createDriveBridge(), [driveProp]);
   const loginItem = useMemo(() => loginItemProp ?? createLoginItemBridge(), [loginItemProp]);
@@ -173,7 +140,6 @@ export function InstallerFlow({
   // Done: the checkbox is the user's choice; the app registers (or not)
   // as the main window shows. A failure shows in Settings, General.
   const finish = () => {
-    telemetry.recordSignals(onboardingFinishedSignals(state));
     if (loginItem.isNative) {
       const on = state.launchAtLogin ?? true;
       writeLaunchChoice(on);
@@ -326,28 +292,6 @@ export function InstallerFlow({
               {view.primaryLabel}
             </button>
           </footer>
-          {view.usage && (
-            <label className="onboarding-usage" title={view.usage.help ?? undefined}>
-              <input
-                type="checkbox"
-                role="switch"
-                checked={view.usage.on}
-                disabled={!view.usage.enabled}
-                onChange={(e) => send({ type: "usage-data-toggled", on: e.target.checked })}
-              />
-              {view.usage.label}
-            </label>
-          )}
-          {view.notice && (
-            <p className="onboarding-telemetry-notice" data-testid="telemetry-notice">
-              {view.notice}{" "}
-              {view.noticeLinkUrl && (
-                <a href={view.noticeLinkUrl} target="_blank" rel="noreferrer">
-                  {view.noticeLinkLabel}
-                </a>
-              )}
-            </p>
-          )}
         </>
       );
       break;

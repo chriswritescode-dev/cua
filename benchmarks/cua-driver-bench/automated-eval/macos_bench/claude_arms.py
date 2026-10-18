@@ -244,7 +244,6 @@ def cu_helper_env() -> dict[str, str]:
     return {
         "HOME": os.environ.get("HOME", "/tmp"),
         "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-        "DO_NOT_TRACK": "1",
     }
 
 
@@ -370,12 +369,10 @@ def load_pins() -> dict[str, Any]:
 
 
 def cua_env(home: Path) -> dict[str, str]:
-    """Environment of the Cua Driver daemon and of its MCP client: own HOME, telemetry off."""
+    """Environment of the Cua Driver daemon and of its MCP client: own HOME."""
     return {
         "HOME": str(home),
         "PATH": "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
-        "CUA_DRIVER_RS_TELEMETRY_ENABLED": "false",
-        "DO_NOT_TRACK": "1",  # the main build's shared telemetry crate also honours this (Amendment 3)
     }
 
 
@@ -603,7 +600,7 @@ def start_cua_daemon(
     binary: Path | None = None,
     env_extra: dict[str, str] | None = None,
 ) -> subprocess.Popen[bytes]:
-    """Private daemon of the release under test: own socket, own HOME, telemetry off."""
+    """Private daemon of the release under test: own socket, own HOME."""
     binary = binary or CUA_BIN
     home = state_dir / "home"
     home.mkdir(parents=True, exist_ok=True)

@@ -154,7 +154,6 @@ async def run_fleet_pool_live(mode: str) -> None:
             name=namespace,
             service="env" if spacesd_image else "server",
             time_to_start=WARM_TIME_TO_START if mode == "warm" else COLD_TIME_TO_START,
-            telemetry_enabled=False,
             local=False,
         ) as sandbox:
             sandbox_yielded = True

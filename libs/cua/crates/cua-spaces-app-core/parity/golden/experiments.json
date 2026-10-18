@@ -28,8 +28,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
           "lede": "Cua Spaces is in your menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -46,8 +44,7 @@
             "Shows in: Notch and menu bar",
             "This machine: Access other machines"
           ],
-          "title": "You're all set",
-          "usage": null
+          "title": "You're all set"
         },
         "pages": [
           "welcome",
@@ -71,12 +68,8 @@
         "- launch-at-login-note note: Keeps your Spaces and agents available after a restart.",
         "- notch choice: Spaces tab in the notch {*Show|Hide}",
         "- welcome text: Welcome [Show again]",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share anonymous usage data {*On|Off}",
-        "- telemetry-note note: Features used, sandbox types, durations and error categories. Never paths, names, prompts, screen content or Keyvault items. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
       ],
-      "signals": [],
       "step": "defaults",
       "tab": [
         "= Experiments",
@@ -135,8 +128,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces, agents and Cua Volume available after a restart.",
           "lede": "Cua Spaces is in your menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -154,8 +145,7 @@
             "Cua Volume: In Finder",
             "This machine: Access other machines"
           ],
-          "title": "You're all set",
-          "usage": null
+          "title": "You're all set"
         },
         "pages": [
           "welcome",
@@ -185,24 +175,7 @@
         "- fs-path text: Stored in = ~/.cua/volume/data ?/Users/maya/.cua/volume/data",
         "- mount choice: Add Cua Volume to Finder {*On|Off}",
         "- mount-path text: In Finder at = ~/Cua Volume [Show in Finder] ?/Users/maya/Cua Volume < /Users/maya/Cua Volume>",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share anonymous usage data {*On|Off}",
-        "- telemetry-note note: Features used, sandbox types, durations and error categories. Never paths, names, prompts, screen content or Keyvault items. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
-      ],
-      "signals": [
-        {
-          "action": "experiment_on",
-          "experiment": "cua_volume",
-          "type": "experiment"
-        },
-        {
-          "experiments": [
-            "cua_volume",
-            "sharing"
-          ],
-          "type": "experiments-on"
-        }
       ],
       "step": "cua volume on",
       "tab": [
@@ -262,8 +235,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces, agents and Cua Volume available after a restart.",
           "lede": "Cua Spaces is in your menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -281,8 +252,7 @@
             "Cua Volume: In Finder",
             "This machine: Access other machines"
           ],
-          "title": "You're all set",
-          "usage": null
+          "title": "You're all set"
         },
         "pages": [
           "welcome",
@@ -312,25 +282,7 @@
         "- fs-path text: Stored in = ~/.cua/volume/data ?/Users/maya/.cua/volume/data",
         "- mount choice: Add Cua Volume to Finder {*On|Off}",
         "- mount-path text: In Finder at = ~/Cua Volume [Show in Finder] ?/Users/maya/Cua Volume < /Users/maya/Cua Volume>",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share anonymous usage data {*On|Off}",
-        "- telemetry-note note: Features used, sandbox types, durations and error categories. Never paths, names, prompts, screen content or Keyvault items. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
-      ],
-      "signals": [
-        {
-          "action": "experiment_on",
-          "experiment": "your_cloud",
-          "type": "experiment"
-        },
-        {
-          "experiments": [
-            "cua_volume",
-            "your_cloud",
-            "sharing"
-          ],
-          "type": "experiments-on"
-        }
       ],
       "step": "your cloud on",
       "tab": [
@@ -393,8 +345,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces, agents and Cua Volume available after a restart.",
           "lede": "Cua Spaces is in your menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -412,8 +362,7 @@
             "Cua Volume: In Finder",
             "This machine: Access other machines"
           ],
-          "title": "You're all set",
-          "usage": null
+          "title": "You're all set"
         },
         "pages": [
           "welcome",
@@ -443,12 +392,8 @@
         "- fs-path text: Stored in = ~/.cua/volume/data ?/Users/maya/.cua/volume/data",
         "- mount choice: Add Cua Volume to Finder {*On|Off}",
         "- mount-path text: In Finder at = ~/Cua Volume [Show in Finder] ?/Users/maya/Cua Volume < /Users/maya/Cua Volume>",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share anonymous usage data {*On|Off}",
-        "- telemetry-note note: Features used, sandbox types, durations and error categories. Never paths, names, prompts, screen content or Keyvault items. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
       ],
-      "signals": [],
       "step": "sharing on",
       "tab": [
         "= Experiments",
@@ -510,8 +455,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces, agents and Cua Volume available after a restart.",
           "lede": "Cua Spaces is in your menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -529,8 +472,7 @@
             "Cua Volume: In Finder",
             "This machine: Access other machines"
           ],
-          "title": "You're all set",
-          "usage": null
+          "title": "You're all set"
         },
         "pages": [
           "welcome",
@@ -560,12 +502,8 @@
         "- fs-path text: Stored in = ~/.cua/volume/data ?/Users/maya/.cua/volume/data",
         "- mount choice: Add Cua Volume to Finder {*On|Off}",
         "- mount-path text: In Finder at = ~/Cua Volume [Show in Finder] ?/Users/maya/Cua Volume < /Users/maya/Cua Volume>",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share anonymous usage data {*On|Off}",
-        "- telemetry-note note: Features used, sandbox types, durations and error categories. Never paths, names, prompts, screen content or Keyvault items. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
       ],
-      "signals": [],
       "step": "on again changes nothing",
       "tab": [
         "= Experiments",
@@ -627,8 +565,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces, agents and Cua Volume available after a restart.",
           "lede": "Cua Spaces is in your menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -646,8 +582,7 @@
             "Cua Volume: In Finder",
             "This machine: Access other machines"
           ],
-          "title": "You're all set",
-          "usage": null
+          "title": "You're all set"
         },
         "pages": [
           "welcome",
@@ -677,12 +612,8 @@
         "- fs-path text: Stored in = ~/.cua/volume/data ?/Users/maya/.cua/volume/data",
         "- mount choice: Add Cua Volume to Finder {*On|Off}",
         "- mount-path text: In Finder at = ~/Cua Volume [Show in Finder] ?/Users/maya/Cua Volume < /Users/maya/Cua Volume>",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share anonymous usage data {*On|Off}",
-        "- telemetry-note note: Features used, sandbox types, durations and error categories. Never paths, names, prompts, screen content or Keyvault items. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
       ],
-      "signals": [],
       "step": "another row changes nothing",
       "tab": [
         "= Experiments",
@@ -743,8 +674,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
           "lede": "Cua Spaces is in your menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -761,8 +690,7 @@
             "Shows in: Notch and menu bar",
             "This machine: Access other machines"
           ],
-          "title": "You're all set",
-          "usage": null
+          "title": "You're all set"
         },
         "pages": [
           "welcome",
@@ -786,24 +714,7 @@
         "- launch-at-login-note note: Keeps your Spaces and agents available after a restart.",
         "- notch choice: Spaces tab in the notch {*Show|Hide}",
         "- welcome text: Welcome [Show again]",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share anonymous usage data {*On|Off}",
-        "- telemetry-note note: Features used, sandbox types, durations and error categories. Never paths, names, prompts, screen content or Keyvault items. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
-      ],
-      "signals": [
-        {
-          "action": "experiment_off",
-          "experiment": "cua_volume",
-          "type": "experiment"
-        },
-        {
-          "experiments": [
-            "your_cloud",
-            "sharing"
-          ],
-          "type": "experiments-on"
-        }
       ],
       "step": "cua volume off",
       "tab": [
@@ -865,8 +776,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
           "lede": "Cua Spaces is in your menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -883,8 +792,7 @@
             "Shows in: Notch and menu bar",
             "This machine: Access other machines"
           ],
-          "title": "You're all set",
-          "usage": null
+          "title": "You're all set"
         },
         "pages": [
           "welcome",
@@ -908,23 +816,7 @@
         "- launch-at-login-note note: Keeps your Spaces and agents available after a restart.",
         "- notch choice: Spaces tab in the notch {*Show|Hide}",
         "- welcome text: Welcome [Show again]",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share anonymous usage data {*On|Off}",
-        "- telemetry-note note: Features used, sandbox types, durations and error categories. Never paths, names, prompts, screen content or Keyvault items. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
-      ],
-      "signals": [
-        {
-          "action": "experiment_off",
-          "experiment": "your_cloud",
-          "type": "experiment"
-        },
-        {
-          "experiments": [
-            "sharing"
-          ],
-          "type": "experiments-on"
-        }
       ],
       "step": "your cloud off",
       "tab": [
@@ -982,8 +874,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
           "lede": "Cua Spaces is in your menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -1000,8 +890,7 @@
             "Shows in: Notch and menu bar",
             "This machine: Access other machines"
           ],
-          "title": "You're all set",
-          "usage": null
+          "title": "You're all set"
         },
         "pages": [
           "welcome",
@@ -1025,21 +914,7 @@
         "- launch-at-login-note note: Keeps your Spaces and agents available after a restart.",
         "- notch choice: Spaces tab in the notch {*Show|Hide}",
         "- welcome text: Welcome [Show again]",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share anonymous usage data {*On|Off}",
-        "- telemetry-note note: Features used, sandbox types, durations and error categories. Never paths, names, prompts, screen content or Keyvault items. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
-      ],
-      "signals": [
-        {
-          "action": "experiment_off",
-          "experiment": "sharing",
-          "type": "experiment"
-        },
-        {
-          "experiments": [],
-          "type": "experiments-on"
-        }
       ],
       "step": "sharing off",
       "tab": [
@@ -1097,8 +972,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
           "lede": "Cua Spaces is in your menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -1115,8 +988,7 @@
             "Shows in: Notch and menu bar",
             "This machine: Access other machines"
           ],
-          "title": "You're all set",
-          "usage": null
+          "title": "You're all set"
         },
         "pages": [
           "welcome",
@@ -1140,23 +1012,7 @@
         "- launch-at-login-note note: Keeps your Spaces and agents available after a restart.",
         "- notch choice: Spaces tab in the notch {*Show|Hide}",
         "- welcome text: Welcome [Show again]",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share anonymous usage data {*On|Off}",
-        "- telemetry-note note: Features used, sandbox types, durations and error categories. Never paths, names, prompts, screen content or Keyvault items. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
-      ],
-      "signals": [
-        {
-          "action": "experiment_on",
-          "experiment": "web_ui",
-          "type": "experiment"
-        },
-        {
-          "experiments": [
-            "web_ui"
-          ],
-          "type": "experiments-on"
-        }
       ],
       "step": "new ui on (use classic ui off)",
       "tab": [
@@ -1214,8 +1070,6 @@
           "driveStorage": null,
           "launchAtLogin": "[x] Launch at login ~Keeps your Spaces and agents available after a restart.",
           "lede": "Cua Spaces is in your menu bar.",
-          "notice": null,
-          "noticeLink": null,
           "presentations": [],
           "primary": "Start using Cua Spaces",
           "prompts": [
@@ -1232,8 +1086,7 @@
             "Shows in: Notch and menu bar",
             "This machine: Access other machines"
           ],
-          "title": "You're all set",
-          "usage": null
+          "title": "You're all set"
         },
         "pages": [
           "welcome",
@@ -1257,21 +1110,7 @@
         "- launch-at-login-note note: Keeps your Spaces and agents available after a restart.",
         "- notch choice: Spaces tab in the notch {*Show|Hide}",
         "- welcome text: Welcome [Show again]",
-        "# Privacy (privacy)",
-        "- telemetry choice: Share anonymous usage data {*On|Off}",
-        "- telemetry-note note: Features used, sandbox types, durations and error categories. Never paths, names, prompts, screen content or Keyvault items. <What is collected https://cua.ai/docs/cua-sdk/concepts/telemetry>",
         "# AI agents (agents) [Configure all detected agents] (disabled)"
-      ],
-      "signals": [
-        {
-          "action": "experiment_off",
-          "experiment": "web_ui",
-          "type": "experiment"
-        },
-        {
-          "experiments": [],
-          "type": "experiments-on"
-        }
       ],
       "step": "use classic ui on",
       "tab": [

@@ -131,7 +131,6 @@ export const CLI_GROUPS: CliGroup[] = [
   { slug: 'cache', title: 'cua cache', summary: 'See and reclaim the disk used by images, sandboxes, builds and logs', commands: ['cache'] },
   { slug: 'runtime', title: 'cua runtime', summary: 'Inspect and provision local runtimes', commands: ['runtime'] },
   { slug: 'doctor', title: 'cua doctor', summary: 'Check the host, an image and a sandbox guest, or eval parity between image variants', commands: ['doctor'] },
-  { slug: 'telemetry', title: 'cua telemetry', summary: 'Anonymous usage telemetry (status, off, show-last)', commands: ['telemetry'] },
 ];
 
 export function cliReference(cli: CLIDocumentation): CliReference {

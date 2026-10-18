@@ -346,8 +346,8 @@ pub struct InstallCuaPrompt {
     pub url: String,
 }
 
-/// Where people install Cua.
-pub const CUA_INSTALL_URL: &str = "https://cua.ai/install";
+/// The repository Cua is built from.
+pub const CUA_REPOSITORY_URL: &str = "https://github.com/trycua/cua";
 /// Opens the Keyvault page of an installed Cua app.
 pub const CUA_OPEN_URL: &str = "cua://keyvault";
 
@@ -375,12 +375,15 @@ pub fn requires_cua_app(texts: &[String], installed_flag: bool) -> Option<Instal
     } else {
         InstallCuaPrompt {
             installed: false,
-            title: "Install Cua to teleport your session".into(),
-            message:
-                "The Cua app keeps your logins in its Keyvault and asks you before sharing them."
-                    .into(),
-            action_label: "Install Cua".into(),
-            url: CUA_INSTALL_URL.into(),
+            title: "Build Cua to teleport your session".into(),
+            message: "The Cua app keeps your logins in its Keyvault and asks you before sharing \
+                      them. Build it from the repository: git pull && \
+                      apps/cua-spaces-macos/scripts/build-release.sh (macOS), or \
+                      pnpm --dir apps/cua-spaces-desktop dist:mac (macOS), dist:win (Windows), \
+                      dist:linux (Linux)."
+                .into(),
+            action_label: "Open the repository".into(),
+            url: CUA_REPOSITORY_URL.into(),
         }
     })
 }
@@ -1772,6 +1775,10 @@ mod tests {
         .unwrap();
         assert!(p.installed);
         assert_eq!(p.url, CUA_OPEN_URL);
+        let p = requires_cua_app(&["requires_cua_app".into()], false).unwrap();
+        assert!(!p.installed);
+        assert_eq!(p.url, CUA_REPOSITORY_URL);
+        assert!(p.message.contains("build-release.sh"));
         assert!(requires_cua_app(&["xrequires_cua_app".into()], false).is_none());
     }
 

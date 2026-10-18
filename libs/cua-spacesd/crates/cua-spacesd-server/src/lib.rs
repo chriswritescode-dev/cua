@@ -25,7 +25,6 @@ pub mod provider;
 pub mod relay_account;
 pub mod server;
 pub mod services;
-pub mod telemetry;
 pub mod token_file;
 pub mod util;
 

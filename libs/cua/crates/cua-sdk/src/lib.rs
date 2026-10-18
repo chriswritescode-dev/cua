@@ -40,13 +40,12 @@ mod native;
 #[cfg(not(any(target_arch = "wasm32", feature = "web")))]
 pub use native::*;
 
-/// For crates that export more over this SDK's runtime and telemetry (the
-/// Cua Spaces app export, `cua-spaces-ffi`). Not part of the binding API.
+/// For crates that export more over this SDK's runtime (the Cua Spaces app
+/// export, `cua-spaces-ffi`). Not part of the binding API.
 #[doc(hidden)]
 #[cfg(not(any(target_arch = "wasm32", feature = "web")))]
 pub mod support {
     use std::future::Future;
-    use std::time::Instant;
 
     /// Runs `fut` on the SDK runtime and awaits it from any executor.
     pub async fn run<T, F>(fut: F) -> crate::Result<T>
@@ -63,18 +62,6 @@ pub mod support {
         F: Future<Output = ()> + Send + 'static,
     {
         crate::native::runtime().spawn(fut);
-    }
-
-    /// Records a teleport made through this SDK (telemetry).
-    pub fn record_teleport<T>(
-        app: &str,
-        capability: &str,
-        move_kind: &str,
-        started: Instant,
-        r: &crate::Result<T>,
-        items: u64,
-    ) {
-        crate::native::telemetry::teleport(app, capability, move_kind, started, r, items)
     }
 }
 

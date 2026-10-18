@@ -663,13 +663,16 @@ pub fn run_driver_setup(
     }
     if parts.mcp && server.command == "cua-driver" {
         let how = if cfg!(windows) {
-            "& ([scriptblock]::Create((irm https://cua.ai/install.ps1))) -Only cua-driver"
+            "libs\\cua-driver\\scripts\\install-local.ps1"
         } else {
-            "curl -fsSL https://cua.ai/install.sh | sh -s -- --only cua-driver"
+            "libs/cua-driver/scripts/install-local.sh"
         };
         line(
             out,
-            format!("cua-driver is not installed yet. Install it with: {how}"),
+            format!(
+                "cua-driver is not installed yet. Build it from this repository: {how} \
+                 (it installs cua-driver-local; put that on PATH as cua-driver)"
+            ),
         );
     }
     line(

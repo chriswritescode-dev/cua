@@ -118,33 +118,6 @@ public struct OnboardingView: View {
                 .controlSize(.large)
                 .keyboardShortcut(.defaultAction)
                 .padding(.top, 12)
-            if let usage = v.usage {
-                // The usage-data switch and its notice, first thing: nothing
-                // is sent before Welcome is left, nothing at all while off.
-                VStack(spacing: 6) {
-                    Toggle(usage.label, isOn: Binding(get: { usage.on }, set: { onboarding.setShareUsage($0) }))
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-                        .disabled(!usage.enabled)
-                        .help(usage.help ?? "")
-                        .accessibilityIdentifier("onboarding-share-usage")
-                    if let notice = v.notice {
-                        // It wraps, with its link inline.
-                        noticeText(notice, v)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .environment(\.openURL, OpenURLAction { url in
-                                NSWorkspace.shared.open(url)
-                                return .handled
-                            })
-                            .accessibilityIdentifier("onboarding-telemetry-notice")
-                    }
-                }
-                .frame(maxWidth: 520)
-                .padding(.top, 20)
-            }
         }
         .onAppear { onboarding.shown() }
     }
@@ -415,18 +388,6 @@ public struct OnboardingView: View {
                     .help([a.mcpConfig ?? a.skillsDir ?? "", a.error ?? ""].filter { !$0.isEmpty }.joined(separator: " \u{b7} "))
             }
         }
-    }
-
-    /// The telemetry notice with its link inline at the end (it wraps).
-    private func noticeText(_ notice: String, _ v: AppOnboardingView) -> Text {
-        var s = AttributedString(notice)
-        s.foregroundColor = .secondary
-        if let label = v.noticeLinkLabel, let url = v.noticeLinkUrl.flatMap(URL.init(string:)) {
-            var link = AttributedString(label)
-            link.link = url
-            s += AttributedString(" ") + link
-        }
-        return Text(s)
     }
 
     /// The bottom bar (Setup Assistant placement): Back in the bottom-left

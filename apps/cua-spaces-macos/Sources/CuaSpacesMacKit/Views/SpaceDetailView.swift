@@ -267,7 +267,6 @@ struct SpaceDetailView: View {
 
     private func send(_ paths: [String]) async {
         guard !paths.isEmpty else { return }
-        model.recordFeature("file_send")
         dropStatus = .working(appDropSendingText(paths: paths))
         do {
             let files = try await model.backend.sendFiles(id: space.id, paths: paths)
@@ -328,7 +327,6 @@ struct SpaceDetailView: View {
     private func perform(_ id: AppDetailActionId) {
         switch id {
         case .teleport:
-            model.recordFeature("teleport_app_picker")
             Task { await openTeleport(entry: nil) }
         case .pip: pips?.toggle(.desktop, sharing: session)
         case .share:
@@ -336,14 +334,11 @@ struct SpaceDetailView: View {
                 backend: model.backend, spaceId: space.id, spaceName: space.name,
                 signedIn: model.identity != nil,
                 shareable: space.id.hasPrefix("relay:") || (space.sdk?.features.contains("relay_attach") ?? false))
-            sharing?.telemetry = model.telemetrySink
             sharing?.onShared = { [weak model] in model?.checklist.done(.share) }
-            model.recordFeature("share_open")
         case .power:
             if let button = appPowerButton(space: space) { model.setPower(space, on: button.turnOn) }
         case .delete: model.confirmDeleteId = space.id
         case .open:
-            model.recordFeature("space_open_viewer")
             openWindow(id: "space", value: space.id)
         case .cancel: model.cancelCreate(space.id)
         }

@@ -44,6 +44,11 @@ Homepage = "https://github.com/trycua/cua"
 Repository = "https://github.com/trycua/cua"
 Issues = "https://github.com/trycua/cua/issues"
 
+[tool.uv.sources]
+cua-core = { path = "../../python/core" }
+cua-agent = { path = "../../python/agent" }
+cua-sandbox = { path = "../../python/cua-sandbox" }
+
 [project.scripts]
 # The Rust `cua` CLI, bundled as src/cua/bin/cua[.exe] by build_wheel.py.
 cua = "cua._cli:main"

@@ -30,8 +30,7 @@ RUN python -m pip install --upgrade pip && \
     python -m pip install --no-cache-dir -e .[all]
 
 # Install cua-agent and non torch optional deps
-RUN python -m pip install --no-cache-dir soundfile cua-agent[qwen,gemini] cua-som && \
-    python -m pip install --no-cache-dir opentelemetry-sdk opentelemetry-exporter-otlp-proto-http
+RUN python -m pip install --no-cache-dir soundfile cua-agent[qwen,gemini] cua-som
 
 # Create a non-root user and set ownership
 RUN useradd -m -u 1000 cuauser && \

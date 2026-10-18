@@ -176,8 +176,6 @@ pub(crate) struct Decoding {
     audio: Mutex<cua_media_client::decode::AudioDecoders>,
     keyframe: Mutex<KeyframeTarget>,
     decoder_logged: std::sync::atomic::AtomicBool,
-    /// The session's counters (hardware vs software decode for telemetry).
-    session: Mutex<Option<std::sync::Weak<MediaSession>>>,
 }
 
 /// Where keyframe requests go. Frames can reach the decoder before
@@ -263,7 +261,6 @@ impl Decoding {
             audio: Mutex::new(cua_media_client::decode::AudioDecoders::new()),
             keyframe: Mutex::new(KeyframeTarget::default()),
             decoder_logged: std::sync::atomic::AtomicBool::new(false),
-            session: Mutex::new(None),
         })
     }
 
@@ -273,7 +270,6 @@ impl Decoding {
     /// a static target would otherwise freeze the picture). It stops with
     /// the session.
     pub(crate) fn attach(self: &Arc<Self>, session: &Arc<MediaSession>) {
-        *self.session.lock().unwrap() = Some(Arc::downgrade(session));
         let outgoing: Arc<dyn Outgoing> = Arc::new(session.outgoing());
         {
             let mut keyframe = self.keyframe.lock().unwrap();
@@ -327,15 +323,6 @@ impl FrameSink for Decoding {
                 hardware = ?video.hardware(),
                 "video decoder opened"
             );
-            let session = self
-                .session
-                .lock()
-                .unwrap()
-                .as_ref()
-                .and_then(|w| w.upgrade());
-            if let (Some(hw), Some(session)) = (video.hardware(), session) {
-                session.record_decode(hw);
-            }
         }
         drop(video);
         match outcome {

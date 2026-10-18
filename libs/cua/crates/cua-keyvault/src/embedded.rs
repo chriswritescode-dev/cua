@@ -5,7 +5,7 @@
 //!
 //! An app that embeds the cua SDK cannot teleport by itself. It reaches the
 //! Keyvault in the installed Cua daemon; when there is none it gets
-//! [`RequiresCuaApp`] with an install link, so the user installs Cua (which
+//! [`RequiresCuaApp`] with the repository link, so the user builds Cua (which
 //! owns the consent UI) instead of the app reading credentials itself.
 //!
 //! **Enterprise embedded mode** is a seam, not a feature: with the Cargo
@@ -21,8 +21,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(unix)]
 use crate::ipc::{ConnectError, KeyvaultClient, ServerCheck};
 
-/// Where users get Cua.
-pub const INSTALL_URL: &str = "https://cua.ai/download";
+/// The repository Cua is built from.
+pub const REPOSITORY_URL: &str = "https://github.com/trycua/cua";
 /// Opens the Keyvault page of the installed Cua app.
 pub const OPEN_URL: &str = "cua://keyvault";
 
@@ -49,12 +49,12 @@ impl RequiresCuaApp {
             )
         } else {
             format!(
-                "Teleport requires the Cua app, which keeps your sessions in its Keyvault and asks you before anything moves. Install it from {INSTALL_URL}. {detail}"
+                "Teleport requires the Cua app, which keeps your sessions in its Keyvault and asks you before anything moves. Build it from the repository ({REPOSITORY_URL}): git pull && apps/cua-spaces-macos/scripts/build-release.sh (macOS), or pnpm --dir apps/cua-spaces-desktop dist:mac|win|linux. {detail}"
             )
         };
         Self {
             installed,
-            install_url: INSTALL_URL.into(),
+            install_url: REPOSITORY_URL.into(),
             open_url: OPEN_URL.into(),
             message: message.trim().to_string(),
         }
@@ -337,7 +337,7 @@ mod tests {
     #[test]
     fn requires_cua_app_messages_carry_links() {
         let e = RequiresCuaApp::new(false, "");
-        assert!(!e.installed && e.message.contains(INSTALL_URL));
+        assert!(!e.installed && e.message.contains(REPOSITORY_URL));
         let e = RequiresCuaApp::new(true, "");
         assert!(e.installed && e.message.contains(OPEN_URL));
     }
@@ -352,7 +352,7 @@ mod tests {
             .err()
             .unwrap();
         assert!(!err.installed);
-        assert_eq!(err.install_url, INSTALL_URL);
+        assert_eq!(err.install_url, REPOSITORY_URL);
         // "Installed" is detected from install locations.
         let fake_app = d.path().join("Cua Spaces.app");
         std::fs::create_dir(&fake_app).unwrap();

@@ -50,51 +50,7 @@ fn routine_row(r: &cua_spaces::routines::Routine) -> Value {
     v
 }
 
-/// The usage-telemetry action of a persistent-agent tool (reads are not
-/// counted).
-fn telemetry_action(tool: &str) -> Option<&'static str> {
-    Some(match tool {
-        "persistent_agent_create" => "create",
-        "persistent_agent_remove" => "remove",
-        "persistent_agent_send" => "send",
-        "agent_pause" => "pause",
-        "agent_resume" => "resume",
-        "routine_add" => "routine_add",
-        "routine_set_enabled" => "routine_toggle",
-        "routine_remove" => "routine_remove",
-        "computer_access_grant" => "computer_allow",
-        "computer_access_revoke" => "computer_revoke",
-        _ => return None,
-    })
-}
-
 pub(crate) async fn call(spaces: &Spaces, tool: &str, a: Value) -> Result<ToolOutcome> {
-    let Some(action) = telemetry_action(tool) else {
-        return call_inner(spaces, tool, a).await;
-    };
-    // Only the harness id of a new agent (a catalog id, else `other`);
-    // never its name, Space, model, endpoint or prompt.
-    let harness = (action == "create")
-        .then(|| a.get("agent").and_then(Value::as_str).map(str::to_string))
-        .flatten();
-    let r = call_inner(spaces, tool, a).await;
-    let ok = r.as_ref().is_ok_and(|o| !o.is_error);
-    if let Some(e) = cua_telemetry::events::persistent_agent(
-        action,
-        harness.as_deref(),
-        if ok {
-            cua_telemetry::Outcome::Ok
-        } else {
-            cua_telemetry::Outcome::Error
-        },
-        (!ok).then_some("other"),
-    ) {
-        cua_telemetry::capture(e);
-    }
-    r
-}
-
-async fn call_inner(spaces: &Spaces, tool: &str, a: Value) -> Result<ToolOutcome> {
     let p = spaces.persistent();
     match tool {
         "persistent_agent_create" => {

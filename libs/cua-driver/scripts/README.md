@@ -71,12 +71,9 @@ once. When the dedicated default keychain above exists, the installer prefers
 it automatically; exporting `CUA_DRIVER_LOCAL_SIGNING_KEYCHAIN` remains the
 most explicit choice.
 
-Released installers show a telemetry notice before asking the installed binary
-to record anything. Telemetry is enabled by default and can be persistently
-disabled with `cua-driver telemetry disable`. Installation events use the same
-consent decision as routine events. A normal uninstall preserves the pseudonymous
-installation ID and preference for a future reinstall; use `--purge` on Unix,
-or set `CUA_DRIVER_RS_UNINSTALL_PURGE=1` on Windows, to delete them.
+A normal uninstall preserves user configuration for a future reinstall; use
+`--purge` on Unix, or set `CUA_DRIVER_RS_UNINSTALL_PURGE=1` on Windows, to
+delete it.
 
 Keep source commits host-owned. Verification machines should sync from this
 checkout and return artifacts, not push code.

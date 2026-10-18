@@ -3,7 +3,7 @@
 
 //! Transport-neutral semantic contract for the agent cursor.
 //!
-//! Tool implementations emit these semantics as best-effort visual telemetry.
+//! Tool implementations emit these semantics as best-effort visual state.
 //! They never affect authorization, dispatch, input delivery, or tool results.
 
 use serde::{Deserialize, Serialize};

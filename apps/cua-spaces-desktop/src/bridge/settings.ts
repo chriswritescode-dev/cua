@@ -6,10 +6,10 @@
 // and Experiments, and what a row's choice does (the SwiftUI host's
 // `settings()` and `AppModel.choose` / `press`): the notch or the menu bar,
 // where new Spaces start, auto-connect, the built-in Lume and gVisor
-// runtimes, launch at login, usage data, the update channel, the
+// runtimes, launch at login, the update channel, the
 // experiments, Welcome's "Show again", the coding agents (`model.agents`)
 // and the Keyvault's switches (`model.keyvault`).
-import type { AppLoginItemStatus, AppSettingsInput, AppTeamInput, AppTelemetryInput } from "../native/generated/index";
+import type { AppLoginItemStatus, AppSettingsInput, AppTeamInput } from "../native/generated/index";
 import type { AppModel } from "../model/app-model";
 import { words } from "../model/errors";
 import { bounded } from "../model/time";
@@ -18,14 +18,6 @@ import type { BridgeContext } from "./context";
 import { Failure, type Handlers } from "./host";
 import { hostParts, type HostParts } from "./host-parts";
 import { encode } from "./value";
-
-function telemetryInput(model: AppModel): AppTelemetryInput | undefined {
-  try {
-    return model.telemetry?.status();
-  } catch {
-    return undefined;
-  }
-}
 
 /** Settings, General (and Storage while Cua Volume is on). */
 export function settingsPage(model: AppModel, parts: HostParts) {
@@ -40,7 +32,6 @@ export function settingsPage(model: AppModel, parts: HostParts) {
     menuBar: model.settings.menuBar,
     defaultLocation: model.settings.defaultLocation,
     locationLockedBy: undefined,
-    telemetry: telemetryInput(model),
     agents: coding.rows ?? undefined,
     agentsBusy: coding.busy,
     agentsPending: coding.pending,
@@ -61,7 +52,6 @@ export function settingsPage(model: AppModel, parts: HostParts) {
     experiments: model.settings.experiments,
     keyvaultAutoWipe: model.keyvault.autoWipe ?? undefined,
     keyvaultUnlockPrompt: model.keyvault.unlockPromptShows ?? undefined,
-    keyvaultSiteIcons: model.settings.keyvaultSiteIcons,
     keyvaultProtection: model.keyvault.page.protection,
     autoConnect: model.settings.autoConnect,
     lumeSource: model.lumeSource ?? undefined,
@@ -94,15 +84,12 @@ export function settingsState(model: AppModel, parts: HostParts) {
   };
 }
 
-/** A switch in Settings, Experiments: saved and recorded. Off hides; nothing is undone. */
+/** A switch in Settings, Experiments: saved. Off hides; nothing is undone. */
 export function chooseExperiment(model: AppModel, row: string, option: string): void {
   const before = model.settings.experiments;
   const after = model.native.appExperimentsChoose(before, row, option);
-  const signals = model.native.appTelemetryExperimentsChanged(before, after);
-  if (!signals.length) return;
   model.settings = { ...model.settings, experiments: after };
   model.saveSettings();
-  model.telemetry?.record(signals);
 }
 
 export function settingsMethods(ctx: BridgeContext): Handlers {
@@ -168,16 +155,6 @@ export function settingsMethods(ctx: BridgeContext): Handlers {
         // On shows the prompt; off is the stored "Never ask again".
         await model.keyvault.setSkipUnlockPrompt(option !== "on");
         if (model.keyvault.error) throw Failure.failed(model.keyvault.error);
-        return;
-      case "keyvault-site-icons":
-        save({ keyvaultSiteIcons: option === "on" });
-        return;
-      case "telemetry":
-        model.telemetry?.setEnabled(option === "on");
-        // The switch sits beside the usage note (Welcome, Settings): the
-        // notice was seen.
-        model.telemetry?.acknowledgeNotice();
-        model.changed("settings");
         return;
       default:
         return;

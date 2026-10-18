@@ -206,8 +206,6 @@ pub async fn create_space(
             );
         })
     });
-    // The webview's creates reducer records the create (the app core's
-    // `telemetry::creates`: started, ready or failed, and how long it took).
     let r = state
         .0
         .create_space_with_progress(config, progress, pending_id)
@@ -292,7 +290,6 @@ pub async fn delete_space(
     // The user confirmed: nothing streams from it while it is deleted.
     crate::viewer_windows::close_space_windows(&app, &space_id);
     let r = state.0.delete_space(&space_id).await;
-    crate::telemetry::feature("space_delete");
     changed(&app);
     hotspot_changed(&app, &state.0.hotspot_status());
     r
@@ -368,7 +365,6 @@ pub async fn send_files_to_space(
     paths: Vec<String>,
     target_directory: Option<String>,
 ) -> CmdResult<Vec<SentFile>> {
-    crate::telemetry::feature("file_send");
     state
         .0
         .send_files(&space_id, &paths, target_directory)
@@ -470,15 +466,10 @@ pub async fn open_space_stream(
     target: StreamTargetArg,
     options: Option<StreamOpts>,
 ) -> CmdResult<StreamTicketInfo> {
-    let r = state
+    state
         .0
         .open_stream(&space_id, target, options.unwrap_or_default())
-        .await;
-    crate::telemetry::feature("space_open_viewer");
-    if r.is_ok() {
-        crate::telemetry::step("first_stream", true);
-    }
-    r
+        .await
 }
 
 #[tauri::command]
@@ -564,8 +555,6 @@ pub(crate) async fn run_push(
     push: LastPush,
     space_id: String,
 ) -> CmdResult<TeleportResult> {
-    let started = std::time::Instant::now();
-    crate::telemetry::feature("teleport_drop");
     let outcome = core
         .teleport_push(
             &push.app_id,
@@ -596,7 +585,6 @@ pub(crate) async fn run_push(
             Some(m.clone()),
         ),
     }
-    crate::telemetry::teleport(&push.app_id, "full", "app_with_state", started, &outcome, 0);
     outcome
 }
 
@@ -683,14 +671,6 @@ pub async fn teleport_run(
 ) -> CmdResult<cua_teleport::ux::RunReport> {
     let transfers = transfers.0.clone();
     crate::viewer_windows::emit_transfer_start(&app, &transfers, &space_id, &plan.app.name);
-    // Telemetry: the public catalog id (else `other`), capability and move.
-    let started = std::time::Instant::now();
-    let (tele_app, tele_cap, tele_move) = (
-        plan.app.id.clone(),
-        plan.app.capability.as_str(),
-        plan.moves.as_str(),
-    );
-    crate::telemetry::feature("teleport_app_picker");
     let (app2, t2, sid) = (app.clone(), transfers.clone(), space_id.clone());
     let outcome = state
         .0
@@ -719,14 +699,6 @@ pub async fn teleport_run(
             Some(m.clone()),
         ),
     }
-    crate::telemetry::teleport(
-        &tele_app,
-        tele_cap,
-        tele_move,
-        started,
-        &outcome,
-        outcome.as_ref().map(|r| r.sent.len() as u64).unwrap_or(0),
-    );
     outcome
 }
 
@@ -758,7 +730,6 @@ pub async fn start_hotspot(
     space_id: String,
 ) -> CmdResult<HotspotStatus> {
     let r = state.0.start_hotspot(&space_id).await;
-    crate::telemetry::feature("hotspot");
     hotspot_changed(&app, &state.0.hotspot_status());
     r
 }
@@ -873,13 +844,7 @@ pub fn login_item_set(
     state: State<'_, LoginItemState>,
     on: bool,
 ) -> CmdResult<cua_spaces_app_core::login_item::LoginItemStatus> {
-    let status = crate::login_item::set_and_read(state.0.as_ref(), on)?;
-    crate::telemetry::feature(if on {
-        "launch_at_login_on"
-    } else {
-        "launch_at_login_off"
-    });
-    Ok(status)
+    crate::login_item::set_and_read(state.0.as_ref(), on)
 }
 
 // ---------------------------------------------------------------- installer

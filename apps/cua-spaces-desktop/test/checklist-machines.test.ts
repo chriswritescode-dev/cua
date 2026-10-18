@@ -20,7 +20,7 @@ import { HostModel } from "../src/model/host";
 import { StartupModel } from "../src/model/startup";
 import { devDirName, nativeFiles } from "../src/native/location";
 import { loadNative, type Native } from "../src/native/load";
-import { FixtureAccount, FixtureSpacesBackend, FixtureTelemetry, fixtureDevices, fixtureHost } from "./fixtures";
+import { FixtureAccount, FixtureSpacesBackend, fixtureDevices, fixtureHost } from "./fixtures";
 
 const dir = path.resolve(__dirname, "../native", devDirName(process.platform, process.arch));
 const built = existsSync(nativeFiles(dir, process.platform).library);
@@ -29,14 +29,13 @@ describe.skipIf(!built)("the checklist and the Machines rows on the app core", (
   let home: string;
   let native: Native;
   const saved = { ...process.env };
-  let telemetry: FixtureTelemetry;
   let model: AppModel;
   let bridge: Bridge;
   let appDir: string;
 
   beforeAll(async () => {
     home = mkdtempSync(path.join(tmpdir(), "cua-checklist-"));
-    Object.assign(process.env, { HOME: home, USERPROFILE: home, CUA_HOME: path.join(home, ".cua"), CUA_TELEMETRY: "0", DO_NOT_TRACK: "1", CUA_KEYCHAIN_NONINTERACTIVE: "1" });
+    Object.assign(process.env, { HOME: home, USERPROFILE: home, CUA_HOME: path.join(home, ".cua"), CUA_KEYCHAIN_NONINTERACTIVE: "1" });
     native = await loadNative(dir);
   });
 
@@ -47,7 +46,6 @@ describe.skipIf(!built)("the checklist and the Machines rows on the app core", (
 
   const make = (seed: string | null = null) => {
     const backend = new FixtureSpacesBackend(native);
-    telemetry = new FixtureTelemetry();
     model = new AppModel({
       native,
       backend,
@@ -57,7 +55,6 @@ describe.skipIf(!built)("the checklist and the Machines rows on the app core", (
       devices: new DevicesModel(native, () => fixtureDevices()),
       cloud: new CloudModel(native, () => backend),
       account: new FixtureAccount("ada@example.com"),
-      telemetry,
       servicesIn: () => true,
       cpus: 8,
       checklistPath: path.join(appDir, "checklist.json"),
@@ -107,15 +104,13 @@ describe.skipIf(!built)("the checklist and the Machines rows on the app core", (
     expect(await done()).toContain("run_agent");
   });
 
-  it("merges what the page kept before without its events again", async () => {
+  it("merges what the page kept before", async () => {
     make();
-    const before = telemetry.recorded.length;
     const r = (await call("checklist.send", { action: { type: "merge", state: { done: ["share", "nope"], dismissed: true, shown: true } } })) as {
       state: { done: string[]; dismissed: boolean };
     };
     expect(r.state.done).toEqual(["share"]);
     expect(r.state.dismissed).toBe(true);
-    expect(telemetry.recorded.length).toBe(before);
   });
 
   it("starts from the SwiftUI app's checklist when it has none of its own", () => {

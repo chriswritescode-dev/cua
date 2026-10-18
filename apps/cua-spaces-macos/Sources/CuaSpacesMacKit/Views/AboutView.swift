@@ -16,6 +16,7 @@ struct AboutSettingsView: View {
 
     var body: some View {
         let v = updates.view
+        let update = updates.updateState
         VStack(spacing: 0) {
             VStack(spacing: 6) {
                 Image(nsImage: NSApp.applicationIconImage)
@@ -43,6 +44,17 @@ struct AboutSettingsView: View {
             Text(v.copyright)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            if update.version != nil, let message = update.instructions {
+                Text(message)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: 420)
+                    .padding(.top, 12)
+                    .textSelection(.enabled)
+                    .accessibilityIdentifier("about-update-available")
+            }
             if let u = v.updates {
                 Divider().padding(.vertical, 16)
                 updateControls(u)
@@ -60,13 +72,6 @@ struct AboutSettingsView: View {
                 Toggle(u.autoCheckLabel, isOn: Binding(get: { u.autoCheck }, set: updates.setAutoCheck))
                     .toggleStyle(.checkbox)
                     .accessibilityIdentifier("about-auto-check")
-            }
-            GridRow {
-                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
-                Toggle(u.autoInstallLabel, isOn: Binding(get: { u.autoInstall }, set: updates.setAutoInstall))
-                    .toggleStyle(.checkbox)
-                    .disabled(!u.autoInstallEnabled)
-                    .accessibilityIdentifier("about-auto-install")
             }
             GridRow {
                 Text(u.channelLabel).gridColumnAlignment(.trailing)

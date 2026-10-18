@@ -30,13 +30,8 @@ public final class StorageModel {
     /// Opens a URL (System Settings' file system extensions).
     public var openURL: (URL) -> Void = { NSWorkspace.shared.open($0) }
 
-    /// Where usage events go (a storage choice saved, the Finder volume on
-    /// or off, Open in Finder: the app core's, like the Tauri app).
-    @ObservationIgnored public var telemetry: TelemetryRunning?
-
-    /// Every step: the usage events the core derives, then the reducer.
+    /// Every step: the core's reducer.
     private func reduce(_ action: AppStorageAction) {
-        telemetry?.record(appTelemetryStorage(input: input, state: state, action: action))
         state = appStorageReduce(state: state, action: action)
     }
 

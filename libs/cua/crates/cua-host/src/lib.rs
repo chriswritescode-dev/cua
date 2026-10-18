@@ -137,9 +137,6 @@ pub enum Error {
     /// Relay unreachable or failed.
     #[error("relay: {0}")]
     Relay(String),
-    /// Driver download failed.
-    #[error("download: {0}")]
-    Download(String),
     /// Service install / control failed.
     #[error("service: {0}")]
     Service(String),
@@ -152,9 +149,9 @@ pub enum Error {
 }
 
 impl Error {
-    /// The HTTP status the relay or the download server answered with,
-    /// when one did. None: the server was not reached (offline, DNS, TLS,
-    /// timeout) or the error is not about HTTP at all.
+    /// The HTTP status the relay answered with, when it did. None: the
+    /// relay was not reached (offline, DNS, TLS, timeout) or the error is
+    /// not about HTTP at all.
     pub fn http_status(&self) -> Option<u16> {
         match self {
             // `relay::http_error` maps these statuses to these variants.
@@ -162,7 +159,7 @@ impl Error {
             Error::PermissionDenied(m) if m.starts_with("relay: ") => Some(403),
             Error::NotFound(m) if m.starts_with("relay: ") => Some(404),
             Error::Conflict(m) if m.starts_with("relay: ") => Some(409),
-            Error::Relay(m) | Error::Download(m) => status_in(m),
+            Error::Relay(m) => status_in(m),
             _ => None,
         }
     }

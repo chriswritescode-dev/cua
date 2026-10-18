@@ -15,7 +15,7 @@ use futures_util::{SinkExt, StreamExt};
 use serde_json::Value;
 use std::sync::{
     Arc, Mutex,
-    atomic::{AtomicBool, AtomicU8, AtomicU32, AtomicU64, Ordering},
+    atomic::{AtomicBool, AtomicU64, Ordering},
     mpsc,
 };
 use tokio_tungstenite::tungstenite::{self, client::IntoClientRequest};
@@ -116,13 +116,6 @@ struct Counters {
     audio: AtomicU64,
     malformed: AtomicU64,
     events: AtomicU64,
-    // Stream-stats telemetry (`cua_stream_stats`, sent bucketed on close).
-    started: std::time::Instant,
-    received: AtomicU64,
-    max_height: AtomicU32,
-    /// 0: not decoded here, 1: software, 2: hardware.
-    decode: AtomicU8,
-    codec: Mutex<String>,
 }
 
 impl Default for Counters {
@@ -133,39 +126,6 @@ impl Default for Counters {
             audio: AtomicU64::new(0),
             malformed: AtomicU64::new(0),
             events: AtomicU64::new(0),
-            started: std::time::Instant::now(),
-            received: AtomicU64::new(0),
-            max_height: AtomicU32::new(0),
-            decode: AtomicU8::new(0),
-            codec: Mutex::new(String::new()),
-        }
-    }
-}
-
-impl Counters {
-    /// A received video frame, for the stream summary.
-    fn saw_frame(&self, f: &VideoFrame) {
-        self.received.fetch_add(1, Ordering::Relaxed);
-        self.max_height.fetch_max(f.height, Ordering::Relaxed);
-        let mut codec = self.codec.lock().unwrap_or_else(|p| p.into_inner());
-        if codec.is_empty() {
-            *codec = f.codec.clone();
-        }
-    }
-
-    /// What the stream looked like, for `cua_stream_stats`.
-    fn summary(&self) -> super::telemetry::StreamSummary {
-        super::telemetry::StreamSummary {
-            transport: "websocket",
-            codec: self.codec.lock().unwrap_or_else(|p| p.into_inner()).clone(),
-            hw_decode: match self.decode.load(Ordering::Relaxed) {
-                1 => Some(false),
-                2 => Some(true),
-                _ => None,
-            },
-            frames: self.received.load(Ordering::Relaxed),
-            height: self.max_height.load(Ordering::Relaxed),
-            duration: self.started.elapsed(),
         }
     }
 }
@@ -459,7 +419,6 @@ pub(crate) async fn connect(
                     msg = rx.next() => match msg {
                         Some(Ok(tungstenite::Message::Binary(b))) => match parse_binary(&b) {
                             Some(Binary::Video(f)) => {
-                                counters.saw_frame(&f);
                                 if dtx.try_send(Item::Frame(f)).is_err() {
                                     counters.frames_dropped.fetch_add(1, Ordering::Relaxed);
                                 }
@@ -493,9 +452,6 @@ pub(crate) async fn connect(
                 }
             }
             closed.store(true, Ordering::SeqCst);
-            // Coarse, bucketed stream stats once per session; every opt-out
-            // applies (cua-telemetry decides).
-            super::telemetry::stream_ended(&counters.summary());
             let _ = dtx.send(Item::Event(MediaEvent {
                 kind: "closed".into(),
                 json: close_json.to_string(),
@@ -675,35 +631,6 @@ mod tests {
     }
 
     #[test]
-    fn counters_summarise_the_stream_for_telemetry() {
-        let c = Counters::default();
-        assert_eq!(c.summary().frames, 0);
-        let frame = |h: u32| VideoFrame {
-            sequence: 1,
-            codec: "h264".into(),
-            keyframe: false,
-            width: 16,
-            height: h,
-            capture_timestamp_us: 0,
-            codec_epoch: 1,
-            geometry_epoch: 1,
-            data: vec![],
-            header_json: String::new(),
-        };
-        c.saw_frame(&frame(720));
-        c.saw_frame(&frame(1080));
-        c.decode.store(1, Ordering::Relaxed);
-        let s = c.summary();
-        assert_eq!((s.frames, s.height), (2, 1080));
-        assert_eq!((s.transport, s.codec.as_str()), ("websocket", "h264"));
-        assert_eq!(s.hw_decode, Some(false));
-        // No video: nothing to report.
-        assert!(
-            super::super::telemetry::stream_stats_event(&Counters::default().summary()).is_none()
-        );
-    }
-
-    #[test]
     fn parses_audio_packets_and_rejects_bad_ones() {
         let mut b = b"RAU2".to_vec();
         b.push(2); // version
@@ -765,13 +692,5 @@ impl MediaSession {
     #[doc(hidden)]
     pub fn outgoing(&self) -> MediaOutgoing {
         MediaOutgoing(self.outgoing.clone())
-    }
-
-    /// Records where frames were decoded (stream-stats telemetry).
-    #[doc(hidden)]
-    pub fn record_decode(&self, hardware: bool) {
-        self.counters
-            .decode
-            .store(if hardware { 2 } else { 1 }, Ordering::Relaxed);
     }
 }

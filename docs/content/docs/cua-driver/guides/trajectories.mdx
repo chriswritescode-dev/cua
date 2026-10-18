@@ -56,7 +56,8 @@ nothing outside Cua-mediated actions.
 
 ```bash test="cli-shape" id="cua-driver-history-enable"
 cua-driver channel set nightly
-cua-driver update --apply
+git pull
+libs/cua-driver/scripts/install-local.sh
 cua-driver history enable
 cua-driver history status
 ```
@@ -130,5 +131,6 @@ and storage profile are specified in the
 
 <Callout type="info">
   To return to stable: `cua-driver history disable`, `cua-driver channel set stable`,
-  `cua-driver update --apply`. History is kept unless you delete it.
+  then pull the repository and rebuild with `libs/cua-driver/scripts/install-local.sh`.
+  History is kept unless you delete it.
 </Callout>

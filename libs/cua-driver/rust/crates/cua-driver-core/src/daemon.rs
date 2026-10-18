@@ -67,13 +67,12 @@ pub struct DaemonRequest {
     /// in `args.session`; callers must not use this field to select policy.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_id: Option<String>,
-    /// Bounded internal routing metadata for exactly-once completion
-    /// observation. Older peers ignore this additive field.
+    /// Trusted local-request marker. Older peers ignore this additive field.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub observation_origin: Option<ToolObservationOrigin>,
-    /// Privacy-bounded direct-client identity used only for aggregate product
-    /// telemetry. Raw package names, application names, and host identifiers
-    /// are never accepted here.
+    /// Closed direct-client identity used to gate operator-only requests.
+    /// Raw package names, application names, and host identifiers are never
+    /// accepted here.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub client_kind: Option<DaemonClientKind>,
 }

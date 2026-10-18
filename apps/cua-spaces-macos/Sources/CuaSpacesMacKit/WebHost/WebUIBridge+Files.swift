@@ -25,7 +25,6 @@ extension WebUIBridge {
                 throw Failure(code: "forbidden", message: "only files picked or dropped here are sent")
             }
             guard model.spaces.contains(where: { $0.id == id }) else { throw Failure.notFound("no Space \(id)") }
-            model.recordFeature("file_send")
             return BridgeValue.encode(try await model.backend.sendFiles(id: id, paths: paths))
         default:
             return nil

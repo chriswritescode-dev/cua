@@ -54,7 +54,6 @@ async def test_cloud_routes_fleet_auth_without_explicit_legacy_key(
             claim_name=kwargs["name"],
             pool_name="cua-auto-abc",
             _claim_handle=SimpleNamespace(state_fields=lambda: {"managed": True}),
-            telemetry_enabled=False,
             _ephemeral=False,
         )
 
@@ -81,10 +80,9 @@ async def test_cloud_routes_fleet_auth_without_explicit_legacy_key(
     await Sandbox.create(
         Image.from_registry("example:latest"),
         name="fleet-demo",
-        telemetry_enabled=False,
         local=False,
     )
-    await Sandbox.create(Image.linux(), name="linux-demo", telemetry_enabled=False, local=False)
+    await Sandbox.create(Image.linux(), name="linux-demo", local=False)
     legacy_sandbox = await Sandbox.create(
         Image.from_registry("example:latest"),
         name="legacy-demo",

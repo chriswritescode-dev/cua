@@ -94,7 +94,7 @@ function UpdateControls({
   canChange: boolean;
   /** This build can't update itself: every control greyed out, and why in place of the last check. */
   unavailable?: boolean;
-  onChange: (patch: { autoCheck?: boolean; autoInstall?: boolean; channel?: UpdateChannel }) => void;
+  onChange: (patch: { autoCheck?: boolean; channel?: UpdateChannel }) => void;
   onCheck: () => void;
 }) {
   const channel = (u.channels.find((c) => c.active)?.id ?? "stable") as UpdateChannel;
@@ -105,16 +105,6 @@ function UpdateControls({
         <label className="flex items-center gap-2 text-[13px]">
           <Checkbox checked={u.autoCheck} disabled={!canChange} onCheckedChange={(on) => onChange({ autoCheck: on })} data-about-auto-check />
           {u.autoCheckLabel}
-        </label>
-        <span />
-        <label className="flex items-center gap-2 text-[13px]">
-          <Checkbox
-            checked={u.autoInstall}
-            disabled={!canChange || !u.autoInstallEnabled}
-            onCheckedChange={(on) => onChange({ autoInstall: on })}
-            data-about-auto-install
-          />
-          <span className={u.autoInstallEnabled ? undefined : "text-muted-foreground"}>{u.autoInstallLabel}</span>
         </label>
         <span className="text-right text-[13px]">{u.channelLabel}</span>
         <span className="flex items-center gap-2">

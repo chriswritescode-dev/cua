@@ -22,7 +22,6 @@ def managed_sandbox(pool_name: str, claim_name: str) -> SimpleNamespace:
             state_fields=lambda: {"managed": True, "spec_hash": "0" * 64, "claim_ttl": 900}
         ),
         _ephemeral=False,
-        telemetry_enabled=False,
         keep_alive=AsyncMock(),
         close=AsyncMock(),
     )
@@ -76,7 +75,7 @@ async def test_create_with_fleet_image_claims_from_managed_pool(monkeypatch, tmp
     monkeypatch.setattr(_autopool, "acquire", acquire)
     image = Image.from_registry("registry.example/workspace:latest")
 
-    sandbox = await Sandbox.create(image, name="job-123", telemetry_enabled=False, local=False)
+    sandbox = await Sandbox.create(image, name="job-123", local=False)
 
     assert sandbox is acquired
     apply_pool.assert_not_awaited()
@@ -339,7 +338,6 @@ async def test_ephemeral_image_uses_name_for_the_claim_on_a_managed_pool(monkeyp
         name="cua-live-main-source-manual",
         cpu=4,
         memory_mb=4096,
-        telemetry_enabled=False,
         local=False,
     ):
         pass
@@ -376,7 +374,7 @@ async def test_keep_pool_is_a_deprecated_no_op(monkeypatch, kwargs):
 
     with pytest.warns(DeprecationWarning, match="keep_pool"):
         async with Sandbox.ephemeral(
-            keep_pool=True, telemetry_enabled=False, **kwargs, local=False
+            keep_pool=True, **kwargs, local=False
         ):
             pass
 
@@ -393,7 +391,6 @@ async def test_ephemeral_image_without_name_never_creates_a_disposable_pool(monk
 
     async with Sandbox.ephemeral(
         Image.from_registry("registry.example/workspace:latest"),
-        telemetry_enabled=False,
         local=False,
     ):
         pass
@@ -426,7 +423,6 @@ async def test_ephemeral_image_preserves_body_error_when_claim_cleanup_fails(mon
     with pytest.raises(ValueError, match="body failed"):
         async with Sandbox.ephemeral(
             Image.from_registry("registry.example/workspace:latest"),
-            telemetry_enabled=False,
             local=False,
         ):
             raise ValueError("body failed")
@@ -442,7 +438,7 @@ async def test_ephemeral_forwards_the_fleet_runtime_to_the_managed_pool(monkeypa
     monkeypatch.setattr(_autopool, "acquire", acquire)
     image = Image.from_registry("public.ecr.aws/k5j5w0x5/cua-ubuntu-24.04:main-1")
 
-    async with Sandbox.ephemeral(image, runtime="gvisor", telemetry_enabled=False, local=False):
+    async with Sandbox.ephemeral(image, runtime="gvisor", local=False):
         pass
 
     assert acquire.await_args.kwargs["runtime"] == "gvisor"
@@ -463,7 +459,6 @@ async def test_a_fleet_runtime_belongs_to_the_pool_not_the_claim(monkeypatch, tm
         Image.from_registry("registry.example/workspace:latest"),
         name="job",
         runtime="gvisor",
-        telemetry_enabled=False,
         local=False,
     )
     assert acquire.await_args.kwargs["runtime"] == "gvisor"

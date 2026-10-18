@@ -114,7 +114,6 @@ export { agentRunLines, useDesktopCover, useSpaceDetail, type AgentRunLine, type
 export type * from "./ops/space-detail";
 export { useThisMachine, type HostFailure, type HostFormView as HostSetupFormView, type ThisMachineHook } from "./this-machine";
 export type { HostFormAction, HostSetupRequest } from "./ops/host-setup";
-export type { TelemetrySignal } from "./ops/telemetry";
 export { useStartup, type StartupHook } from "./startup";
 export { defaultTeam, eligibleTeams, teamName, useTeamChoices, type TeamChoices } from "./teams";
 export { joinFailureText, useJoinWithCode, type JoinHook, type JoinPhase } from "./join";
@@ -144,7 +143,6 @@ export {
 export {
   resetUpsellMemory,
   useQuiet,
-  useTrackPlanClick,
   useUpsellGate,
   useUpsellPrompt,
   type UpsellGate,

@@ -17,7 +17,6 @@
 //! | list, describe, audit, grants, rules, pending, disable, revoke, deny, lock, delete | first party |
 //! | init, import, approve, add rule, widen policy, enable, unlock (presence policy), interactive teleport | first party + user presence |
 
-use cua_telemetry::events::{KeyvaultAction, KeyvaultMethod};
 use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -1015,9 +1014,6 @@ pub struct Broker {
     root: SecretKey,
     state: tokio::sync::Mutex<State>,
     decided: tokio::sync::Notify,
-    /// Where teleport and consent counts go (the process-wide client
-    /// unless replaced with [`Broker::with_telemetry`]).
-    telemetry: cua_telemetry::Telemetry,
     /// Why this daemon cannot create the OS key store protector (`None`: it
     /// can). Computed once: the daemon's own signature does not change.
     os_enroll_block: std::sync::OnceLock<Option<String>>,
@@ -1111,16 +1107,8 @@ impl Broker {
                 ..Default::default()
             }),
             decided: tokio::sync::Notify::new(),
-            telemetry: cua_telemetry::global().clone(),
             os_enroll_block: std::sync::OnceLock::new(),
         })
-    }
-
-    /// Records telemetry through `t` instead of the process-wide client
-    /// (tests, embedders with their own client).
-    pub fn with_telemetry(mut self, t: cua_telemetry::Telemetry) -> Self {
-        self.telemetry = t;
-        self
     }
 
     /// Resolves every target name to its immutable id, failing closed if any
@@ -1344,20 +1332,7 @@ impl Broker {
 
     /// Creates the vault (first party + presence). Returns the recovery key
     /// to show once.
-    pub async fn init(&self, caller: &CallerIdentity, req: InitRequest) -> Result<Option<String>> {
-        let method = if req.os_protector {
-            KeyvaultMethod::OsKeyStore
-        } else if req.passphrase.is_some() {
-            KeyvaultMethod::Passphrase
-        } else {
-            KeyvaultMethod::RecoveryKey
-        };
-        let r = self.init_inner(caller, req).await;
-        self.record_action(KeyvaultAction::Setup, method, &r);
-        r
-    }
-
-    async fn init_inner(
+    pub async fn init(
         &self,
         caller: &CallerIdentity,
         mut req: InitRequest,
@@ -1412,17 +1387,6 @@ impl Broker {
     /// Unlocks with the OS protector (no credential) or a passphrase or
     /// recovery key. First party.
     pub async fn unlock(&self, caller: &CallerIdentity, req: UnlockRequest) -> Result<()> {
-        let method = match (&req.passphrase, &req.recovery_key) {
-            (Some(_), _) => KeyvaultMethod::Passphrase,
-            (None, Some(_)) => KeyvaultMethod::RecoveryKey,
-            (None, None) => KeyvaultMethod::OsKeyStore,
-        };
-        let r = self.unlock_inner(caller, req).await;
-        self.record_action(KeyvaultAction::Unlock, method, &r);
-        r
-    }
-
-    async fn unlock_inner(&self, caller: &CallerIdentity, req: UnlockRequest) -> Result<()> {
         policy::require_first_party(caller, "unlocking the Keyvault")?;
         let protector: Box<dyn Protector> = match (&req.passphrase, &req.recovery_key) {
             (Some(p), _) => Box::new(PassphraseProtector::new(p.clone())),
@@ -1494,27 +1458,6 @@ impl Broker {
 
     /// Locks (first party).
     pub async fn lock(&self, caller: &CallerIdentity) -> Result<()> {
-        let r = self.lock_inner(caller).await;
-        self.record_action(KeyvaultAction::Lock, KeyvaultMethod::None, &r);
-        r
-    }
-
-    /// `cua_keyvault_action`: the action, how it was unlocked and whether it
-    /// worked. Nothing about the vault's contents.
-    fn record_action<T>(&self, a: KeyvaultAction, m: KeyvaultMethod, r: &Result<T>) {
-        self.telemetry
-            .capture(cua_telemetry::events::keyvault_action(
-                a,
-                m,
-                if r.is_ok() {
-                    cua_telemetry::Outcome::Ok
-                } else {
-                    cua_telemetry::Outcome::Error
-                },
-            ));
-    }
-
-    async fn lock_inner(&self, caller: &CallerIdentity) -> Result<()> {
         policy::require_first_party(caller, "locking the Keyvault")?;
         let mut st = self.state.lock().await;
         Self::audit(&mut st, ev("vault.lock", caller, "ok"));
@@ -1739,16 +1682,6 @@ impl Broker {
     /// Imports sites or an app session into the vault (first party +
     /// presence). Each site becomes its own item.
     pub async fn import(&self, caller: &CallerIdentity, spec: ImportSpec) -> Result<ImportReport> {
-        let r = self.import_inner(caller, spec).await;
-        self.record_action(KeyvaultAction::Import, KeyvaultMethod::None, &r);
-        r
-    }
-
-    async fn import_inner(
-        &self,
-        caller: &CallerIdentity,
-        spec: ImportSpec,
-    ) -> Result<ImportReport> {
         policy::require_first_party(caller, "importing into the Keyvault")?;
         {
             let st = self.state.lock().await;
@@ -1885,12 +1818,6 @@ impl Broker {
                 "nothing was captured to teleport (empty selection)".into(),
             ));
         }
-        let started = std::time::Instant::now();
-        let app = items
-            .first()
-            .map(|m| m.provider_id.clone())
-            .unwrap_or_default();
-        let n = item_ids.len() as u64;
         let req = TeleportRequest {
             token: None,
             items: item_ids.clone(),
@@ -1907,7 +1834,6 @@ impl Broker {
                 launch,
             )
             .await;
-        crate::telemetry::teleport(&self.telemetry, caller, &app, started, &result, n);
         if !save && !stored.created.is_empty() {
             // Only what this call added is forgotten; an item that was
             // already saved stays (and holds the value just read).
@@ -1943,16 +1869,6 @@ impl Broker {
     /// The passwords stay sealed: they are used through [`Broker::login`]
     /// and never delivered.
     pub async fn import_passwords(
-        &self,
-        caller: &CallerIdentity,
-        spec: PasswordImportSpec,
-    ) -> Result<ImportReport> {
-        let r = self.import_passwords_inner(caller, spec).await;
-        self.record_action(KeyvaultAction::Import, KeyvaultMethod::None, &r);
-        r
-    }
-
-    async fn import_passwords_inner(
         &self,
         caller: &CallerIdentity,
         spec: PasswordImportSpec,
@@ -2318,21 +2234,6 @@ impl Broker {
     pub async fn request_access(
         &self,
         caller: &CallerIdentity,
-        req: AccessRequest,
-    ) -> Result<PendingView> {
-        let r = self.request_access_inner(caller, req).await;
-        if r.is_ok() {
-            crate::telemetry::consent(
-                &self.telemetry,
-                cua_telemetry::events::ConsentDecision::Requested,
-            );
-        }
-        r
-    }
-
-    async fn request_access_inner(
-        &self,
-        caller: &CallerIdentity,
         mut req: AccessRequest,
     ) -> Result<PendingView> {
         if req.selectors.is_empty() || req.targets.is_empty() {
@@ -2357,10 +2258,8 @@ impl Broker {
             return Err(Error::Disabled);
         }
         // Expire stale requests.
-        let before = st.pending.len();
         st.pending
             .retain(|_, p| now.saturating_sub(p.view.created_ms) < PENDING_TTL_MS);
-        crate::telemetry::expired(&self.telemetry, before - st.pending.len());
         // Global consent-prompt rate limit (across every caller): bounds the
         // total prompt volume even when several distinct identities each stay
         // under their own budget (red-team F9).
@@ -2554,10 +2453,6 @@ impl Broker {
         Self::audit(&mut st, e);
         drop(st);
         self.decided.notify_waiters();
-        crate::telemetry::consent(
-            &self.telemetry,
-            cua_telemetry::events::ConsentDecision::Approved,
-        );
         let mut caller_view = view;
         caller_view.items = caller_view.items.iter().map(|i| i.redacted()).collect();
         Ok(caller_view)
@@ -2614,26 +2509,13 @@ impl Broker {
         policy::require_first_party(caller, "listing consent requests")?;
         let now = crate::now_ms();
         let mut st = self.state.lock().await;
-        let before = st.pending.len();
         st.pending
             .retain(|_, p| now.saturating_sub(p.view.created_ms) < PENDING_TTL_MS);
-        crate::telemetry::expired(&self.telemetry, before - st.pending.len());
         Ok(st.pending.values().map(|p| p.view.clone()).collect())
     }
 
     /// Declines a request (first party; no presence needed).
     pub async fn deny(&self, caller: &CallerIdentity, request_id: &str) -> Result<()> {
-        let r = self.deny_inner(caller, request_id).await;
-        if r.is_ok() {
-            crate::telemetry::consent(
-                &self.telemetry,
-                cua_telemetry::events::ConsentDecision::Denied,
-            );
-        }
-        r
-    }
-
-    async fn deny_inner(&self, caller: &CallerIdentity, request_id: &str) -> Result<()> {
         policy::require_first_party(caller, "answering consent requests")?;
         let mut st = self.state.lock().await;
         let p = st
@@ -2670,22 +2552,6 @@ impl Broker {
     /// Approves a request (first party + user presence), optionally
     /// narrowed, importing missing sites first. Mints the requester's token.
     pub async fn approve(
-        &self,
-        caller: &CallerIdentity,
-        request_id: &str,
-        opts: ApproveOptions,
-    ) -> Result<Grant> {
-        let r = self.approve_inner(caller, request_id, opts).await;
-        if r.is_ok() {
-            crate::telemetry::consent(
-                &self.telemetry,
-                cua_telemetry::events::ConsentDecision::Approved,
-            );
-        }
-        r
-    }
-
-    async fn approve_inner(
         &self,
         caller: &CallerIdentity,
         request_id: &str,
@@ -3035,30 +2901,9 @@ impl Broker {
         caller: &CallerIdentity,
         req: TeleportRequest,
     ) -> Result<TeleportOutcome> {
-        let started = std::time::Instant::now();
-        let items = req.items.len() as u64;
-        // The provider (a public catalog id such as `chrome`) of the first
-        // item, read without changing anything; `other` when unknown.
-        let app = {
-            let st = self.state.lock().await;
-            st.vault
-                .as_ref()
-                .filter(|v| v.is_unlocked())
-                .and_then(|v| v.meta().ok())
-                .and_then(|m| {
-                    req.items
-                        .first()
-                        .and_then(|i| m.items.get(i))
-                        .map(|it| it.provider_id.clone())
-                })
-                .unwrap_or_default()
-        };
         let launch = req.launch;
-        let r = self
-            .teleport_inner(caller, req, PresenceAlready::NotConfirmed, None, launch)
-            .await;
-        crate::telemetry::teleport(&self.telemetry, caller, &app, started, &r, items);
-        r
+        self.teleport_inner(caller, req, PresenceAlready::NotConfirmed, None, launch)
+            .await
     }
 
     async fn teleport_inner(

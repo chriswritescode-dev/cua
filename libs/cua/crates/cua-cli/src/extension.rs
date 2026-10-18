@@ -150,8 +150,11 @@ fn forward(what: &str) -> Result<i32, CuaError> {
     let missing = || {
         CuaError::Unsupported(format!(
             "{what} ships with Cua Spaces (source-available, FSL-1.1-MIT) and this `cua` \
-             does not include it; install Cua Spaces (https://cua.ai/download) and run its \
-             `cua`, or set {ENV_SPACES_CLI} to it"
+             does not include it; build Cua Spaces from the repository \
+             (https://github.com/trycua/cua) with `git pull && \
+             apps/cua-spaces-macos/scripts/build-release.sh` (macOS) or `pnpm --dir \
+             apps/cua-spaces-desktop dist:mac|win|linux` and run its `cua`, or set \
+             {ENV_SPACES_CLI} to it"
         ))
     };
     if std::env::var_os(ENV_FORWARDED).is_some() {

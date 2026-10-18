@@ -64,7 +64,7 @@ async def env_sandbox(env):
     async def factory():
         return env
 
-    sb = Sandbox(EnvTransport(env_factory=factory), _telemetry_enabled=False)
+    sb = Sandbox(EnvTransport(env_factory=factory))
     await sb._connect()
     return sb
 
@@ -125,7 +125,7 @@ async def test_fleet_env_claim_uses_the_env_carrier_not_named_services(shared, r
     _, channels = shared
     env = EnvHttp(reply=SimpleNamespace(status=200, headers=[], body=b"{}"))
     transport = FleetEnvTransport(env)
-    sb = Sandbox(transport, _telemetry_enabled=False)
+    sb = Sandbox(transport)
     await sb._connect()
     async with sb.driver.connect():
         request = SimpleNamespace(method="POST", path="/mcp", body=b"", headers=[], timeout_ms=5)
@@ -139,7 +139,7 @@ async def test_fleet_claim_without_env_service_fails_before_loading_native(monke
 
     monkeypatch.setitem(sys.modules, "cua_driver", None)
     transport = FleetEnvTransport(EnvHttp(), services=("server",))
-    sb = Sandbox(transport, _telemetry_enabled=False)
+    sb = Sandbox(transport)
     await sb._connect()
     with pytest.raises(DriverConnectionError, match="expose"):
         async with sb.driver.connect():

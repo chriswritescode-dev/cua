@@ -107,7 +107,7 @@ impl BrokerError {
                 open_url,
                 ..
             } => format!(
-                "teleport goes through the Cua Keyvault, which needs the Cua app: install it from {install_url}, open {open_url}, then retry"
+                "teleport goes through the Cua Keyvault, which needs the Cua app: build it from the repository ({install_url}) with `git pull && apps/cua-spaces-macos/scripts/build-release.sh` (macOS) or `pnpm --dir apps/cua-spaces-desktop dist:mac|win|linux`, then open {open_url} and retry"
             ),
             Self::Keyvault { code, message } => format!("keyvault {code}: {message}"),
         }
@@ -147,7 +147,7 @@ impl Broker for Unwired {
 pub fn requires_cua_app() -> BrokerError {
     BrokerError::RequiresCuaApp {
         installed: false,
-        install_url: "https://cua.ai/download".into(),
+        install_url: "https://github.com/trycua/cua".into(),
         open_url: "cua://keyvault".into(),
     }
 }
@@ -216,55 +216,6 @@ pub fn duration(value: &Value) -> Result<Duration, String> {
         None => Err("duration_minutes must be a whole number".into()),
         Some(0) => Err("duration_minutes must be at least 1".into()),
         Some(m) => Ok(Duration::from_secs(m.saturating_mul(60)).min(MAX_DURATION)),
-    }
-}
-
-/// Records the `cua_teleport_attempted` / `cua_teleport_completed` events
-/// of one `teleport_browser_session` call. No broker verified this process,
-/// so `caller_kind` is self-reported (`unknown` for the CLI). A pending
-/// consent records no completion.
-pub fn record_telemetry(
-    app: &str,
-    first_call: bool,
-    out: &Result<Value, BrokerError>,
-    started: std::time::Instant,
-    sites: usize,
-) {
-    use cua_telemetry::events::{self, CallerKind, CallerKindSource, TeleportOutcome as O};
-    let t = cua_telemetry::global();
-    let info = events::TeleportInfo::new(
-        app,
-        "full",
-        "session",
-        CallerKind::self_reported(t.product()),
-        CallerKindSource::SelfReported,
-        "sdk",
-    );
-    if first_call {
-        t.capture(events::teleport_attempted(&info));
-    }
-    let outcome = match out {
-        Ok(v) if v["moved"] == true => Some(O::Ok),
-        Ok(_) => None,
-        Err(e) => Some(match e.kind() {
-            "requires_cua_app" => O::RequiresCuaApp,
-            "denied" | "expired" => O::ConsentDenied,
-            "disabled" => O::Disabled,
-            "locked" => O::Locked,
-            "rate_limited" => O::RateLimited,
-            "forbidden" => O::Forbidden,
-            "not_found" => O::NotFound,
-            "invalid" => O::Invalid,
-            _ => O::Error,
-        }),
-    };
-    if let Some(o) = outcome {
-        t.capture(events::teleport_completed(
-            &info,
-            o,
-            started.elapsed(),
-            sites as u64,
-        ));
     }
 }
 
@@ -515,6 +466,6 @@ mod tests {
             .await
             .unwrap_err();
         assert_eq!(e.kind(), "requires_cua_app");
-        assert!(e.message().contains("https://cua.ai/download"));
+        assert!(e.message().contains("https://github.com/trycua/cua"));
     }
 }

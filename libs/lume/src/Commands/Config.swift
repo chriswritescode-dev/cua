@@ -6,7 +6,7 @@ struct Config: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "config",
         abstract: "Get or set lume configuration",
-        subcommands: [Get.self, Storage.self, Cache.self, Telemetry.self, Registry.self, Network.self],
+        subcommands: [Get.self, Storage.self, Cache.self, Registry.self, Network.self],
         defaultSubcommand: Get.self
     )
 
@@ -32,9 +32,6 @@ struct Config: ParsableCommand {
 
             // Display caching enabled status
             print("Caching enabled: \(settings.cachingEnabled)")
-
-            // Display telemetry status
-            print("Telemetry enabled: \(settings.telemetryEnabled)")
 
             // Display registry info
             if let registry = settings.registry {
@@ -222,76 +219,6 @@ struct Config: ParsableCommand {
                 let controller = LumeController()
                 try controller.setDefaultLocation(name: name)
                 print("Set default VM storage location to: \(name)")
-            }
-        }
-    }
-
-    // MARK: - Telemetry Management Subcommands
-
-    struct Telemetry: ParsableCommand {
-        static let configuration = CommandConfiguration(
-            commandName: "telemetry",
-            abstract: "Manage pseudonymous telemetry settings",
-            subcommands: [Status.self, Enable.self, Disable.self, ResetID.self],
-            defaultSubcommand: Status.self
-        )
-
-        struct Status: ParsableCommand {
-            static let configuration = CommandConfiguration(
-                commandName: "status",
-                abstract: "Show current telemetry status"
-            )
-
-            func run() throws {
-                let status = TelemetryClient.shared.status()
-
-                print("Telemetry enabled: \(status.enabled)")
-                print("Effective source: \(status.source)")
-                print("Persisted preference: \(status.persistedEnabled)")
-                print("Installation ID: \(status.installationIdPresent ? "present (redacted)" : "not created")")
-
-                print("\nTelemetry collects pseudonymous usage data to help improve Lume.")
-                print("No prompts, VM/image names, file paths, or VM contents are collected.")
-            }
-        }
-
-        struct Enable: ParsableCommand {
-            static let configuration = CommandConfiguration(
-                commandName: "enable",
-                abstract: "Enable pseudonymous telemetry"
-            )
-
-            func run() throws {
-                let controller = LumeController()
-                try controller.setTelemetryEnabled(true)
-                print("Telemetry enabled")
-                print("Thank you for helping improve Lume!")
-            }
-        }
-
-        struct Disable: ParsableCommand {
-            static let configuration = CommandConfiguration(
-                commandName: "disable",
-                abstract: "Disable pseudonymous telemetry"
-            )
-
-            func run() throws {
-                let controller = LumeController()
-                try controller.setTelemetryEnabled(false)
-                print("Telemetry disabled")
-            }
-        }
-
-        struct ResetID: ParsableCommand {
-            static let configuration = CommandConfiguration(
-                commandName: "reset-id",
-                abstract: "Delete the pseudonymous installation ID and registration markers"
-            )
-
-            func run() throws {
-                try TelemetryClient.shared.resetInstallationId()
-                print("Telemetry installation ID reset")
-                print("The enabled/disabled preference was preserved.")
             }
         }
     }

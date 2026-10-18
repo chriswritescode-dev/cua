@@ -132,7 +132,7 @@ struct ProviderFailureTests {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let model = AppModel(backend: backend, keyvault: KeyvaultModel(client: nil),
             onboarding: OnboardingModel(statePath: nil), settingsPath: directory.appendingPathComponent("settings.json").path,
-            telemetry: FixtureTelemetry(), devices: devices, presence: FixturePresence())
+            devices: devices, presence: FixturePresence())
         model.settings.autoConnect = autoConnect
         await model.refresh()
         model.devices.signedIn = true

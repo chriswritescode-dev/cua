@@ -15,7 +15,10 @@ GREEN = "\033[92m"
 RED = "\033[91m"
 GREY = "\033[90m"
 
-INSTALL_HINT = "Install the cua CLI: curl -fsSL https://cua.ai/install.sh | sh"
+INSTALL_HINT = (
+    "Build the cua CLI from the repository: "
+    "git pull && cargo build --release -p cua-cli --manifest-path libs/cua/Cargo.toml"
+)
 
 
 def execute(args) -> int:

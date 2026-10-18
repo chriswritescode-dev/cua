@@ -97,10 +97,6 @@ export type { SandboxPreset } from './constants/sandboxPresets';
 // Trajectory Viewer
 export { default as TrajectoryViewer } from './components/TrajectoryViewer';
 
-// Telemetry
-export { TelemetryProvider, usePlaygroundTelemetry, classifyTrajectoryError } from './telemetry';
-export type { TelemetryProviderProps, TelemetryFunctions, TrajectoryErrorType } from './telemetry';
-
 // Main Playground Component
 export { Playground } from './components/Playground';
 

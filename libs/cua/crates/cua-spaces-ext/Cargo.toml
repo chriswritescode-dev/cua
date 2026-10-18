@@ -24,8 +24,6 @@ cua-spaces-contract = { path = "../cua-spaces-contract" }
 cua-spacesd-client.workspace = true
 cua-volume = { workspace = true, features = ["nfs"] }
 cua-keyvault.workspace = true
-# Persistent-agent adoption counts (fixed words only).
-cua-telemetry.workspace = true
 cua-daemon = { workspace = true, features = ["server", "client", "spaces"] }
 cua-fleet.workspace = true
 cua-auth.workspace = true

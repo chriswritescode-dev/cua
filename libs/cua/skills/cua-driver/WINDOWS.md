@@ -440,9 +440,10 @@ your prior tool calls earned.
    `where.exe cua-driver`. Install location:
    `%LOCALAPPDATA%\Programs\trycua\cua-driver-rs\bin\cua-driver.exe`,
    added to the user PATH by the install script.
-   If missing, point the user at:
+   If missing, point the user at a repository build:
    ```powershell
-   irm https://cua.ai/driver/install.ps1 | iex
+   git pull
+   libs\cua-driver\scripts\install-local.ps1
    ```
    and stop.
 2. **The runtime owner must run in an interactive session (Session 1+),

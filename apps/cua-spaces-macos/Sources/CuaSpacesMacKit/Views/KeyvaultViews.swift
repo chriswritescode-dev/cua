@@ -523,8 +523,7 @@ struct BatchBar: View {
     }
 }
 
-/// A site's icon (the browser's own, else Google's when allowed), else the
-/// globe. It asks for the icon once, as it first appears.
+/// A site's icon (the browser's own), else the globe.
 struct SiteIcon: View {
     let keyvault: KeyvaultModel
     let site: String
@@ -540,7 +539,6 @@ struct SiteIcon: View {
         }
         .frame(width: 20)
         .accessibilityHidden(true)
-        .task(id: site) { await keyvault.siteIcon(site) }
     }
 }
 

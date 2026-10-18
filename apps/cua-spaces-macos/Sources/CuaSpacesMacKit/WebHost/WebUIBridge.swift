@@ -40,7 +40,7 @@ public struct WebUIActions {
 /// { detail: { event, payload } }))`, where `event` is `spaces.changed`,
 /// `machines.changed`, `keyvault.changed`, `session.changed`,
 /// `settings.changed`, `agents.changed` or `update.changed` (an update
-/// found, downloading, ready or failed); the UI asks again for what it
+/// found or failed); the UI asks again for what it
 /// shows. `spaces.createProgress` carries a create's progress (the page's
 /// pending id), and `spaces.newRequested` (`{on}`) asks the page to open
 /// its New Space wizard (the app's New Space menu items, the notch).
@@ -86,12 +86,12 @@ final class WebUIBridge: NSObject, WKScriptMessageHandlerWithReply {
         "volume.overview", "volume.storage", "volume.storageSet", "volume.mount", "volume.unmount",
         "volume.approve", "volume.deny", "volume.revoke", "volume.resolve", "volume.reveal",
         "agents.setupDriver",
-        "about.get", "about.set", "about.checkNow", "update.get", "update.install", "loginItem.get", "loginItem.set", "loginItem.openSettings",
+        "about.get", "about.set", "about.checkNow", "update.get", "loginItem.get", "loginItem.set", "loginItem.openSettings",
         "devices.get", "devices.enroll", "devices.checkEnrolled", "devices.approve", "devices.rename",
         "devices.revoke", "devices.confirmMachine", "devices.createPairingCode", "devices.pairingCodes",
         "devices.revokePairingCode", "teams.list", "storage.get", "storage.run",
         "notifications.list", "notifications.markAllRead", "notifications.markRead",
-        "telemetry.track", "spaces.usage", "spaces.windows", "stream.pip",
+        "spaces.usage", "spaces.windows", "stream.pip",
         // A Space's thumbnail (WebUIBridge+Thumbnails.swift).
         "spaces.thumbnail",
         // A Space's drop well: Send file… and dropped files (WebUIBridge+Files.swift).

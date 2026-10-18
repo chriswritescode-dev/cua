@@ -409,14 +409,6 @@ AppSignInPhase::Failed { message: String }
 | `Waiting` | The browser is open. Fields: `user_code: Option<String>` |
 | `Failed` | It failed. Fields: `message: String` |
 
-## `AppTelemetryInput` record
-
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `enabled` | `bool` |  | Usage data is shared. |
-| `locked_by` / `lockedBy` | `Option<String>` |  | The environment decides (`DO_NOT_TRACK`, `CUA_TELEMETRY`, CI): who. |
-| `notice_shown` / `noticeShown` | `bool` |  | The first-run usage notice was already shown on this machine (by `cua`, or an earlier run of the app): events may be sent before Welcome is left. |
-
 ## `app_menu`
 
 The menu bar item's menu: the Spaces the user can open (the notch's
@@ -590,7 +582,6 @@ Returned by [`app_settings_input_from_json`](#app_settings_input_from_json).
 | `menu_bar` / `menuBar` | `bool` |  | The Spaces tab is hidden from the notch (the menu bar item is the entry point). |
 | `default_location` / `defaultLocation` | [`AppLocation`](/cua-sdk/reference/spaces/app-core/new-space#applocation-enum) |  | Where New Space starts. |
 | `location_locked_by` / `locationLockedBy` | `Option<String>` |  | The environment sets the default location: which variable. |
-| `telemetry` | [`Option<AppTelemetryInput>`](#apptelemetryinput-record) |  | The telemetry switch (none until read). |
 | `agents` | [`Option<Vec<AppAgentSettingsRow>>`](/cua-sdk/reference/spaces/app-core/agent-keys#appagentsettingsrow-record) |  | Coding agents (none while detecting). |
 | `agents_busy` / `agentsBusy` | `bool` |  | "Configure all" is running. |
 | `agents_pending` / `agentsPending` | `Vec<String>` |  | Agents with an action running. |
@@ -600,7 +591,6 @@ Returned by [`app_settings_input_from_json`](#app_settings_input_from_json).
 | `experiments` | [`AppExperiments`](/cua-sdk/reference/spaces/app-core/experiments#appexperiments-record) |  | Settings, Experiments (what the page mentions follows them). |
 | `keyvault_auto_wipe` / `keyvaultAutoWipe` | `Option<bool>` |  | The Keyvault's auto-wipe, once the broker told it (none: no Keyvault section). |
 | `keyvault_unlock_prompt` / `keyvaultUnlockPrompt` | `Option<bool>` |  | The unlock prompt shows (false once the user chose "Never ask again"); none until the broker told it. |
-| `keyvault_site_icons` / `keyvaultSiteIcons` | `bool` |  | Load site icons from Google when the browser had none (`AppSettings.keyvault_site_icons`). |
 | `keyvault_protection` / `keyvaultProtection` | [`Vec<AppFact>`](#appfact-record) |  | The Keyvault's protection facts (Touch ID, the daemon's signature), shown in the section. |
 | `auto_connect` / `autoConnect` | `Option<bool>` |  | "Connect to the desktop automatically" (none: no row; a shell without the preview cover leaves it out). |
 | `lume_source` / `lumeSource` | `Option<String>` |  | Which Lume macOS Spaces run on (`runtime.lume`: `auto`, `builtin`, `system`); none: no Runtimes section. |
@@ -621,7 +611,7 @@ Returned by [`app_experiments_page`](/cua-sdk/reference/spaces/app-core/experime
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `title` | `String` |  | "Settings". |
-| `sections` | [`Vec<AppSettingsSection>`](#appsettingssection-record) |  | Account, General, Privacy (once read), AI agents. |
+| `sections` | [`Vec<AppSettingsSection>`](#appsettingssection-record) |  | Account, General, AI agents. |
 
 ## `AppSettingsRow` record
 
@@ -645,8 +635,8 @@ Returned by [`app_storage_section`](/cua-sdk/reference/spaces/volume-app-core#ap
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `id` | `String` |  | `account`, `general`, `privacy`, `agents`. |
-| `title` | `String` |  | "Account", "General", "Privacy", "AI agents". |
+| `id` | `String` |  | `account`, `general`, `agents`. |
+| `title` | `String` |  | "Account", "General", "AI agents". |
 | `button` | `Option<String>` |  | A button in the header. |
 | `button_enabled` / `buttonEnabled` | `bool` |  | That button can be used. |
 | `button_help` / `buttonHelp` | `Option<String>` |  | Its tooltip. |

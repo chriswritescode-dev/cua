@@ -26,7 +26,7 @@ import { HostModel } from "./host";
 import { KeyvaultModel } from "./keyvault";
 import { appImageCua, appImageDaemonRoot } from "./appimage-cua";
 import { LiveGate, PendingAccount, PendingSpacesBackend, type LiveServices } from "./pending";
-import { LiveAccount, LiveTelemetry, hostAccount } from "./services";
+import { LiveAccount, hostAccount } from "./services";
 import { BundledCuaKeychain, StartupModel } from "./startup";
 import { withTimeout } from "./time";
 import { LinuxRuntime, nodeLinuxSystem, type RelaunchSpec } from "./linux-runtime";
@@ -92,20 +92,13 @@ export function makeModel(o: EnvironmentOptions): Environment {
   // No keychain prompt from this process or the daemon it starts: a read
   // that would need one fails fast as "needs access", and the page asks.
   env[KEYCHAIN_NONINTERACTIVE_ENV] = "1";
-  // This process's usage events are the app's, wait for the notice the
-  // first run shows, and start with `app_launched`.
   const firstRunDue = !(readOnboardingCompleted(onboardingPath) ?? false);
-  native.appTelemetryStart(o.version, firstRunDue);
 
   const ownership = (daemonExe: string | null, bundle: string) => native.appAboutRestartDaemon({ daemonExe: daemonExe ?? undefined, bundle });
   const supervisor = cua ? new DaemonSupervisor(cua, path.dirname(cua), ownership, env, platform) : null;
   const gate = new LiveGate<LiveServices>();
   const backend = new PendingSpacesBackend(gate);
   const account = new PendingAccount(gate);
-  const telemetry = new LiveTelemetry(native);
-  // A first run that finished here had the notice on its Welcome page;
-  // earlier builds never recorded that, so their machines sent nothing.
-  if (!firstRunDue) telemetry.acknowledgeNotice();
   const host = new HostModel(native, null);
   const devices = new DevicesModel(native, () => gate.current?.devices ?? null);
   const cloud = new CloudModel(native, () => backend.current);
@@ -121,7 +114,6 @@ export function makeModel(o: EnvironmentOptions): Environment {
     devices,
     cloud,
     account,
-    telemetry,
     agentSetup: new PendingAgentSetup(gate),
     keyvault,
     servicesIn: () => gate.current !== null,

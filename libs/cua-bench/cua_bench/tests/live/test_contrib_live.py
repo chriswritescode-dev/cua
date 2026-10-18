@@ -53,7 +53,6 @@ def test_hello_task_on_a_contrib_provider(tmp_path):
         "XDG_DATA_HOME": str(tmp_path / "data"),
         "XDG_STATE_HOME": str(tmp_path / "state"),
         "CUA_BENCH_NO_BANNER": "1",
-        "CUA_TELEMETRY_ENABLED": "false",
         "PYTHONUNBUFFERED": "1",
     }
     proc = subprocess.run(

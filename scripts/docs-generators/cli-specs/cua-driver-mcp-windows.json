@@ -1346,7 +1346,7 @@
    "read_only": false
   },
   {
-   "description": "List available system clipboard types and optionally return privacy-sensitive plain text. Clipboard content is never retained in telemetry.",
+   "description": "List available system clipboard types and optionally return privacy-sensitive plain text. Clipboard content is never retained beyond the response.",
    "destructive": false,
    "idempotent": false,
    "input_schema": {
@@ -1354,7 +1354,7 @@
     "properties": {
      "include_text": {
       "default": false,
-      "description": "Return plain-text clipboard content in addition to the available types.\nClipboard content is privacy-sensitive and is never retained in telemetry.",
+      "description": "Return plain-text clipboard content in addition to the available types.\nClipboard content is privacy-sensitive and is never retained beyond the response.",
       "type": "boolean"
      },
      "session": {
@@ -3200,7 +3200,7 @@
    "read_only": false
   },
   {
-   "description": "Check the saved stable/nightly Cua Driver channel for a release on GitHub. Returns current and selected channels, current and latest versions, an `update_available` boolean, the install one-liner, and the release notes URL. Read-only — never installs. Pacman-owned Linux executables return package-manager guidance without checking GitHub. Mirror of `cua-driver check-update --json`.",
+   "description": "Check the saved stable/nightly Cua Driver channel for a release on GitHub. Returns current and selected channels, current and latest versions, an `update_available` boolean, the repository rebuild instruction, and the release notes URL. Read-only — never installs. Pacman-owned Linux executables return package-manager guidance without checking GitHub. Mirror of `cua-driver check-update --json`.",
    "destructive": false,
    "idempotent": true,
    "input_schema": {

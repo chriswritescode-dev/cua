@@ -230,66 +230,6 @@ struct OnboardingTests {
         o.send(.driveContinue)
     }
 
-    /// Welcome counts the run as it shows once this machine showed the usage
-    /// notice (else only when it is left), and only once per run.
-    @Test func welcomeCountsTheRunWhenShownOnce() {
-        func steps(_ t: FixtureTelemetry) -> [String] {
-            t.recorded.compactMap { if case let .step(step, _) = $0 { return step } else { return nil } }
-        }
-        let seen = FixtureTelemetry()
-        seen.current.noticeShown = true
-        let o = OnboardingModel(statePath: nil)
-        o.telemetry = seen
-        o.shown()
-        #expect(steps(seen) == ["onboarding_shown"])
-        o.send(.start)
-        o.send(.back)
-        o.shown()
-        o.send(.start)
-        #expect(steps(seen) == ["onboarding_shown"])
-
-        let fresh = FixtureTelemetry()
-        let f = OnboardingModel(statePath: nil)
-        f.telemetry = fresh
-        f.shown()
-        #expect(fresh.recorded.isEmpty)
-        f.send(.start)
-        #expect(steps(fresh) == ["onboarding_shown"])
-    }
-
-    /// Welcome's usage-data switch: from the machine's setting, locked when
-    /// the environment decides, and settled before anything is recorded.
-    @Test func welcomesUsageSwitchSettlesBeforeAnythingIsRecorded() {
-        let telemetry = FixtureTelemetry()
-        let o = OnboardingModel(statePath: nil)
-        o.telemetry = telemetry
-        var left: [Bool] = []
-        o.onWelcomeLeft = { left.append($0) }
-        o.shown()
-        #expect(o.view.usage?.on == true)
-        #expect(o.view.usage?.label == "Share anonymous usage data")
-        #expect(o.view.notice?.contains("Change it here or in Settings, Privacy.") == true)
-        o.setShareUsage(false)
-        #expect(o.view.usage?.on == false)
-        #expect(telemetry.recorded.isEmpty)
-        o.send(.start)
-        #expect(left == [false])
-        o.send(.signinDone)
-        o.finish()
-        #expect(telemetry.recorded.isEmpty)
-
-        let locked = FixtureTelemetry()
-        locked.current = AppTelemetryInput(enabled: false, lockedBy: "env DO_NOT_TRACK", noticeShown: true)
-        let l = OnboardingModel(statePath: nil)
-        l.telemetry = locked
-        l.shown()
-        #expect(l.view.usage?.on == false)
-        #expect(l.view.usage?.enabled == false)
-        #expect(l.view.usage?.help == "Set by env DO_NOT_TRACK")
-        l.setShareUsage(true)
-        #expect(l.view.usage?.on == false)
-    }
-
     /// Sign-in skipped, then "Set up for access": the This machine step's
     /// own HostModel signs in inline through the app's sign-in (wired by
     /// AppModel), then finishes setup with the new session's token.
@@ -302,7 +242,7 @@ struct OnboardingTests {
         let app = AppModel(backend: FixtureSpacesBackend(),
                            keyvault: KeyvaultModel(client: nil, clock: { fixtureNow }),
                            onboarding: o, settingsPath: dir.appendingPathComponent("settings.json").path,
-                           account: account, telemetry: FixtureTelemetry())
+                           account: account)
         o.accountToken = { _ in account.identity() == nil ? nil : "tok-signed-in" }
         o.send(.start)
         toMode(o)
@@ -325,9 +265,6 @@ struct OnboardingTests {
         toMode(o)
         #expect(o.view.step == .mode)
         #expect(o.view.choices.map(\.mode) == [.client, .host])
-        // The telemetry notice and its switch are Welcome's.
-        #expect(o.view.notice == nil)
-        #expect(o.view.usage == nil)
         o.host.openForm()
         o.host.send(.setName(name: "  studio  "))
         o.host.send(.setAllow(allow: "a@x.com, b@y.com"))

@@ -930,7 +930,7 @@ export const PAGES: PageSpec[] = [
     title: 'Experiments',
     description: 'Settings > Experiments: the switches that hide Cua Volume, your own cloud and sharing until they are turned on.',
     intro: '`app_experiments_page` derives the Experiments tab from the saved `AppExperiments`; `app_settings_choose_experiment` applies a switch and saves the New UI choice ("Use classic UI"). `app_settings_resolve_new_ui` applies the New UI default for the update channel and version. Off only hides a feature: a mounted Volume, a connected cloud and existing shares stay as they are.',
-    items: ['app_experiments_from_json', 'app_settings_with_storage', 'app_settings_resolve_new_ui', 'app_settings_first_launch_channel', 'app_settings_choose_experiment', 'app_telemetry_experiments_changed', 'app_telemetry_experiments_on'],
+    items: ['app_experiments_from_json', 'app_settings_with_storage', 'app_settings_resolve_new_ui', 'app_settings_first_launch_channel', 'app_settings_choose_experiment'],
     prefixes: ['AppExperiment', 'app_experiments_'],
     spaces: true,
   },
@@ -983,7 +983,7 @@ export const PAGES: PageSpec[] = [
     title: 'Onboarding and settings',
     description: 'First-run onboarding, its card miniatures, the settings file and the hotkey label.',
     intro: '`app_onboarding_reduce` steps through first-run onboarding. `app_settings_load` and `app_settings_save` read and write the apps\' settings file.',
-    items: ['app_format_hotkey', 'AppKeyCombo', 'AppSwitcherTheme', 'AppUsageToggle', 'AppModeChoice'],
+    items: ['app_format_hotkey', 'AppKeyCombo', 'AppSwitcherTheme', 'AppModeChoice'],
     prefixes: ['AppOnboarding', 'app_onboarding_', 'AppSettings', 'app_settings_', 'AppPresentation', 'app_presentation_', 'AppMenuPreview', 'AppPreview', 'AppDriver', 'app_driver_'],
     spaces: true,
   },
@@ -1039,7 +1039,6 @@ export const PAGES: PageSpec[] = [
       'app_drop_sending_text',
       'app_drop_sent_text',
       'AppSignInPhase',
-      'AppTelemetryInput',
       'app_menu',
       'AppMenuInput',
       'app_menu_input_from_json',
@@ -1116,16 +1115,6 @@ export const PAGES: PageSpec[] = [
     spaces: true,
   },
   {
-    slug: 'spaces/app-core/telemetry',
-    title: 'Usage telemetry',
-    description: 'Which anonymous usage events a Spaces app step means, and sending them.',
-    intro:
-      'Each `app_telemetry_*` function takes a reducer step (the state before it and the action) and returns the `AppTelemetrySignal`s it means: first-run pages, Space creates, Settings, Storage, sharing and enrollment, as fixed words only. `app_telemetry_record` sends them on the SDK\'s telemetry client, where every switch and the first-run notice apply. `app_telemetry_start` and `app_telemetry_welcome_left` hold the first events until the first run\'s Welcome page is left, with its usage-data switch deciding. What is sent: [Telemetry and privacy](/cua-sdk/concepts/telemetry).',
-    items: [],
-    prefixes: ['AppTelemetrySignal', 'app_telemetry_'],
-    spaces: true,
-  },
-  {
     slug: 'spaces/devices',
     title: 'Devices',
     description: 'This device as a client of the account on the relay: enroll, approve, rename, revoke and the audit log.',
@@ -1170,14 +1159,6 @@ export const PAGES: PageSpec[] = [
     items: ['AgentSetup'],
     modules: ['agent_setup'],
   },
-  {
-    slug: 'telemetry',
-    title: 'Telemetry',
-    description: 'Anonymous usage telemetry switches.',
-    intro: 'What is collected and never collected: [Telemetry and privacy](/cua-sdk/concepts/telemetry). These calls read and change the same switches as `cua telemetry`; the SDK records its own events.',
-    items: ['telemetry_status', 'telemetry_set_enabled', 'telemetry_show_last', 'telemetry_schema_json', 'telemetry_reset_id'],
-    modules: ['telemetry'],
-  },
 ];
 
 /** The two pages every item links into. */
@@ -1216,7 +1197,7 @@ const NAV: Array<[label: string, pages: string[]]> = [
   ['Cloud capacity', ['fleet']],
   ['Inside a sandbox', ['spacesd', 'agents']],
   ['Spaces', ['spaces']],
-  ['Account', ['auth', 'agent-setup', 'telemetry']],
+  ['Account', ['auth', 'agent-setup']],
   ['Errors and types', [ERRORS_SLUG, TYPES_SLUG]],
   ['Language packages', ['python', 'typescript', 'rust']],
   ['Protocol', ['protocol']],

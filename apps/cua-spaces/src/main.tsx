@@ -10,7 +10,6 @@ import { MainWindow } from "./components/desktop/MainWindow";
 import { initCore } from "./core";
 import { createBridge, hasTauri } from "./native/bridge";
 import { createFleetBridge } from "./native/fleet";
-import { declareExperiments } from "./state/experiments";
 import { SpaceViewer } from "./viewer/SpaceViewer";
 import { WindowStream } from "./viewer/WindowStream";
 import "./styles/tokens.css";
@@ -41,8 +40,6 @@ async function pickSurface(): Promise<React.ReactElement> {
       // The main window: an ordinary, opaque desktop window (sidebar, toolbar,
       // detail) with the traffic lights over its own title-bar area.
       document.documentElement.classList.add("is-main");
-      // Which experiments are on (the day's `cua_app_active` carries them).
-      declareExperiments();
       return <MainWindow />;
     }
     if (label.startsWith("teleport-picker")) {
@@ -63,11 +60,12 @@ async function pickSurface(): Promise<React.ReactElement> {
     document.documentElement.classList.add("is-browser");
   }
   if (hasTauri()) {
-    // Only the portal reaches this point; kick off a background auto-update
-    // check so long-lived installs pick up new releases without user action.
-    void import("./native/updater").then(({ checkForUpdateSilently }) =>
-      checkForUpdateSilently(),
-    );
+    // Only the portal reaches this point; quietly say when a newer release
+    // exists, and how to rebuild into it. Never blocks the first paint.
+    void import("./native/updater").then(async ({ checkForUpdateSilently }) => {
+      const message = await checkForUpdateSilently();
+      if (message) console.info(`[Cua Spaces] ${message}`);
+    });
   }
   return <App bridge={createBridge()} />;
 }

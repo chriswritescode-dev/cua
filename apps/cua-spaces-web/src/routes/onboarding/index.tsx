@@ -28,7 +28,6 @@ import { SetUpLater } from "@/components/onboarding-skip";
 import { SignInLink } from "@/components/sign-in-link";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { RuntimeFixRow } from "@/components/new-space/runtime-fix";
@@ -119,16 +118,6 @@ function OnboardingPage() {
 /* ---- Welcome ----------------------------------------------------------------- */
 
 function Welcome({ flow, view }: { flow: OnboardingHook; view: OnboardingView }) {
-  const { openExternal } = useSession();
-  const usage = view.usage;
-  // Welcome is on screen: the core counts the run now when this machine
-  // already showed the usage notice (else when Welcome is left).
-  const settingRead = Boolean(flow.state?.telemetry);
-  useEffect(() => {
-    if (settingRead) flow.send({ type: "welcome-shown" });
-    // Once per showing, after the setting was read.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settingRead]);
   return (
     <div className="flex w-full max-w-[520px] flex-col items-center text-center">
       {view.showMark ? <CuaLogo className="mb-6 size-14" /> : null}
@@ -137,35 +126,6 @@ function Welcome({ flow, view }: { flow: OnboardingHook; view: OnboardingView })
       <Button size="lg" className="mt-8 min-w-36" autoFocus onClick={() => flow.send({ type: "start" })}>
         {view.primaryLabel}
       </Button>
-      <div className="mt-10 flex flex-col items-center gap-2.5">
-        {usage ? (
-          <label className="flex items-center gap-2.5 text-[13px]" title={usage.help ?? undefined}>
-            <Switch
-              checked={usage.on}
-              disabled={!usage.enabled}
-              onCheckedChange={(on) => flow.send({ type: "usage-data-toggled", on })}
-              data-testid="onboarding-share-usage"
-            />
-            {usage.label}
-            <span className="text-muted-foreground">{usage.on ? "On" : "Off"}</span>
-          </label>
-        ) : null}
-        {usage?.help ? <p className="text-xs text-muted-foreground">{usage.help}</p> : null}
-        {view.notice ? (
-          <p className="text-xs text-pretty text-muted-foreground">
-            {view.notice}{" "}
-            {view.noticeLinkLabel && view.noticeLinkUrl ? (
-              <button
-                type="button"
-                className="text-foreground underline-offset-2 hover:underline"
-                onClick={() => void openExternal(view.noticeLinkUrl!)}
-              >
-                {view.noticeLinkLabel}
-              </button>
-            ) : null}
-          </p>
-        ) : null}
-      </div>
     </div>
   );
 }

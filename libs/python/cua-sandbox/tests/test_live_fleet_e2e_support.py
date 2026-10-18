@@ -756,7 +756,6 @@ async def test_live_runner_uses_pinned_ephemeral_configuration(monkeypatch) -> N
         "memory_mb": 4096,
         "server_port": 8000,
         "time_to_start": 900,
-        "telemetry_enabled": False,
         "local": False,
     }
 

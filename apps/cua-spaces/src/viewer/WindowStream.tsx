@@ -30,7 +30,6 @@ import type {
   ViewerConfig,
 } from "../native/fleet";
 import { createTeleportBridge } from "../native/teleport";
-import { telemetryBridge, type TelemetryBridge } from "../native/telemetry";
 import { PresenceOverlay } from "./presence/PresenceOverlay";
 import { MediaSession, type MediaStatus, type MediaTicket, type SessionOpenedPayload } from "@cua/spacesd-html5/core/mediaSession";
 
@@ -90,8 +89,6 @@ export interface MediaCanvasProps {
   sessionRef?: (session: MediaSession | null) => void;
   /** Bump to force a fresh attach (user "Retry"). */
   generation?: number;
-  /** Where the stream summary goes when the session ends (tests). */
-  telemetry?: TelemetryBridge;
 }
 
 /** One media session drawn into a canvas that CSS scales to its box. */
@@ -106,13 +103,9 @@ export function MediaCanvas(props: MediaCanvasProps) {
     if (!canvas) return;
     let session: MediaSession | null = null;
     let cancelled = false;
-    // Stream-stats telemetry: coarse buckets once per session, on teardown.
-    let startedAt = 0;
-    let height = 0;
     const cb = () => latest.current;
     const start = (ticket: MediaTicket) => {
       if (cancelled) return;
-      startedAt = performance.now();
       session = new MediaSession({
         canvas,
         ticket,
@@ -120,10 +113,7 @@ export function MediaCanvas(props: MediaCanvasProps) {
         interactive: cb().interactive,
         audio: cb().audio,
         onStatus: (s, d) => cb().onStatus?.(s, d),
-        onGeometry: (w, h) => {
-          height = Math.max(height, h);
-          cb().onGeometry?.(w, h);
-        },
+        onGeometry: (w, h) => cb().onGeometry?.(w, h),
         onOpened: (o) => cb().onOpened?.(o),
         onTitle: (t) => cb().onTitle?.(t),
         onGone: (r) => cb().onGone?.(r),
@@ -145,15 +135,6 @@ export function MediaCanvas(props: MediaCanvasProps) {
     }
     return () => {
       cancelled = true;
-      if (session) {
-        const stats = session.stats;
-        (cb().telemetry ?? telemetryBridge()).recordStream({
-          codec: stats.codec,
-          frames: stats.framesReceived,
-          height,
-          durationMs: performance.now() - startedAt,
-        });
-      }
       session?.stop();
       cb().sessionRef?.(null);
     };

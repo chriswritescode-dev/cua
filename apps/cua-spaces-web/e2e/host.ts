@@ -69,8 +69,6 @@ export async function launchShell(): Promise<{ app: ElectronApplication; page: P
       CUA_SPACES_E2E_HIDDEN: "1",
       // The parity flows' traces are a Mac's: the shell reports a Mac to the page on any OS.
       CUA_SPACES_DEMO_PLATFORM: "darwin/arm64",
-      CUA_TELEMETRY: "0",
-      DO_NOT_TRACK: "1",
       // Linux: the X server (xvfb-run in CI) and its cookie.
       ...pick("DISPLAY", "XAUTHORITY"),
     },

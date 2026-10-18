@@ -3,14 +3,7 @@
 
 import { useSyncExternalStore } from "react";
 
-import {
-  chooseExperiment,
-  experimentsChangedSignals,
-  experimentsOnSignals,
-  NO_EXPERIMENTS,
-  type Experiments,
-} from "../model/experiments";
-import { telemetryBridge, type TelemetryBridge } from "../native/telemetry";
+import { chooseExperiment, NO_EXPERIMENTS, type Experiments } from "../model/experiments";
 import { readSetting, SETTINGS_KEYS, writeJson } from "./settings";
 
 /**
@@ -47,27 +40,14 @@ function subscribe(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
-/** A row of the Experiments tab changed (`on` or `off`): saves the switches
- * and records the change (the events the core derives). */
-export function chooseExperimentRow(
-  row: string,
-  option: string,
-  telemetry: TelemetryBridge = telemetryBridge(),
-): Experiments {
+/** A row of the Experiments tab changed (`on` or `off`): saves the switches. */
+export function chooseExperimentRow(row: string, option: string): Experiments {
   const before = currentExperiments();
   const after = chooseExperiment(before, row, option);
-  const signals = experimentsChangedSignals(before, after);
-  if (signals.length === 0) return before;
+  if (JSON.stringify(before) === JSON.stringify(after)) return before;
   writeJson(SETTINGS_KEYS.experiments, after);
-  telemetry.recordSignals(signals);
   for (const l of listeners) l();
   return currentExperiments();
-}
-
-/** At launch: tells telemetry which experiments are on (the day's
- * `cua_app_active` carries them). */
-export function declareExperiments(telemetry: TelemetryBridge = telemetryBridge()): void {
-  telemetry.recordSignals(experimentsOnSignals(currentExperiments()));
 }
 
 /** The switches, re-rendering when one changes. */

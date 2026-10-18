@@ -1,6 +1,6 @@
 {
   "name": "about",
-  "about": "Settings, About: the name, version, links and copyright; the update controls (automatic checks and installs, Stable or Beta, Check Now, the last check); what a launch after an update refreshes; whose daemon restarts; the one notice when the refresh failed.",
+  "about": "Settings, About: the name, version, links and copyright; the update controls (automatic checks, Stable or Beta, Check Now, the last check); what a launch after an update refreshes; whose daemon restarts; the one notice when the refresh failed.",
   "input": {
     "platform": "macos",
     "version": "0.2.0",
@@ -8,14 +8,12 @@
     "os": "macOS 26.0 (arm64)",
     "updater": true,
     "autoCheck": true,
-    "autoInstall": false,
     "channel": "stable",
     "lastCheck": null,
     "checking": false
   },
   "panes": [
     { "step": "first open" },
-    { "step": "install automatically", "set": { "autoInstall": true } },
     { "step": "beta, checked before", "set": { "channel": "beta", "version": "0.3.0-beta.1", "build": "0.3.0.130", "lastCheck": "9/30/26, 3:04 PM" } },
     { "step": "checking", "set": { "checking": true } },
     { "step": "no automatic checks", "set": { "checking": false, "autoCheck": false } },

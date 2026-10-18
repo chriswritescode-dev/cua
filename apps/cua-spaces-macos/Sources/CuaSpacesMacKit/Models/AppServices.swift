@@ -6,9 +6,9 @@ import CuaSDK
 import CuaSpacesFFI
 import Foundation
 
-// The account, telemetry and coding-agent setup, behind protocols so
-// fixtures and tests never touch the account's real session, telemetry
-// config or agent configs. Rows and words are the core's.
+// The account and coding-agent setup, behind protocols so
+// fixtures and tests never touch the account's real session or agent
+// configs. Rows and words are the core's.
 
 /// Coding agents on this machine (the SDK's agent onboarding).
 public protocol AgentSetupRunning: AnyObject, Sendable {
@@ -118,51 +118,6 @@ public final class FixtureAgentSetup: AgentSetupRunning, @unchecked Sendable {
             current[i].cuaConfigured = false
         }
         return []
-    }
-}
-
-/// The usage-telemetry switch, and where the app's usage events go.
-public protocol TelemetryRunning: AnyObject, Sendable {
-    func status() -> AppTelemetryInput
-    func setEnabled(_ on: Bool) throws -> AppTelemetryInput
-    /// Records signals the app core derived (`appTelemetry*`): the same ones
-    /// the Tauri app sends for the same step.
-    func record(_ signals: [AppTelemetrySignal])
-}
-
-/// The SDK's telemetry setting (`$CUA_HOME/config.toml`, the same switch as
-/// `cua telemetry off`); the environment wins and locks it.
-public final class LiveTelemetry: TelemetryRunning, @unchecked Sendable {
-    public init() {}
-
-    static func input(_ s: TelemetryStatus) -> AppTelemetryInput {
-        let locked = s.sourceKind != "config" && s.sourceKind != "default"
-        return AppTelemetryInput(enabled: s.enabled, lockedBy: locked ? s.source : nil, noticeShown: s.noticeShown)
-    }
-
-    public func status() -> AppTelemetryInput { Self.input(telemetryStatus()) }
-    public func setEnabled(_ on: Bool) throws -> AppTelemetryInput { Self.input(try telemetrySetEnabled(enabled: on)) }
-    /// On the SDK's client: the switch, the first-run notice and the schema
-    /// apply (fixed words only).
-    public func record(_ signals: [AppTelemetrySignal]) {
-        guard !signals.isEmpty else { return }
-        _ = appTelemetryRecord(signals: signals)
-    }
-}
-
-/// An in-memory switch (fixtures, tests).
-public final class FixtureTelemetry: TelemetryRunning, @unchecked Sendable {
-    public var current = AppTelemetryInput(enabled: true, lockedBy: nil, noticeShown: false)
-    public init() {}
-    public func status() -> AppTelemetryInput { current }
-    public func setEnabled(_ on: Bool) throws -> AppTelemetryInput {
-        current.enabled = on
-        return current
-    }
-    /// What the app recorded, in order (nothing leaves the process).
-    public private(set) var recorded: [AppTelemetrySignal] = []
-    public func record(_ signals: [AppTelemetrySignal]) {
-        if current.enabled { recorded += signals }
     }
 }
 

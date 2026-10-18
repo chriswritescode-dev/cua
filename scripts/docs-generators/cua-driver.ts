@@ -218,8 +218,8 @@ export const CLI_GROUPS: CliGroup[] = [
   {
     slug: 'config',
     title: 'Configuration',
-    summary: 'Driver configuration, telemetry, cursor themes and cursor motion',
-    commands: ['config', 'telemetry', 'cursor-theme', 'cursor'],
+    summary: 'Driver configuration, cursor themes and cursor motion',
+    commands: ['config', 'cursor-theme', 'cursor'],
   },
   {
     slug: 'extensions',
@@ -230,7 +230,7 @@ export const CLI_GROUPS: CliGroup[] = [
   {
     slug: 'updates',
     title: 'Updates',
-    summary: 'Check for and apply updates, and choose the release channel',
+    summary: 'Check for newer releases and choose the release channel',
     commands: ['check-update', 'update', 'channel'],
   },
 ];

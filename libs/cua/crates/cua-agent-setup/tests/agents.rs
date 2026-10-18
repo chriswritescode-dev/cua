@@ -997,7 +997,7 @@ fn hermes_mcp_update_and_remove_touch_only_cuas_entry() {
     let t = T::new();
     let file = t.write(hermes_rel("config.yaml"), HERMES_CONFIG);
     let s = t.setup();
-    let srv = server().with_env("CUA_TELEMETRY", "0");
+    let srv = server().with_env("CUA_LOG", "error");
     let o = one(s.configure_mcp(&ids(&["hermes"]), &srv).unwrap());
     assert_eq!(o.change, Change::Created, "{o:?}");
     let after = t.read(&file);
@@ -1006,13 +1006,13 @@ fn hermes_mcp_update_and_remove_touch_only_cuas_entry() {
         after,
         HERMES_CONFIG.replace(
             "    args: []\n\napprovals:",
-            "    args: []\n  cua:\n    command: /opt/cua/bin/cua\n    args:\n      - mcp\n    env:\n      CUA_TELEMETRY: '0'\n\napprovals:"
+            "    args: []\n  cua:\n    command: /opt/cua/bin/cua\n    args:\n      - mcp\n    env:\n      CUA_LOG: error\n\napprovals:"
         )
     );
     let parsed: Value = serde_yaml_ng::from_str(&after).unwrap();
     assert_eq!(
         parsed["mcp_servers"]["cua"],
-        json!({"command": "/opt/cua/bin/cua", "args": ["mcp"], "env": {"CUA_TELEMETRY": "0"}})
+        json!({"command": "/opt/cua/bin/cua", "args": ["mcp"], "env": {"CUA_LOG": "error"}})
     );
     assert_eq!(parsed["approvals"]["mode"], "smart");
 

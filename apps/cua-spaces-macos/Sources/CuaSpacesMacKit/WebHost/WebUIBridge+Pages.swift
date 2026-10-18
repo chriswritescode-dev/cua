@@ -77,7 +77,6 @@ extension WebUIBridge {
             let updates = model.updates
             guard updates.updater != nil else { throw Failure.unsupported("Updates are off in this build") }
             if let on = args["autoCheck"] as? Bool { updates.setAutoCheck(on) }
-            if let on = args["autoInstall"] as? Bool { updates.setAutoInstall(on) }
             if let channel = args["channel"] as? String { updates.choose(channel: channel) }
             return BridgeValue.encode(updates.input)
         case "about.checkNow":
@@ -89,17 +88,9 @@ extension WebUIBridge {
             input["checking"] = true
             return input
 
-        // The in-app update indicator: Sparkle downloads in the background,
-        // and the page asks to restart.
+        // The in-app update indicator: Sparkle reports a found release and
+        // never installs it.
         case "update.get": return model.updates.updateState.json
-        case "update.install":
-            guard model.updates.updater != nil else { throw Failure.unsupported("Updates are off in this build") }
-            // The app quits to install: answer first, then start.
-            let answer = model.updates.updateState.json
-            if model.updates.updateState.status == .downloaded {
-                DispatchQueue.main.async { [model] in model.updates.installUpdate() }
-            }
-            return answer
 
         // Settings, launch at login
         case "loginItem.get":
@@ -160,16 +151,6 @@ extension WebUIBridge {
             guard model.persistent.canCallTools else { throw Failure.unsupported("Notifications need the cua daemon") }
             guard let ids = args["ids"] as? [String] else { throw Failure.badArgs("ids: array of strings") }
             await model.persistent.markRead(ids: ids)
-            return NSNull()
-
-        // Usage events
-        case "telemetry.track":
-            guard let raw = args["signals"] as? [Any] else { throw Failure.badArgs("signals: array") }
-            // The page's switch is the app's: off (or locked off) drops every
-            // signal here, before the SDK's own check.
-            guard let telemetry = model.telemetrySink, telemetry.status().enabled else { return NSNull() }
-            let signals = raw.compactMap(Self.telemetrySignal)
-            if !signals.isEmpty { telemetry.record(signals) }
             return NSNull()
 
         // A Space's detail
@@ -393,90 +374,6 @@ extension WebUIBridge {
         }
         await devices.refresh()
         return NSNull()
-    }
-
-    /// A usage event as the core's signal: known kinds with every field a
-    /// fixed word, flag or duration (anything else is dropped whole, so a
-    /// name or a path never reaches the telemetry).
-    static func telemetrySignal(_ raw: Any) -> AppTelemetrySignal? {
-        guard let s = raw as? [String: Any], let type = s["type"] as? String else { return nil }
-        func word(_ k: String) -> String? {
-            guard let v = s[k] as? String, (1...64).contains(v.count),
-                  v.allSatisfy({ $0.isASCII && ($0.isLowercase || $0.isNumber || $0 == "_") }) else { return nil }
-            return v
-        }
-        func flag(_ k: String) -> Bool? {
-            guard let n = s[k] as? NSNumber, CFGetTypeID(n) == CFBooleanGetTypeID() else { return nil }
-            return n.boolValue
-        }
-        func ms(_ k: String) -> UInt64? {
-            guard let n = s[k] as? NSNumber, CFGetTypeID(n) != CFBooleanGetTypeID(), n.doubleValue >= 0,
-                  n.doubleValue == n.doubleValue.rounded() else { return nil }
-            return n.uint64Value
-        }
-        func variant(_ k: String) -> String? {
-            guard let v = s[k] as? String, v.count <= 64,
-                  v.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "_") }) else { return nil }
-            return v
-        }
-        switch type {
-        case "feature":
-            guard let f = word("feature") else { return nil }
-            return .feature(feature: f)
-        case "step":
-            guard let step = word("step"), let ok = flag("ok") else { return nil }
-            return .step(step: step, ok: ok)
-        case "sign-in-failed":
-            guard let kind = word("errorKind") else { return nil }
-            return .signInFailed(errorKind: kind)
-        case "launched":
-            if s["onboardingEligible"] is NSNull || s["onboardingEligible"] == nil { return .launched(onboardingEligible: nil) }
-            guard let eligible = flag("onboardingEligible") else { return nil }
-            return .launched(onboardingEligible: eligible)
-        case "onboarding-page":
-            guard let page = word("page"), let action = word("action"), let choice = word("choice") else { return nil }
-            return .onboardingPage(page: page, action: action, choice: choice)
-        case "space-wizard":
-            guard let action = word("action") else { return nil }
-            return .spaceWizard(action: action)
-        case "space-create":
-            guard let location = word("location"), let os = word("guestOs"), let kind = word("kind"),
-                  let outcome = word("outcome"), let phase = word("failedPhase"), let stalled = flag("stalled"),
-                  let elapsed = ms("elapsedMs"), let gpu = flag("gpu"), let errorVariant = variant("errorVariant") else { return nil }
-            return .spaceCreate(location: location, guestOs: os, kind: kind, outcome: outcome, failedPhase: phase,
-                                stalled: stalled, elapsedMs: elapsed, gpu: gpu, errorVariant: errorVariant)
-        case "space-create-started":
-            guard let location = word("location"), let os = word("guestOs"), let kind = word("kind"),
-                  let gpu = flag("gpu") else { return nil }
-            return .spaceCreateStarted(location: location, guestOs: os, kind: kind, gpu: gpu)
-        case "volume-setup":
-            guard let surface = word("surface"), let storage = word("storage"), let finder = flag("addToFinder"),
-                  let method = word("mountMethod"), let outcome = word("outcome") else { return nil }
-            return .volumeSetup(surface: surface, storage: storage, addToFinder: finder, mountMethod: method, outcome: outcome)
-        case "share":
-            guard let action = word("action"), let role = word("role"), let outcome = word("outcome") else { return nil }
-            return .share(action: action, role: role, outcome: outcome)
-        case "app-update":
-            guard let action = word("action"), let channel = word("channel"), let trigger = word("trigger") else { return nil }
-            return .appUpdate(action: action, channel: channel, trigger: trigger)
-        case "device-enroll":
-            guard let method = word("method"), let outcome = word("outcome") else { return nil }
-            return .deviceEnroll(method: method, outcome: outcome)
-        case "experiment":
-            guard let action = word("action"), let experiment = word("experiment") else { return nil }
-            return .experiment(action: action, experiment: experiment)
-        case "experiments-on":
-            guard let list = s["experiments"] as? [Any], list.count <= 16 else { return nil }
-            let words = list.compactMap { v -> String? in
-                guard let w = v as? String, (1...64).contains(w.count),
-                      w.allSatisfy({ $0.isASCII && ($0.isLowercase || $0.isNumber || $0 == "_") }) else { return nil }
-                return w
-            }
-            guard words.count == list.count else { return nil }
-            return .experimentsOn(experiments: words)
-        default:
-            return nil
-        }
     }
 
     // MARK: - This machine

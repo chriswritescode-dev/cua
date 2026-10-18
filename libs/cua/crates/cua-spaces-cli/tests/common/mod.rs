@@ -19,10 +19,6 @@ use tokio::{
 
 /// Variables that could leak real credentials or endpoints into a test.
 const SCRUB: &[&str] = &[
-    // CI sets telemetry opt-outs; each test decides telemetry itself.
-    "DO_NOT_TRACK",
-    "CUA_TELEMETRY_ENABLED",
-    "CUA_TELEMETRY_DISABLED",
     "FLEETS_TOKEN",
     "CUA_CLIENT_ID",
     "CUA_CLIENT_SECRET",
@@ -96,15 +92,6 @@ impl Home {
         env.insert("CUA_LOG".into(), "error".into());
         // Never read a real registry for the Fleet runtime/image rule.
         env.insert("CUA_FLEET_IMAGE_INSPECT".into(), "0".into());
-        // Never send telemetry, even from a child that clears its
-        // environment; tests that exercise it turn it on explicitly and keep
-        // the no-network guard.
-        env.insert("CUA_TELEMETRY".into(), "0".into());
-        env.insert("CUA_TELEMETRY_FORBID_NETWORK".into(), "1".into());
-        env.insert(
-            "CUA_TELEMETRY_ENDPOINT".into(),
-            "http://127.0.0.1:9/batch/".into(),
-        );
         Self { dir, env }
     }
 

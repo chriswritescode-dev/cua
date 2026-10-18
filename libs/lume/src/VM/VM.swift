@@ -45,7 +45,6 @@ class VM {
     // MARK: - Properties
 
     var vmDirContext: VMDirContext
-    var telemetryTransport: TelemetryTransport?
 
     @MainActor
     private var virtualizationService: VMVirtualizationService?
@@ -412,12 +411,6 @@ class VM {
                 "Starting VM via virtualization service", metadata: ["name": vmDirContext.name])
             try await service.start()
             Logger.info("VM started successfully", metadata: ["name": vmDirContext.name])
-            if let telemetryTransport {
-                TelemetryClient.shared.recordVMStarted(
-                    transport: telemetryTransport,
-                    guestOS: vmDirContext.config.os
-                )
-            }
 
             // macOS does not include a SPICE guest agent, so its native viewer uses
             // Lume's SSH bridge automatically. Keep --clipboard as an explicit opt-in

@@ -363,7 +363,6 @@ pub fn mcp_request(data: &[u8]) {
         return;
     };
     let _ = request.is_notification();
-    let _ = request.initialize_metadata();
     let _ = request.tool_call();
     drive_request(request, stub_registry().as_ref(), Some(TRANSPORT_SESSION));
     drive_recorded(data, None);

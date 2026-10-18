@@ -121,7 +121,6 @@ async def run_fleet_ephemeral_live() -> None:
             "cpu": 4,
             "memory_mb": 4096,
             "time_to_start": 900,
-            "telemetry_enabled": False,
         }
         if spacesd_image is None:
             options["server_port"] = 8000

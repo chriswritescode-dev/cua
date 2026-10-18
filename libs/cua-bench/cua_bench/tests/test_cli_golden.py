@@ -165,7 +165,6 @@ def cli_env(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "data"))
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
     monkeypatch.setenv("CUA_BENCH_NO_BANNER", "1")
-    monkeypatch.setenv("CUA_TELEMETRY_ENABLED", "false")
     for var in ("CUA_BENCH_ON", "CUA_BENCH_RUNTIME", "CUA_BENCH_IMAGE"):
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setattr(manager, "RUNS_FILE", tmp_path / "state" / "cua-bench" / "runs.json")

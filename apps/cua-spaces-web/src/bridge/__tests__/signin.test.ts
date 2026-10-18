@@ -38,9 +38,6 @@ describe.skipIf(!wasmBuilt)("a sign-in that never finishes", () => {
 
     await store.signIn();
     await until(() => expect(session()?.signIn).toEqual({ kind: "failed", message: SIGN_IN_TIMED_OUT }));
-    await store.telemetry.flush();
-    const kinds = adapter.state.telemetry.flatMap((s) => (s.type === "sign-in-failed" ? [s.errorKind] : []));
-    expect(kinds).toEqual(["cancelled", "timeout"]);
     store.dispose();
   });
 });

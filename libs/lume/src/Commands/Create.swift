@@ -118,15 +118,6 @@ struct Create: AsyncParsableCommand {
             ])
         }
 
-        // Record telemetry
-        TelemetryClient.shared.record(event: TelemetryEvent.create, properties: [
-            "os_type": os.lowercased(),
-            "cpu": cpu,
-            "memory_gb": memory / (1024 * 1024 * 1024),
-            "disk_size_gb": diskSize / (1024 * 1024 * 1024),
-            "has_unattended": unattendedConfig != nil
-        ])
-
         let controller = LumeController()
         try await controller.create(
             name: name,

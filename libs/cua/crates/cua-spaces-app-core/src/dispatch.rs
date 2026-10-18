@@ -14,13 +14,13 @@ use crate::model::*;
 use crate::spaces::{self, creating, roster, sidebar, stream};
 use crate::teleport::{drag, flow, grid, transfer, windows};
 use crate::{
-    CoreError, about, agent_keys, agents, checklist, cloud_connect, devices, drive_mount_preview,
-    drive_page, drive_settings, driver_preview, experiments, host, login_item, machines, notch,
-    notifications, onboarding, onboarding_preview, palette, paths, persistent, presence,
-    relay_usage, settings, share, telemetry, upsell, window, wizard,
+    about, agent_keys, agents, checklist, cloud_connect, devices, drive_mount_preview, drive_page,
+    drive_settings, driver_preview, experiments, host, login_item, machines, notch, notifications,
+    onboarding, onboarding_preview, palette, paths, persistent, presence, relay_usage, settings,
+    share, upsell, window, wizard, CoreError,
 };
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 use serde_json::Value;
 
 /// Every method [`call`] answers.
@@ -263,24 +263,11 @@ pub const METHODS: &[&str] = &[
     "storage.requestText",
     "notifications.plan",
     "notifications.view",
-    "telemetry.launched",
-    "telemetry.feature",
-    "telemetry.onboarding",
-    "telemetry.onboardingFinished",
-    "telemetry.onboardingSkipped",
-    "telemetry.signInFailed",
-    "telemetry.creates",
-    "telemetry.storage",
-    "telemetry.share",
-    "telemetry.enroll",
-    "telemetry.checklist",
     "checklist.reduce",
     "checklist.view",
     "checklist.observeFrom",
     "palette.keybindings",
     "palette.rank",
-    "telemetry.experimentsChanged",
-    "telemetry.experimentsOn",
     "settings.withStorage",
     "experiments.page",
     "experiments.choose",
@@ -288,7 +275,6 @@ pub const METHODS: &[&str] = &[
     "relayUsage.view",
     "upsell.prompt",
     "upsell.allows",
-    "telemetry.upsell",
 ];
 
 struct Args(Value);
@@ -492,10 +478,6 @@ pub fn call_value(method: &str, args: Value) -> Result<Value, CoreError> {
             ))
         }
         "upsell.allows" => out(upsell::allows(&a.get("state")?)),
-        "telemetry.upsell" => out(telemetry::upsell(
-            &a.get::<String>("surface")?,
-            &a.get::<String>("action")?,
-        )),
         "wizard.pickerImages" => out(wizard::picker_images()),
         "wizard.pickerGroups" => out(wizard::picker_groups()),
         "wizard.findImage" => out(wizard::find_image(&a.get::<String>("ref")?)),
@@ -1057,32 +1039,6 @@ pub fn call_value(method: &str, args: Value) -> Result<Value, CoreError> {
             &a.get::<String>("text")?,
             a.get::<Option<String>>("home")?.as_deref(),
         )),
-        "telemetry.launched" => out(telemetry::launched(a.get("onboardingEligible")?)),
-        "telemetry.feature" => out(telemetry::feature_used(&a.get::<String>("feature")?)),
-        "telemetry.onboarding" => out(telemetry::onboarding(&a.get("state")?, &a.get("action")?)),
-        "telemetry.onboardingFinished" => out(telemetry::onboarding_finished(&a.get("state")?)),
-        "telemetry.onboardingSkipped" => out(telemetry::onboarding_skipped(&a.get("state")?)),
-        "telemetry.signInFailed" => out(telemetry::sign_in_failed(
-            a.get::<Option<String>>("message")?.as_deref(),
-        )),
-        "telemetry.creates" => out(telemetry::creates(
-            &a.get::<Option<creating::CreatesState>>("state")?
-                .unwrap_or_default(),
-            &a.get("action")?,
-            a.get("now")?,
-        )),
-        "telemetry.storage" => out(telemetry::storage(
-            &a.get("input")?,
-            &a.get("state")?,
-            &a.get("action")?,
-        )),
-        "telemetry.share" => out(telemetry::share(
-            &a.get("input")?,
-            &a.get("state")?,
-            &a.get("action")?,
-        )),
-        "telemetry.enroll" => out(telemetry::enroll(&a.get("state")?, &a.get("action")?)),
-        "telemetry.checklist" => out(telemetry::checklist(&a.get::<String>("event")?)),
         "checklist.reduce" => out(checklist::reduce(
             &a.get::<checklist::ChecklistState>("state")?,
             &a.get::<checklist::ChecklistAction>("action")?,
@@ -1098,16 +1054,6 @@ pub fn call_value(method: &str, args: Value) -> Result<Value, CoreError> {
         "palette.rank" => out(palette::rank(
             &a.get::<Vec<palette::PaletteEntry>>("entries")?,
             &a.get::<String>("query")?,
-        )),
-        "telemetry.experimentsChanged" => out(telemetry::experiments_changed(
-            &a.get::<Option<experiments::Experiments>>("before")?
-                .unwrap_or_default(),
-            &a.get::<Option<experiments::Experiments>>("after")?
-                .unwrap_or_default(),
-        )),
-        "telemetry.experimentsOn" => out(telemetry::experiments_on(
-            &a.get::<Option<experiments::Experiments>>("experiments")?
-                .unwrap_or_default(),
         )),
         other => Err(CoreError::Invalid(format!("unknown method {other}"))),
     }
@@ -1141,22 +1087,6 @@ mod tests {
         assert_eq!(
             call_value("upsell.allows", json!({"state": state(true)})).unwrap(),
             json!(false)
-        );
-        assert_eq!(
-            call_value(
-                "telemetry.upsell",
-                json!({"surface": "meter", "action": "shown"})
-            )
-            .unwrap(),
-            json!([{"type": "feature", "feature": "upsell_meter_shown"}])
-        );
-        assert_eq!(
-            call_value(
-                "telemetry.upsell",
-                json!({"surface": "plan_card", "action": "shown"})
-            )
-            .unwrap(),
-            json!([])
         );
     }
 
@@ -1291,10 +1221,8 @@ mod tests {
         assert!(mac.contains("on this Mac in the Keychain,"));
         assert_eq!(intro(json!({ "input": input, "hostOs": "macos" })), mac);
         assert_eq!(intro(json!({ "input": input, "hostOs": null })), mac);
-        assert!(
-            intro(json!({ "input": input, "hostOs": "windows" }))
-                .contains("on this PC in Windows Credential Manager,")
-        );
+        assert!(intro(json!({ "input": input, "hostOs": "windows" }))
+            .contains("on this PC in Windows Credential Manager,"));
         let linux = intro(json!({ "input": input, "hostOs": "linux" }));
         assert!(linux.contains("on this computer,") && !linux.contains("Keychain"));
         let help = |os: Value| {

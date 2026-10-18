@@ -31,7 +31,6 @@ import {
   demoKeyvaultItems,
   demoKeyvaultOverview,
   demoSpaceRows,
-  demoTelemetry,
 } from "./demo-data";
 import { demoNewSpaceState, newSpaceDemoHandlers, type DemoNewSpaceState } from "./demo/new-space";
 import { demoShareHandlers } from "./demo/share";
@@ -49,7 +48,6 @@ import { demoAgentSetup, demoPersistentAgents, demoRunRecords, runAt, writtenEve
 import { demoVolumeHandlers, demoVolumeState, type DemoVolumeState } from "./demo/volume";
 import { demoHostSetupHandlers, demoHostSetupState, type DemoHostSetupState } from "./demo/host-setup";
 import { demoSpaceDetailHandlers, demoSpaceDetailState, type DemoSpaceDetailState } from "./demo/space-detail";
-import { demoTelemetryHandlers, demoTelemetryState, type DemoTelemetryState } from "./demo/telemetry";
 import { demoRelayUsageHandlers, demoRelayUsageNamed, demoRelayUsageState, type DemoRelayUsageState } from "./demo/relay-usage";
 import { demoStartupHandlers, demoStartupState, type DemoStartupState } from "./demo/startup";
 import { demoMachine, MAC_DEMO_PLATFORM, type DemoPlatform } from "./demo/platform";
@@ -80,7 +78,7 @@ export interface DemoOptions {
   /** The machine the demo runs on: a Mac on Apple silicon unless set (the
    * Electron shell passes its own system and architecture). */
   platform?: DemoPlatform;
-  /** Where the updater is at start (`?demo=update-ready`, `?demo=update-downloading`). */
+  /** Where the updater is at start (`?demo=update`: a newer release). */
   update?: Partial<UpdateState>;
 }
 
@@ -89,8 +87,8 @@ const DEMO_NOTES = "https://github.com/trycua/cua/releases/tag/cua-spaces-v0.9.3
 /** `?demo=fresh` (signed out, first run), `?demo=locked` (Keyvault locked), `?demo=novault` (no Keyvault yet),
  * `?demo=empty` (no Spaces yet), `?demo=keychain` (the startup screen),
  * `?demo=mac-host` (New Space options and the Keyvault's Settings rows in the
- * SwiftUI host's shape), `?demo=unenrolled` (this device not enrolled),
- * `?demo=update-ready` (an update is downloaded) and `?demo=update-downloading`. */
+ * SwiftUI host's shape), `?demo=unenrolled` (this device not enrolled) and
+ * `?demo=update` (a newer release is available). */
 export function demoOptionsFromSearch(search: string): DemoOptions {
   const flags = new Set((new URLSearchParams(search).get("demo") ?? "").split(",").filter(Boolean));
   return {
@@ -103,11 +101,16 @@ export function demoOptionsFromSearch(search: string): DemoOptions {
     macHost: flags.has("mac-host"),
     unenrolled: flags.has("unenrolled"),
     usage: (["idle", "warn", "limit", "pro", "teams"] as const).find((u) => flags.has(`usage-${u}`)),
-    ...(flags.has("update-ready")
-      ? { update: { status: "downloaded" as const, version: "0.9.3", percent: 100, notesUrl: DEMO_NOTES } }
-      : flags.has("update-downloading")
-        ? { update: { status: "downloading" as const, version: "0.9.3", percent: 42, notesUrl: DEMO_NOTES } }
-        : {}),
+    ...(flags.has("update")
+      ? {
+          update: {
+            status: "available" as const,
+            version: "0.9.3",
+            notesUrl: DEMO_NOTES,
+            instructions: `A newer Cua Spaces release (0.9.3) is available. Update by pulling the repository and rebuilding: git pull && pnpm --dir apps/cua-spaces build`,
+          },
+        }
+      : {}),
   };
 }
 
@@ -115,7 +118,6 @@ export function demoOptionsFromSearch(search: string): DemoOptions {
 const DEMO_MAC_HOST_SETTINGS: HostSettings = {
   keyvaultAutoWipe: false,
   keyvaultUnlockPrompt: true,
-  keyvaultSiteIcons: true,
   keyvaultProtection: [
     { label: "Touch ID", value: "Asked by the Cua daemon to widen access" },
     { label: "Unlock", value: "Mac login" },
@@ -123,10 +125,9 @@ const DEMO_MAC_HOST_SETTINGS: HostSettings = {
   ],
 };
 
-const DEMO_KEYVAULT_ROWS: Partial<Record<string, "keyvaultAutoWipe" | "keyvaultUnlockPrompt" | "keyvaultSiteIcons">> = {
+const DEMO_KEYVAULT_ROWS: Partial<Record<string, "keyvaultAutoWipe" | "keyvaultUnlockPrompt">> = {
   "keyvault-auto-wipe": "keyvaultAutoWipe",
   "keyvault-unlock-prompt": "keyvaultUnlockPrompt",
-  "keyvault-site-icons": "keyvaultSiteIcons",
 };
 
 const CREATE_PHASES = ["preparing", "pulling", "creating", "booting", "waiting_for_services", "connecting"];
@@ -159,7 +160,6 @@ export function createDemoAdapter(options: DemoOptions = {}): DataAdapter & { re
     paired: [],
     hostSettings: options.macHost ? DEMO_MAC_HOST_SETTINGS : undefined,
     volume: demoVolumeState(now(), options.onboarded !== false, options.platform),
-    ...demoTelemetryState(),
     ...demoRelayUsageState(),
     ...(options.usage ? { relayUsage: demoRelayUsageNamed(options.usage) } : {}),
     ...demoSpaceDetailState(),
@@ -193,7 +193,6 @@ export function createDemoAdapter(options: DemoOptions = {}): DataAdapter & { re
   const settingsSnapshot = (): SettingsSnapshot => ({
     values: { ...state.settings },
     defaultLocation: { value: state.settings.defaultLocation, source: "config", path: "~/.cua/config.toml" },
-    telemetry: demoTelemetry(state.settings.telemetry),
     ...(state.hostSettings ? { hostSettings: { ...state.hostSettings } } : {}),
     // The macOS hosts register ⌘⇧Space; the Windows and Linux shells have none.
     globalShortcut: state.platform.os === "macos" ? { label: state.settings.hotkey, registered: true } : null,
@@ -486,7 +485,6 @@ export function createDemoAdapter(options: DemoOptions = {}): DataAdapter & { re
     ...demoAgentKeysHandlers({ wait, stepMs: step, now }),
     ...demoVolumeHandlers({ state: state.volume, now, wait, step, emit, platform: state.platform }),
     ...createDemoSettings({ now, wait, emit, stepMs: step, platform: state.platform, unenrolled: options.unenrolled, update: options.update, experiments: state.volume.experiments, signedIn: () => Boolean(state.identity), settings: () => state.settings, setSettings: (p) => ((state.settings = { ...state.settings, ...p }), emit({ type: "settings.changed" })), addMachine: (m) => ((state.paired = [...state.paired, m]), emit({ type: "machines.changed" })) }),
-    ...demoTelemetryHandlers(ctx),
     ...demoRelayUsageHandlers(ctx),
     ...demoSpaceDetailHandlers(ctx),
     ...demoHostSetupHandlers(ctx),
@@ -517,7 +515,7 @@ export function createDemoAdapter(options: DemoOptions = {}): DataAdapter & { re
   };
 }
 
-export interface DemoState extends DemoTelemetryState, DemoRelayUsageState, DemoSpaceDetailState, DemoHostSetupState, DemoStartupState, DemoNewSpaceState, DemoKeyvaultSetupState, DemoKeyvaultManageState {
+export interface DemoState extends DemoRelayUsageState, DemoSpaceDetailState, DemoHostSetupState, DemoStartupState, DemoNewSpaceState, DemoKeyvaultSetupState, DemoKeyvaultManageState {
   rows: SpaceRow[];
   items: KvItem[];
   keyvaultLocked: boolean;

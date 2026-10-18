@@ -6,12 +6,11 @@
  * (`onboarding.initial`, `.reduce`, `.view`, `.copy`), the same one the
  * SwiftUI and Tauri apps draw.
  *
- * The pages are Welcome (with the usage-data switch), Sign in, AI agents
- * (with the cua-driver card), Menu bar (where the app shows: the notch and
- * the menu bar, or the menu bar only), Cua Volume (only with its experiment
- * on; `volume.ts` runs its commands), This machine (with the permissions
- * still to grant) and Done. The order, titles, buttons and answers are the
- * core's.
+ * The pages are Welcome, Sign in, AI agents (with the cua-driver card),
+ * Menu bar (where the app shows: the notch and the menu bar, or the menu
+ * bar only), Cua Volume (only with its experiment on; `volume.ts` runs its
+ * commands), This machine (with the permissions still to grant) and Done.
+ * The order, titles, buttons and answers are the core's.
  *
  * Menu bar is a Mac's: the notch is the macOS app's (the SwiftUI app, and
  * the Electron app's notch helper). Off a Mac there is no notch, so the
@@ -24,13 +23,12 @@
 
 import type { CoreClient } from "./core";
 import { hostOs, type HostOs } from "./host-os";
-import type { OnboardingMode, PermissionHint, TelemetryView } from "./contracts/host";
+import type { OnboardingMode, PermissionHint } from "./contracts/host";
 import type {
   OnboardingAction,
   OnboardingCopy,
   OnboardingFlowState,
   OnboardingStep,
-  OnboardingTelemetry,
   OnboardingView,
   PermissionRow,
   SandboxImage,
@@ -61,8 +59,6 @@ export interface OnboardingContext {
   menuBar: boolean;
   /** The system the app runs on (default: this host's). */
   os?: HostOs;
-  /** Sees every step the core takes, with the state before it (usage events). */
-  observe?: (before: OnboardingFlowState, action: OnboardingAction) => void;
 }
 
 export function onboardingInitial(core: CoreClient, identity: string | null, installerMode: OnboardingMode | null = null): OnboardingFlowState {
@@ -73,13 +69,11 @@ export function onboardingInitial(core: CoreClient, identity: string | null, ins
       installerMode,
       mode: null,
       menuBar: false,
-      telemetry: null,
     }
   );
 }
 
-function reduceOnce(core: CoreClient, state: OnboardingFlowState, action: OnboardingAction, ctx?: OnboardingContext): OnboardingFlowState {
-  ctx?.observe?.(state, action);
+function reduceOnce(core: CoreClient, state: OnboardingFlowState, action: OnboardingAction): OnboardingFlowState {
   return core.tryCall<OnboardingFlowState>("onboarding.reduce", { state, action }) ?? fallbackReduce(state, action);
 }
 
@@ -96,21 +90,21 @@ export function onboardingReduce(
   ctx: OnboardingContext,
 ): OnboardingFlowState {
   const passed = passedSteps(ctx.os);
-  let s = reduceOnce(core, state, action, ctx);
+  let s = reduceOnce(core, state, action);
   for (let guard = 0; guard < passed.length + 1 && passed.includes(s.step); guard++) {
     const before = s.step;
     if (action.type === "back") {
-      s = reduceOnce(core, s, { type: "back" }, ctx);
+      s = reduceOnce(core, s, { type: "back" });
     } else if (s.step === "agents") {
-      s = reduceOnce(core, s, { type: "agents-done", configured: [] }, ctx);
+      s = reduceOnce(core, s, { type: "agents-done", configured: [] });
     } else if (s.step === "presentation") {
-      s = reduceOnce(core, s, { type: "presentation-picked", menuBar: ctx.menuBar }, ctx);
-      s = reduceOnce(core, s, { type: "presentation-done" }, ctx);
+      s = reduceOnce(core, s, { type: "presentation-picked", menuBar: ctx.menuBar });
+      s = reduceOnce(core, s, { type: "presentation-done" });
     }
     if (s.step === before) break;
   }
   if (s.step === "presentation" && state.step !== "presentation" && s.menuBar !== ctx.menuBar) {
-    s = reduceOnce(core, s, { type: "presentation-picked", menuBar: ctx.menuBar }, ctx);
+    s = reduceOnce(core, s, { type: "presentation-picked", menuBar: ctx.menuBar });
   }
   return s;
 }
@@ -127,13 +121,6 @@ export function onboardingView(core: CoreClient, state: OnboardingFlowState, os:
     dots: v.dots.filter((d) => !passed.includes(d.step)),
     summary: v.summary.filter((f) => !facts.has(f.label)),
   };
-}
-
-/** The machine's telemetry setting as the flow reads it: locked when the
- * environment decides (the same rule as Settings, Privacy). */
-export function onboardingTelemetry(t: TelemetryView): OnboardingTelemetry {
-  const locked = ["do_not_track", "env", "legacy_env", "ci"].includes(t.sourceKind);
-  return { enabled: t.enabled, lockedBy: locked ? t.source : null, noticeShown: t.noticeShown };
 }
 
 export function onboardingCopy(core: CoreClient): OnboardingCopy {
@@ -205,7 +192,7 @@ function fallbackReduce(s: OnboardingFlowState, a: OnboardingAction): Onboarding
   const at = (step: OnboardingStep) => s.step === step;
   switch (a.type) {
     case "start":
-      return at("welcome") ? { ...s, step: "signin", runCounted: true } : s;
+      return at("welcome") ? { ...s, step: "signin" } : s;
     case "signed-in":
       return { ...s, identity: a.identity };
     case "signin-done":
@@ -218,10 +205,6 @@ function fallbackReduce(s: OnboardingFlowState, a: OnboardingAction): Onboarding
       return at("presentation") ? { ...s, step: "mode" } : s;
     case "mode-chosen":
       return at("mode") ? { ...s, mode: a.mode, step: "done" } : s;
-    case "telemetry-loaded":
-      return { ...s, telemetry: a.telemetry };
-    case "usage-data-toggled":
-      return at("welcome") && !s.telemetry?.lockedBy ? { ...s, telemetry: { ...s.telemetry, enabled: a.on } } : s;
     case "back": {
       const i = ORDER.indexOf(s.step);
       return i > 0 ? { ...s, step: ORDER[i - 1]! } : s;
@@ -242,7 +225,6 @@ function fallbackView(s: OnboardingFlowState, os: HostOs): OnboardingView {
   };
   const [title, lede, primaryLabel] = pages[s.step] ?? ["", "", "Continue"];
   const pre = s.installerMode ?? "client";
-  const locked = s.telemetry?.lockedBy || null;
   return {
     step: s.step,
     dots: ORDER.map((step) => ({ step, label: LABELS[step], current: step === s.step })),
@@ -276,18 +258,6 @@ function fallbackView(s: OnboardingFlowState, os: HostOs): OnboardingView {
             { menuBar: true, title: "Menu bar only", id: "onboarding-menu-bar", imageLabel: "The menu bar menu alone", selected: s.menuBar },
           ]
         : [],
-    notice: s.step === "welcome" ? "Cua collects anonymous usage data. Change it here or in Settings, Privacy." : null,
-    noticeLinkLabel: s.step === "welcome" ? "What is collected" : null,
-    noticeLinkUrl: s.step === "welcome" ? "https://cua.ai/docs/cua-sdk/concepts/telemetry" : null,
-    usage:
-      s.step === "welcome"
-        ? {
-            label: "Share anonymous usage data",
-            on: s.telemetry?.enabled ?? true,
-            enabled: !locked,
-            help: locked ? `Set by ${locked}` : null,
-          }
-        : null,
   };
 }
 

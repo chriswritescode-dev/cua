@@ -106,7 +106,6 @@ async def test_local_create_passes_command_env_services_and_probes(monkeypatch):
             services={"mcp": 8765},
             wait_for=http("mcp", "/health"),
             memory="2GB",
-            telemetry_enabled=False,
         )
     [opts] = calls
     assert opts["command"] == ["python", "-m", "srv"]
@@ -139,7 +138,7 @@ async def test_local_is_the_default_with_a_one_time_notice(monkeypatch, fresh_no
             warnings.simplefilter("error", DeprecationWarning)
             with pytest.raises(_Stop):
                 await Sandbox.create(
-                    Image.linux(kind="container"), services={"web": 80}, telemetry_enabled=False
+                    Image.linux(kind="container"), services={"web": 80}
                 )
     assert len(calls) == 2, "both went to the local runtime"
     notices = [r for r in caplog.records if "defaulting to a local sandbox" in r.message]
@@ -152,7 +151,7 @@ async def test_quiet_default_hides_the_notice(monkeypatch, fresh_notice, caplog)
     monkeypatch.setattr("cua_sandbox.runtime.docker.DockerRuntime", _native_recorder([]))
     caplog.set_level("WARNING", logger="cua_sandbox.sandbox")
     with pytest.raises(_Stop):
-        await Sandbox.create(Image.linux(kind="container"), telemetry_enabled=False)
+        await Sandbox.create(Image.linux(kind="container"))
     assert not [r for r in caplog.records if "defaulting to a local" in r.message]
 
 
@@ -170,7 +169,7 @@ async def test_cloud_only_arguments_keep_the_cloud_with_a_deprecation(monkeypatc
     with pytest.warns(DeprecationWarning, match="local=False"):
         with pytest.raises(_Stop):
             await Sandbox.create(
-                Image.from_registry(ROOTFS), claim_ttl=600, telemetry_enabled=False
+                Image.from_registry(ROOTFS), claim_ttl=600
             )
     assert seen and seen[0]["claim_ttl"] == 600
     # cloud= implies the cloud, without a warning.
@@ -180,7 +179,6 @@ async def test_cloud_only_arguments_keep_the_cloud_with_a_deprecation(monkeypatc
             await Sandbox.create(
                 Image.from_registry(ROOTFS),
                 cloud=CloudOptions(max_pool_size=2),
-                telemetry_enabled=False,
             )
     assert len(seen) == 2
 
@@ -193,7 +191,6 @@ async def test_local_true_with_cloud_options_is_a_typed_error():
             Image.linux(kind="container"),
             local=True,
             cloud=CloudOptions(warm=True),
-            telemetry_enabled=False,
         )
     with pytest.raises(ValueError):
         async with Sandbox.ephemeral(
@@ -375,7 +372,6 @@ async def test_non_sdk_runtimes_refuse_the_portable_options():
             local=True,
             runtime=Legacy(),  # type: ignore[arg-type]
             services={"mcp": 8765},
-            telemetry_enabled=False,
         )
 
 
@@ -388,7 +384,7 @@ async def test_flat_cloud_keywords_are_deprecated_and_conflicts_refused(monkeypa
     with pytest.warns(DeprecationWarning, match=r"cloud=CloudOptions\(warm=\.\.\."):
         with pytest.raises(_Stop):
             await Sandbox.create(
-                Image.linux(kind="container"), local=True, warm=True, telemetry_enabled=False
+                Image.linux(kind="container"), local=True, warm=True
             )
     with pytest.raises(ValueError, match="both in cloud="):
         with warnings.catch_warnings():
@@ -397,7 +393,6 @@ async def test_flat_cloud_keywords_are_deprecated_and_conflicts_refused(monkeypa
                 Image.linux(kind="container"),
                 warm=True,
                 cloud=CloudOptions(warm=False),
-                telemetry_enabled=False,
                 local=False,
             )
     # A named pool: the given fields are compared with its template.
@@ -409,7 +404,7 @@ async def test_flat_cloud_keywords_are_deprecated_and_conflicts_refused(monkeypa
     monkeypatch.setattr(Pool, "check", staticmethod(check))
     with pytest.raises(PoolSpecMismatch, match="command"):
         await Sandbox.create(
-            cloud=CloudOptions(pool="p"), command=["x"], telemetry_enabled=False, local=False
+            cloud=CloudOptions(pool="p"), command=["x"], local=False
         )
 
 
@@ -424,7 +419,6 @@ async def test_cloud_command_services_info_urls_and_progress(fleet, rootfs_varia
         services={"mcp": 8765},
         cloud=CloudOptions(max_pool_size=3, claim_ttl=600),
         progress=events.append,
-        telemetry_enabled=False,
         local=False,
     )
     try:
@@ -469,9 +463,9 @@ async def test_cloud_command_services_info_urls_and_progress(fleet, rootfs_varia
 
 async def test_cloud_env_is_created_and_keys_its_own_pool(fleet, rootfs_variant):
     # Cloud env= is the template's env (processMode Run on every runtime).
-    plain = await Sandbox.create(Image.from_registry(ROOTFS), telemetry_enabled=False, local=False)
+    plain = await Sandbox.create(Image.from_registry(ROOTFS), local=False)
     sb = await Sandbox.create(
-        Image.from_registry(ROOTFS), env={"K": "v"}, telemetry_enabled=False, local=False
+        Image.from_registry(ROOTFS), env={"K": "v"}, local=False
     )
     try:
         assert sb.pool_name != plain.pool_name, "env is part of the pool key"

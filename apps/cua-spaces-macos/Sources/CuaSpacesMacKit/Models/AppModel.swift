@@ -102,9 +102,8 @@ public final class AppModel {
     public var settingsTab: SettingsTab = .general
     /// A Settings section to scroll to when Settings opens (captures).
     public var settingsSection: String?
-    /// The Cua account, the telemetry switch and the coding agents.
+    /// The Cua account and the coding agents.
     let account: AccountRunning?
-    let telemetry: TelemetryRunning?
     let agentSetup: AgentSetupRunning?
     /// The signed-in account.
     public private(set) var identity: String?
@@ -119,7 +118,6 @@ public final class AppModel {
     public var signInTimeout: Duration = .seconds(600)
     /// Tells one sign-in from the next (a timeout of an old one is ignored).
     private var signInAttempt = 0
-    public private(set) var telemetryInput: AppTelemetryInput?
     /// The account's Cua Cloud billing (Settings, Billing), once read.
     public private(set) var billingStatus: AppBillingStatus?
     /// Cua Cloud billing (nil: no Billing row).
@@ -165,7 +163,7 @@ public final class AppModel {
     public init(backend: SpacesBackend, keyvault: KeyvaultModel,
                 onboarding: OnboardingModel, settingsPath: String,
                 host: HostRunning? = nil, account: AccountRunning? = nil,
-                telemetry: TelemetryRunning? = nil, agentSetup: AgentSetupRunning? = nil,
+                agentSetup: AgentSetupRunning? = nil,
                 billing: BillingRunning? = nil, devices: DevicesRunning? = nil,
                 presence: PresenceChecking = LivePresence(), loginItem: LoginItemControlling? = nil,
                 startup: StartupModel? = nil, appVersion: String? = nil) {
@@ -182,7 +180,6 @@ public final class AppModel {
         self.loginItem = loginItem
         self.host = HostModel(host: host)
         self.account = account
-        self.telemetry = telemetry
         self.agentSetup = agentSetup
         self.roster = appRosterInitial(spaces: [])
         self.keyvault = keyvault
@@ -202,16 +199,9 @@ public final class AppModel {
         // The notch tiles and the preview cover read one thumbnail store,
         // filled from the SDK's shared cache.
         notch.thumbnails.fetch = { [backend] id, maxAgeMs in await backend.thumbnail(id: id, maxAgeMs: maxAgeMs) }
-        // The app core's usage events for each step (the Tauri app sends
-        // the same ones): the first run, Settings, Storage, enrollment.
-        onboarding.telemetry = telemetry
-        self.checklist.telemetry = telemetry
-        self.storage.telemetry = telemetry
-        self.devices.telemetry = telemetry
         // Live Keyvault sign-ins show left of the notch (and in the menu).
         // Dismissed ones stay hidden across launches (Settings file).
         keyvault.dismissed = settings.dismissedAccess
-        keyvault.siteIconsFromGoogle = { [weak self] in self?.settings.keyvaultSiteIcons ?? true }
         keyvault.onSharing = { [weak self] _ in self?.syncNotchKeyvault() }
         keyvault.onDismissed = { [weak self] ids in
             guard let self else { return }
@@ -233,8 +223,6 @@ public final class AppModel {
         onboarding.currentExperiments = { [weak self] in
             self?.settings.experiments ?? AppExperiments(cuaVolume: false, yourCloud: false, sharing: true, webUi: false)
         }
-        // Which experiments are on: the day's `cua_app_active` carries them.
-        telemetry?.record(appTelemetryExperimentsOn(experiments: settings.experiments))
         // The notifications marker lives in the settings file, so a restart
         // never posts the same entry again.
         persistent.seenMs = { [weak self] in self?.settings.notificationsSeenMs ?? 0 }
@@ -517,8 +505,6 @@ public final class AppModel {
 
     /// Advances the Spaces being created and redraws the list.
     func sendCreate(_ action: AppCreateAction) {
-        // A create started, reached ready or failed (how long it took).
-        telemetry?.record(appTelemetryCreates(state: creates, action: action, nowMs: Self.nowMs()))
         creates = appCreatesReduce(state: creates, action: action)
         recompose()
         tickWhileCreating()
@@ -550,7 +536,6 @@ public final class AppModel {
     /// A tick moves the bars (and may stall a row) without redrawing twice.
     private func sendTick() {
         let now = Self.nowMs()
-        telemetry?.record(appTelemetryCreates(state: creates, action: .tick(now: now), nowMs: now))
         creates = appCreatesReduce(state: creates, action: .tick(now: now))
     }
 
@@ -762,7 +747,6 @@ public final class AppModel {
             if wizard.view.canContinue { create(wizard.view.plan); return }
         }
         showingNewSpace = true
-        telemetry?.record([.spaceWizard(action: "opened")])
         self.cloud.onConnected = { [weak self] in self?.cloudsChanged() }
     }
 
@@ -882,17 +866,7 @@ public final class AppModel {
     /// The New Space panel's Cancel.
     public func cancelNewSpace() {
         showingNewSpace = false
-        telemetry?.record([.spaceWizard(action: "cancelled")])
     }
-
-    /// Records a Spaces app feature (a fixed name; the Tauri app uses the
-    /// same words).
-    public func recordFeature(_ name: String) {
-        telemetry?.record(appTelemetryFeature(feature: name))
-    }
-
-    /// Where views send usage events.
-    public var telemetrySink: TelemetryRunning? { telemetry }
 
     /// This Mac's CPU architecture, as the image catalog spells it (the
     /// app core's): the wizard's platform, a pending create's, and the
@@ -916,7 +890,6 @@ public final class AppModel {
     /// elsewhere) only leaves the list.
     public func create(_ plan: AppCreatePlan) {
         showingNewSpace = false
-        telemetry?.record([.spaceWizard(action: "submitted")])
         let args = appWizardCreateArgs(plan: plan)
         let pendingId = "pending:\(UUID().uuidString.lowercased())"
         startCreate(args, os: plan.image.os, pendingId: pendingId, select: plan.openDesktop)
@@ -1081,7 +1054,6 @@ public final class AppModel {
             return
         }
         guard !isDeleting(space.id) else { return }
-        recordFeature("space_delete")
         let detail = appSpaceDetail(space: space)
         sendCreate(.deleteStart(id: space.id, now: Int64(Date().timeIntervalSince1970 * 1000)))
         usage[space.id] = nil
@@ -1189,13 +1161,6 @@ public final class AppModel {
             host.identity = identity
             onboarding.host.identity = identity
             devices.signedIn = identity != nil
-            // Activation funnel: the first run records `signed_in` on its
-            // sign-in page; a sign-in from the main window (first run done or
-            // not showing, so its state is on Welcome) records it here.
-            if onboarding.state.step == .welcome, let who = identity, !who.isEmpty,
-               who != onboarding.state.identity {
-                telemetry?.record([.step(step: "signed_in", ok: true)])
-            }
             onboarding.send(.signedIn(identity: identity ?? ""))
             signIn = .idle
             signInURL = nil
@@ -1209,12 +1174,10 @@ public final class AppModel {
         }
     }
 
-    /// Shown where the sign-in was started; counted by its kind only (the
-    /// core keeps the words).
+    /// Shown where the sign-in was started.
     private func signInFailed(_ message: String) {
         signIn = .failed(message: message)
         signInURL = nil
-        telemetry?.record(appTelemetrySignInFailed(message: message))
     }
 
     /// Stops waiting for the browser (the page can start again).
@@ -1222,7 +1185,6 @@ public final class AppModel {
         switch signIn {
         case .starting, .waiting:
             signInAttempt += 1
-            telemetry?.record(appTelemetrySignInFailed(message: nil))
         default: break
         }
         signIn = .idle
@@ -1248,12 +1210,12 @@ public final class AppModel {
         appSettingsPage(input: AppSettingsInput(
             identity: identity, apiKeyClient: nil, signIn: signIn, canSignOut: account != nil && identity != nil,
             menuBar: settings.menuBar, defaultLocation: settings.defaultLocation, locationLockedBy: nil,
-            telemetry: telemetryInput, agents: agentRows, agentsBusy: agentsBusy, agentsPending: agentsPending,
+            agents: agentRows, agentsBusy: agentsBusy, agentsPending: agentsPending,
             teams: teamsSettingsInput,
             billing: identity == nil ? nil : billingStatus, loginItem: loginItemInput,
             experiments: settings.experiments, keyvaultAutoWipe: keyvault.autoWipe,
             keyvaultUnlockPrompt: keyvault.unlockPromptShows,
-            keyvaultSiteIcons: settings.keyvaultSiteIcons, keyvaultProtection: keyvault.page.protection,
+            keyvaultProtection: keyvault.page.protection,
             autoConnect: settings.autoConnect, lumeSource: lumeSource, linuxSource: linuxSource))
     }
 
@@ -1303,7 +1265,6 @@ public final class AppModel {
         settings = next
         let after = next.experiments
         saveSettings()
-        telemetry?.record(appTelemetryExperimentsChanged(before: before, after: after))
         applyExperiments(before: before, after: after)
     }
 
@@ -1358,7 +1319,6 @@ public final class AppModel {
         loginItemError = nil
         do {
             if on { try loginItem.register() } else { try loginItem.unregister() }
-            telemetry?.record([.feature(feature: on ? "launch_at_login_on" : "launch_at_login_off")])
         } catch {
             loginItemError = error.localizedDescription
         }
@@ -1390,11 +1350,10 @@ public final class AppModel {
         readLoginItem()
     }
 
-    /// Reads what Settings shows (telemetry, the coding agents).
+    /// Reads what Settings shows (the coding agents).
     public func loadSettings() async {
         lumeSource = await backend.lumeSource()
         linuxSource = await backend.linuxSource()
-        telemetryInput = telemetry?.status()
         readLoginItem()
         await storage.load()
         await reloadBilling()
@@ -1467,22 +1426,11 @@ public final class AppModel {
         case "keyvault-auto-wipe":
             await keyvault.setAutoWipe(option == "on")
             if let error = keyvault.error { show(error: error) }
-        case "keyvault-site-icons":
-            settings.keyvaultSiteIcons = option == "on"
-            saveSettings()
-            // Turning it on asks for the rows' icons again.
-            if settings.keyvaultSiteIcons { await keyvault.loadIcons() }
         case "keyvault-unlock-prompt":
             // On shows the prompt (Never ask again off); off is the stored
             // "Never ask again".
             await keyvault.setSkipUnlockPrompt(option != "on")
             if let error = keyvault.error { show(error: error) }
-        case "telemetry":
-            do {
-                telemetryInput = try telemetry?.setEnabled(option == "on")
-            } catch {
-                show(error: LiveSpacesBackend.words(error))
-            }
         default: break
         }
     }

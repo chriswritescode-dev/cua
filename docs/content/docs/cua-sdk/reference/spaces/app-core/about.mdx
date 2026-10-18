@@ -251,7 +251,6 @@ Returned by [`app_about_input_from_json`](#app_about_input_from_json).
 | `os` | `String` |  | This machine for an issue report (`macOS 26.0 (arm64)`). |
 | `updater` | `bool` |  | The app updates itself (its updater is running). |
 | `auto_check` / `autoCheck` | `bool` |  | The updater checks on its own. |
-| `auto_install` / `autoInstall` | `bool` |  | The updater downloads and installs on its own. |
 | `channel` | [`AppUpdateChannel`](#appupdatechannel-enum) |  | The chosen channel. |
 | `last_check` / `lastCheck` | `Option<String>` |  | The last check, as the shell formats a date; `None`: never. |
 | `checking` | `bool` |  | A check is running. |
@@ -268,11 +267,8 @@ Returned by [`app_about_input_from_json`](#app_about_input_from_json).
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `auto_check_label` / `autoCheckLabel` | `String` |  | "Check for and download updates automatically". |
+| `auto_check_label` / `autoCheckLabel` | `String` |  | "Check for updates automatically". |
 | `auto_check` / `autoCheck` | `bool` |  | Checked. |
-| `auto_install_label` / `autoInstallLabel` | `String` |  | "Install a downloaded update when Cua Spaces quits". |
-| `auto_install` / `autoInstall` | `bool` |  | Checked. |
-| `auto_install_enabled` / `autoInstallEnabled` | `bool` |  | It can be used (only with automatic checks). |
 | `channel_label` / `channelLabel` | `String` |  | "Update to:". |
 | `channels` | [`Vec<AppSettingsOption>`](/cua-sdk/reference/spaces/app-core/window#appsettingsoption-record) |  | Stable, Beta. |
 | `channel_help` / `channelHelp` | `String` |  | The channel picker's tooltip. |

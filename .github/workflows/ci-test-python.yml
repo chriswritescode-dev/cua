@@ -79,8 +79,6 @@ jobs:
             echo "No tests directory found, skipping tests"
           fi
         shell: bash
-        env:
-          CUA_TELEMETRY_ENABLED: "false" # Disable telemetry during tests
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
@@ -135,8 +133,6 @@ jobs:
 
       - name: Run the hermetic suite
         working-directory: libs/python/cua-sandbox
-        env:
-          CUA_TELEMETRY_ENABLED: "false"
         run: >
           uv run --frozen pytest tests -p no:cacheprovider --timeout=120 -ra
           --ignore=tests/live

@@ -15,10 +15,6 @@ struct Serve: AsyncParsableCommand {
     func run() async throws {
         if mcp {
             // MCP mode - run as MCP server over stdio
-            TelemetryClient.shared.record(event: TelemetryEvent.serve, properties: [
-                "mode": "mcp"
-            ])
-
             let controller = LumeController()
             let mcpServer = await LumeMCPServer(controller: controller)
 
@@ -26,11 +22,6 @@ struct Serve: AsyncParsableCommand {
             try await mcpServer.start()
         } else {
             // HTTP mode - run as HTTP server
-            TelemetryClient.shared.record(event: TelemetryEvent.serve, properties: [
-                "port": port,
-                "mode": "http"
-            ])
-
             let server = await Server(port: port)
 
             Logger.info("Starting server", metadata: ["port": "\(port)"])

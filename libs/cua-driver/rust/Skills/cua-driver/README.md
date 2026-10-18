@@ -12,18 +12,23 @@ platform-specific limitations. The skill
 defaults to background delivery and requires structured refusal or observed
 failure before a caller escalates to foreground input.
 
-## Install Cua Driver
+## Build Cua Driver from the repository
+
+Cua Driver is built from a repository checkout, not installed from a release
+archive. Run these commands from the repository root.
 
 macOS or Linux:
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://cua.ai/driver/install.sh)"
+git pull
+libs/cua-driver/scripts/install-local.sh
 ```
 
 Windows PowerShell:
 
 ```powershell
-irm https://cua.ai/driver/install.ps1 | iex
+git pull
+libs\cua-driver\scripts\install-local.ps1
 ```
 
 Then verify the current host:
@@ -101,14 +106,10 @@ missing. See `RECORDING.md`.
 
 ## Updates and source builds
 
-The skill is versioned with Cua Driver releases. Back up personal edits before updating: updates replace the installed pack.
-The pack version does not identify the running daemon; inspect the live tool
-schema when versions differ. For bleeding-edge validation against a matching
-source build (not an arbitrary installed release):
-
-```bash
-cua-driver skills install --from main
-```
+The skill pack ships with the local build. Back up personal edits before
+updating: `cua-driver skills update` replaces the installed pack with the copy
+staged beside the executable. The pack version does not identify the running
+daemon; inspect the live tool schema when versions differ.
 
 From a local checkout, `libs/cua-driver/scripts/install-local.sh` installs the
 source-built macOS driver as `cua-driver-local` and `CuaDriverLocal.app`, without

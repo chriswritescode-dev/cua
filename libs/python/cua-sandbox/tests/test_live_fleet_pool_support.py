@@ -183,7 +183,6 @@ async def test_pool_live_runner_uses_pinned_warm_configuration(monkeypatch, tmp_
     assert isinstance(ephemeral_call["pool"], str)
     assert ephemeral_call["name"] == namespace
     assert ephemeral_call["time_to_start"] == 180
-    assert ephemeral_call["telemetry_enabled"] is False
     for rejected in ("image", "cpu", "memory_mb", "server_port", "replicas"):
         assert rejected not in ephemeral_call
 

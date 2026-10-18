@@ -7,10 +7,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createFakeHostBridge } from "../native/host";
 import { onboardingCopy } from "../model/onboarding";
 import { createFakeInstallerBridge } from "../native/installer";
-import type { TelemetryBridge } from "../native/telemetry";
-import type { TelemetrySignal } from "../model/telemetry";
-// The webview build has no Node types; tests run in Node.
-// @ts-expect-error node:fs is untyped here
 import { readFileSync } from "node:fs";
 import { fakeDrive, MOUNT_OFF, MOUNTED, NEEDS_APPROVAL } from "../test/fakeDrive";
 import { DRIVE_APPROVAL_POLL_MS, DRIVE_PROMPT_POLL_MS, InstallerFlow, type InstallerAuth, summarizeAgent } from "./InstallerFlow";
@@ -42,38 +38,6 @@ function fakeAuth() {
     fail: (why) => failed?.(why),
   };
   return auth;
-}
-
-/** A telemetry bridge that keeps what the flow records. */
-function fakeTelemetry() {
-  const log: string[] = [];
-  const signals: TelemetrySignal[] = [];
-  const view = { enabled: true, source: "default", sourceKind: "default", noticeShown: true, noticeText: "", docsUrl: "" };
-  const bridge: TelemetryBridge = {
-    isNative: true,
-    status: async () => view,
-    setEnabled: async () => view,
-    acknowledgeNotice: async () => {
-      log.push("notice");
-      return view;
-    },
-    welcomeLeft: async (on) => {
-      log.push(`welcome-left:${on}`);
-      view.enabled = on;
-      return view;
-    },
-    recordFeature: () => {},
-    recordStep: () => {},
-    recordStream: () => {},
-    recordSignals: (s) => {
-      if (s.length) log.push("signals");
-      signals.push(...s);
-    },
-  };
-  const pages = () =>
-    signals.flatMap((s) => (s.type === "onboarding-page" ? [`${s.page} ${s.action} ${s.choice}`] : []));
-  const steps = () => signals.flatMap((s) => (s.type === "step" ? [s.step] : []));
-  return { bridge, log, signals, pages, steps };
 }
 
 const click = (name: string | RegExp) => fireEvent.click(screen.getByRole("button", { name }));
@@ -125,7 +89,6 @@ describe("InstallerFlow", () => {
     const auth = fakeAuth();
     const onDone = vi.fn();
     const drive = fakeDrive({ volume_mount_status: MOUNT_OFF });
-    const telemetry = fakeTelemetry();
     localStorage.removeItem("cua.settings.menuBar");
     render(
       <InstallerFlow
@@ -134,27 +97,14 @@ describe("InstallerFlow", () => {
         auth={auth}
         drive={drive.bridge}
         os="macos"
-        telemetry={telemetry.bridge}
         onDone={onDone}
       />,
     );
 
     expect(screen.getByText("Welcome to Cua Spaces")).toBeInTheDocument();
-    // The telemetry notice is on Welcome: it is recorded as shown before
-    // anything is recorded.
-    expect(screen.getByTestId("telemetry-notice")).toHaveTextContent("Change it here or in Settings, Privacy.");
-    expect(screen.getByRole("link", { name: "What is collected" })).toHaveAttribute(
-      "href",
-      "https://cua.ai/docs/cua-sdk/concepts/telemetry",
-    );
-    // Nothing is recorded while Welcome shows; the switch is on.
-    expect(screen.getByRole("switch", { name: "Share anonymous usage data" })).toBeChecked();
-    expect(telemetry.signals).toEqual([]);
     // First launch installs the bundled cua (PATH line added): no page.
     await waitFor(() => expect(installer.calls).toEqual(["cliPlan", "installCli:path"]));
     click("Get started");
-    // Leaving Welcome settles the switch first, then the run is recorded.
-    await waitFor(() => expect(telemetry.log.slice(0, 2)).toEqual(["welcome-left:true", "signals"]));
 
     // Sign in (device flow opens the browser). No Command line page.
     expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
@@ -219,62 +169,6 @@ describe("InstallerFlow", () => {
     expect(onDone).toHaveBeenCalledWith("client");
     expect(host.calls).toEqual(["onboarding:client"]);
     localStorage.removeItem("cua.settings.menuBar");
-    // Every page shown and left, with its answer as a fixed word (the
-    // app core's `telemetry::onboarding`, the same in the SwiftUI app).
-    expect(telemetry.pages()).toEqual([
-      "welcome shown none",
-      "welcome completed none",
-      "signin shown none",
-      "signin completed signed_in",
-      "agents shown none",
-      "agents completed agents_set_up",
-      "presentation shown none",
-      "presentation completed menu_bar_only",
-      "volume shown none",
-      "volume completed this_mac",
-      "this_machine shown none",
-      "this_machine completed access_others",
-      "done shown none",
-      "done completed none",
-    ]);
-    expect(telemetry.steps()).toEqual(["onboarding_shown", "signed_in", "onboarding_completed"]);
-    expect(JSON.stringify(telemetry.signals)).not.toContain("ada");
-  });
-
-  it("the usage-data switch off on Welcome: nothing is recorded for the whole run", async () => {
-    const telemetry = fakeTelemetry();
-    const auth = fakeAuth();
-    const drive = fakeDrive({ volume_mount_status: MOUNT_OFF });
-    render(
-      <InstallerFlow
-        installer={createFakeInstallerBridge()}
-        host={createFakeHostBridge()}
-        auth={auth}
-        drive={drive.bridge}
-        os="macos"
-        telemetry={telemetry.bridge}
-        onDone={vi.fn()}
-      />,
-    );
-    const toggle = screen.getByRole("switch", { name: "Share anonymous usage data" });
-    await waitFor(() => expect(toggle).toBeChecked());
-    fireEvent.click(toggle);
-    expect(toggle).not.toBeChecked();
-    click("Get started");
-    await waitFor(() => expect(telemetry.log).toContain("welcome-left:false"));
-    await screen.findByRole("heading", { name: "Sign in" });
-    click("Skip");
-    await screen.findByRole("heading", { name: "AI agents" });
-    click("Skip");
-    await screen.findByRole("heading", { name: "Where should Cua Spaces show up?" });
-    click("Continue");
-    await screen.findByRole("heading", { name: "Cua Volume" });
-    click("Continue");
-    await screen.findByText("How will you use this machine?");
-    click("Continue");
-    click(await screen.findByRole("button", { name: "Start using Cua Spaces" }).then((b) => b.textContent!));
-    expect(telemetry.signals).toEqual([]);
-    expect(telemetry.log).not.toContain("signals");
   });
 
   it("first launch: a current cua installs nothing; a build without the sidecar installs nothing", async () => {
@@ -833,7 +727,7 @@ declare const process: { cwd(): string };
 const cwd = () => process.cwd();
 
 describe("onboarding helper text", () => {
-  it("the telemetry notice and the card notes wrap instead of being cut short", async () => {
+  it("the card notes wrap instead of being cut short", async () => {
     const css = (readFileSync(`${cwd()}/src/styles/desktop.css`, "utf8") as string).replace(/\/\*[\s\S]*?\*\//g, "");
     const rule = (selector: string) => {
       const blocks = css
@@ -845,7 +739,6 @@ describe("onboarding helper text", () => {
     expect(rule(".st-prompt-text")).toContain("var(--dw-font)");
     expect(rule(".st-prompt-text")).not.toContain("monospace");
     for (const sel of [
-      ".dw .onboarding-telemetry-notice",
       ".dw .ob-page-card .st-note",
       ".dw .ob-page-card .create-cloud-error",
       ".dw .ob-page .host-setup-lede",
@@ -854,12 +747,6 @@ describe("onboarding helper text", () => {
       expect(rule(sel), sel).not.toContain("nowrap");
       expect(rule(sel), sel).not.toContain("text-overflow: ellipsis");
     }
-    render(<InstallerFlow installer={createFakeInstallerBridge()} host={createFakeHostBridge()} onDone={vi.fn()} />);
-    const notice = screen.getByTestId("telemetry-notice");
-    // The whole sentence, with the link inline after it.
-    expect(notice.textContent!.length).toBeGreaterThan(40);
-    expect(notice.lastElementChild!.tagName).toBe("A");
-    expect(notice).not.toHaveAttribute("title");
   });
 });
 

@@ -53,7 +53,6 @@ mod skills;
 #[doc(hidden)]
 pub mod stream_probe;
 mod team_cmd;
-mod telemetry_cmd;
 pub mod teleport;
 pub mod teleport_session;
 mod trajectory;
@@ -288,17 +287,6 @@ enum Command {
   cua volume audit"
     )]
     Volume(drive_cmd::DriveCmd),
-    /// Anonymous usage telemetry (status, on, off, show-last, reset-id,
-    /// schema). What is sent:
-    /// https://cua.ai/docs/cua-sdk/concepts/telemetry
-    #[command(
-        subcommand,
-        after_help = "Examples:
-  cua telemetry status
-  cua telemetry off
-  cua telemetry show-last"
-    )]
-    Telemetry(telemetry_cmd::TelemetryCmd),
     /// (internal) The CLI and MCP surface as JSON, for the generated docs.
     #[command(name = "dump-docs", hide = true)]
     DumpDocs {
@@ -1197,11 +1185,9 @@ async fn open(cli: &Cli, with_session: bool) -> Result<Arc<Cua>, CuaError> {
         })
     };
     if cli.embedded {
-        let _ = TOPOLOGY.set("embedded");
         return embedded();
     }
     if cli.daemon.is_some() {
-        let _ = TOPOLOGY.set("daemon");
         return Cua::connect(cli.daemon.clone(), cli.daemon_token.clone());
     }
     // A daemon that is starting is waited for (bounded), never raced with
@@ -1230,57 +1216,9 @@ async fn open(cli: &Cli, with_session: bool) -> Result<Arc<Cua>, CuaError> {
         {
             cua_daemon::identity::check(&info)?;
         }
-        let _ = TOPOLOGY.set("daemon");
         return Ok(c);
     }
-    let _ = TOPOLOGY.set("embedded");
     embedded()
-}
-
-/// Which runtime this command used (`embedded`, `daemon`), for the
-/// `cua_cli_command` event; unset when it opened none.
-static TOPOLOGY: std::sync::OnceLock<&'static str> = std::sync::OnceLock::new();
-
-/// The command as `group.sub` (clap names, never argument values), for
-/// telemetry. Deeper levels fold into their group.
-fn command_path(m: &clap::ArgMatches) -> String {
-    match m.subcommand() {
-        Some((top, sub)) => match sub.subcommand() {
-            Some((name, _)) => format!("{top}.{name}"),
-            None => top.to_string(),
-        },
-        None => "other".into(),
-    }
-}
-
-/// Every `group.sub` path of the CLI (the telemetry vocabulary).
-#[cfg(test)]
-fn all_command_paths() -> Vec<String> {
-    let cmd = Cli::command();
-    let mut out = Vec::new();
-    for top in cmd.get_subcommands() {
-        let name = top.get_name().to_string();
-        let subs: Vec<_> = top.get_subcommands().collect();
-        if subs.is_empty() || !top.is_subcommand_required_set() {
-            out.push(name.clone());
-        }
-        for sub in subs {
-            out.push(format!("{name}.{}", sub.get_name()));
-        }
-    }
-    out.sort();
-    out
-}
-
-/// Whether a command records a `cua_cli_command` event (not `cua telemetry`
-/// itself, and not the internal docs dump).
-fn records_telemetry(c: &Command) -> bool {
-    // `cua auth keychain` is the Spaces app's own launch check: no usage
-    // event, and never the first-run notice (the app shows its own).
-    !matches!(
-        c,
-        Command::Telemetry(_) | Command::DumpDocs { .. } | Command::Auth(AuthCmd::Keychain { .. })
-    )
 }
 
 fn print(out: &mut dyn Write, v: serde_json::Value, json: bool, text: impl FnOnce() -> String) {
@@ -1628,7 +1566,6 @@ async fn run(cli: Cli, out: &mut dyn Write) -> Result<i32, CuaError> {
             };
         }
         Command::Config(cmd) => return config_cmd::run(cmd.clone(), json, out),
-        Command::Telemetry(cmd) => return telemetry_cmd::run(cmd.clone(), json, out),
         Command::Keyvault(cmd) => return extension::keyvault(cmd.clone(), json, out).await,
         Command::Cache(cmd) => {
             let state_dir = cli.state_dir.clone();
@@ -2163,7 +2100,6 @@ async fn run_sdk(cli: Cli, out: &mut dyn Write) -> Result<i32, CuaError> {
         | Command::Teleport(_)
         | Command::Cache(_)
         | Command::Config(_)
-        | Command::Telemetry(_)
         | Command::Keyvault(_)
         | Command::Images(_)
         | Command::DumpDocs { .. } => unreachable!("handled above"),
@@ -2339,8 +2275,9 @@ async fn daemon_start(
         }
         let child = std::process::Command::new(exe)
             .args(&args)
-            // Who started it (`cua_daemon_started.mode`): the Spaces app
-            // sets `app`; an autostart from the CLI is `background`.
+            // Who started it: the Spaces app sets `app` (the daemon reads it
+            // for the mesh update channel); an autostart from the CLI is
+            // `background`.
             .env(
                 "CUA_DAEMON_STARTED_BY",
                 std::env::var("CUA_DAEMON_STARTED_BY").unwrap_or_else(|_| "cli".into()),
@@ -2438,48 +2375,8 @@ async fn daemon_start(
                 .map_err(|_| CuaError::InvalidArgument(format!("bad loopback address {a}")))?,
         ),
     };
-    let health_runtime = runtime.clone();
     let h = cua_daemon::server::start(runtime, cfg).await;
     drop(starting);
-    {
-        use cua_telemetry::events::{self, Outcome};
-        let mode = match std::env::var("CUA_DAEMON_STARTED_BY").as_deref() {
-            Ok("app") => "app",
-            Ok(_) => "background",
-            Err(_) => "foreground",
-        };
-        let t = cua_telemetry::global();
-        t.capture(events::daemon_started(
-            mode,
-            if h.is_ok() {
-                Outcome::Ok
-            } else {
-                Outcome::Error
-            },
-        ));
-        if h.is_ok() {
-            // Aggregate health, at most hourly: uptime and how many
-            // sandboxes it knows, both bucketed.
-            tokio::spawn(async move {
-                let started = std::time::Instant::now();
-                let mut tick = tokio::time::interval(Duration::from_secs(3600));
-                tick.tick().await;
-                loop {
-                    tick.tick().await;
-                    let n = health_runtime
-                        .list_filtered(None, false)
-                        .await
-                        .map(|l| l.sandboxes.len() as u64)
-                        .unwrap_or(0);
-                    let t = cua_telemetry::global();
-                    t.capture(events::daemon_health(started.elapsed(), n));
-                    t.flush(Duration::from_secs(3));
-                }
-            });
-        } else {
-            cua_telemetry::global().shutdown(Duration::from_millis(400));
-        }
-    }
     let mut h = h?;
     if let Some(addr) = mcp_listen_addr {
         let token = cua_daemon::remote_mcp_token().map_err(util::internal)?;
@@ -2555,20 +2452,6 @@ fn keep_stdio_out_of_children() {
     }
 }
 
-/// How this process shows the first-run telemetry notice. A daemon the
-/// Spaces app starts (`CUA_DAEMON_STARTED_BY=app`) leaves it to the app:
-/// its stderr is a pipe nobody reads, so printing the notice there and
-/// marking it shown would let it (and the app) send before the person saw
-/// the app's Welcome page and its usage-data switch. The app acknowledges
-/// the notice when Welcome is left with the switch on; until then this
-/// daemon sends nothing.
-fn notice_mode(started_by: Option<&str>) -> cua_telemetry::NoticeMode {
-    match started_by {
-        Some("app") => cua_telemetry::NoticeMode::External,
-        _ => cua_telemetry::NoticeMode::Stderr,
-    }
-}
-
 /// Whether `cmd` is a Teams command: `cua team`, `cua host pair --team`,
 /// or sharing a Space with (or unsharing it from) `team:<id>`.
 fn uses_teams(cmd: &Command) -> bool {
@@ -2629,24 +2512,7 @@ pub fn main() {
     // child process (the daemon) uses that environment's home.
     unsafe { cua_home::env::pin_home() };
     let matches = cli_command(cua_home::experimental::teams_enabled()).get_matches();
-    let command = command_path(&matches);
     let cli = Cli::from_arg_matches(&matches).unwrap_or_else(|e| e.exit());
-    let daemon_process = matches!(cli.command, Command::Daemon(DaemonCmd::Start { .. }));
-    let telemetry = cua_telemetry::init(
-        if daemon_process { "daemon" } else { "cli" },
-        cua_sdk::VERSION,
-    );
-    let record = records_telemetry(&cli.command);
-    let json_output = cli.json;
-    telemetry.set_notice_mode(notice_mode(
-        std::env::var("CUA_DAEMON_STARTED_BY").ok().as_deref(),
-    ));
-    // The first-run notice goes to stderr before anything could be sent
-    // (not for `cua telemetry` / `cua config`, which are how you answer it).
-    if record && !matches!(cli.command, Command::Config(_)) {
-        telemetry.show_notice_if_needed();
-    }
-    let started = std::time::Instant::now();
     // The daemon logs to a size-capped, self-rotating file as well as
     // stderr (a background daemon's stderr goes nowhere).
     let daemon_log = matches!(
@@ -2702,26 +2568,6 @@ pub fn main() {
     let code = rt.block_on(async {
         let mut out = std::io::stdout();
         let result = run(cli, &mut out).await;
-        if record && !daemon_process {
-            use cua_telemetry::events::{self, Outcome};
-            // `cua config set telemetry off` must not report itself.
-            telemetry.refresh();
-            let (outcome, variant) = match &result {
-                Ok(0) => (Outcome::Ok, None),
-                Ok(_) => (Outcome::Error, None),
-                Err(e) => (Outcome::Error, Some(e.variant())),
-            };
-            telemetry.capture(events::cli_command(
-                &command,
-                outcome,
-                variant,
-                started.elapsed(),
-                json_output,
-                TOPOLOGY.get().copied().unwrap_or("none"),
-            ));
-            // Retention: one `cua_app_active` per install per UTC day.
-            telemetry.capture_active_day();
-        }
         match result {
             Ok(c) => c,
             Err(e) => {
@@ -2732,9 +2578,6 @@ pub fn main() {
         }
     });
     let _ = std::io::stdout().flush();
-    // Telemetry never holds the exit up for more than this; what is left
-    // goes to the offline spool.
-    telemetry.shutdown(Duration::from_millis(400));
     std::process::exit(code);
 }
 
@@ -2742,10 +2585,11 @@ pub fn main() {
 mod tests {
     use super::*;
 
-    /// The Spaces app's launch check (`cua auth keychain`) records no usage
-    /// event and never shows the first-run notice; other auth commands do.
+    /// The Spaces app's launch check (`cua auth keychain`) prints one
+    /// compact JSON line (the app reads it). A test build is not Cua-signed,
+    /// so its store is a file and no keychain is touched.
     #[test]
-    fn the_app_keychain_check_records_nothing() {
+    fn the_app_keychain_check_reports_its_state() {
         let cli = Cli::try_parse_from(["cua", "auth", "keychain", "--prompt"]).unwrap();
         assert!(matches!(
             cli.command,
@@ -2754,12 +2598,7 @@ mod tests {
                 forget: false
             })
         ));
-        assert!(!records_telemetry(&cli.command));
         assert!(Cli::try_parse_from(["cua", "auth", "keychain", "--prompt", "--forget"]).is_err());
-        let status = Cli::try_parse_from(["cua", "auth", "status"]).unwrap();
-        assert!(records_telemetry(&status.command));
-        // One compact JSON line (the app reads it). A test build is not
-        // Cua-signed, so its store is a file and no keychain is touched.
         if std::env::var_os("CUA_CREDENTIAL_STORE").is_none() {
             let mut out = Vec::new();
             assert_eq!(auth::keychain(false, false, &mut out).unwrap(), 0);
@@ -2768,64 +2607,6 @@ mod tests {
             let v: serde_json::Value = serde_json::from_str(&text).unwrap();
             assert_eq!(v["state"], "not_used");
         }
-    }
-
-    /// A daemon the Spaces app starts never shows or acknowledges the
-    /// first-run notice (the app's Welcome page does), so it sends nothing
-    /// before the person answered it; every other process prints it.
-    #[test]
-    fn an_app_started_daemon_leaves_the_notice_to_the_app() {
-        use cua_telemetry::{NoticeMode, Telemetry};
-        assert_eq!(notice_mode(Some("app")), NoticeMode::External);
-        for other in [None, Some("cli"), Some("launchd")] {
-            assert_eq!(notice_mode(other), NoticeMode::Stderr, "{other:?}");
-        }
-        let home = tempfile::tempdir().unwrap();
-        let t = Telemetry::builder()
-            .home(home.path())
-            .env(|k| (k == "CUA_TELEMETRY").then(|| "1".to_string()))
-            .build();
-        t.set_notice_mode(notice_mode(Some("app")));
-        if !t.is_enabled() {
-            return; // telemetry forced off in this environment
-        }
-        assert!(!t.show_notice_if_needed());
-        assert!(!t.notice_shown(), "the app's Welcome page acknowledges it");
-        t.set_notice_mode(notice_mode(None));
-        assert!(t.show_notice_if_needed());
-        assert!(t.notice_shown());
-    }
-
-    /// Every CLI command path is in the telemetry vocabulary, so a new
-    /// command cannot silently report as `other` (or leak its name). With
-    /// `CUA_WRITE_CLI_COMMANDS=1` the vocabulary file is regenerated.
-    #[test]
-    fn telemetry_command_vocabulary_matches_the_cli() {
-        let paths = all_command_paths();
-        let file = concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../cua-telemetry/src/cli_commands.in"
-        );
-        if std::env::var_os("CUA_WRITE_CLI_COMMANDS").is_some() {
-            let mut body = String::from(
-                "// Generated by cua-cli's telemetry_command_vocabulary_matches_the_cli\n// (CUA_WRITE_CLI_COMMANDS=1 cargo test -p cua-cli telemetry_command).\n&[\n",
-            );
-            for p in &paths {
-                body.push_str(&format!("    {p:?},\n"));
-            }
-            body.push_str("    \"other\",\n]\n");
-            std::fs::write(file, body).unwrap();
-        }
-        for p in &paths {
-            assert!(
-                cua_telemetry::schema::CLI_COMMANDS.contains(&p.as_str()),
-                "{p} is not in cua-telemetry's CLI_COMMANDS; run CUA_WRITE_CLI_COMMANDS=1 cargo test -p cua-cli telemetry_command"
-            );
-        }
-        let m = Cli::command().get_matches_from(["cua", "auth", "status"]);
-        assert_eq!(command_path(&m), "auth.status");
-        let m = Cli::command().get_matches_from(["cua", "viewer"]);
-        assert_eq!(command_path(&m), "viewer");
     }
     use cua_daemon::fixtures;
 

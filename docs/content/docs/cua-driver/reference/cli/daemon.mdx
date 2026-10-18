@@ -261,6 +261,6 @@ cua-driver autostart kick
 | Code | Meaning |
 | --- | --- |
 | `0` | Success. |
-| `1` | Failure: the daemon is not running or is incompatible, a tool call returned an error, or the operation failed. `call` and direct tool invocations exit with the daemon's result code (1 on a tool error); `update --apply` passes through the installer's status. |
-| `2` | Invalid input: tool arguments that are not valid JSON, an unknown `mcp-config` client, or an `update --apply` refused on a local development install. |
+| `1` | Failure: the daemon is not running or is incompatible, a tool call returned an error, or the operation failed. `call` and direct tool invocations exit with the daemon's result code (1 on a tool error); `check-update` and `update` exit 1 when the release check itself fails. |
+| `2` | Invalid input: tool arguments that are not valid JSON, an unknown `mcp-config` client, or an `update` invocation with `--apply`, which is refused because installing release builds is disabled. |
 | `64` | Usage error: an unknown or missing subcommand or argument, or conflicting flags (for example `revoke` without exactly one of `--session` or `--all`, or an authorization flag passed to `mcp`). |

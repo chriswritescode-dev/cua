@@ -81,8 +81,6 @@ export interface AboutData {
 
 export interface UpdateData {
   state: UpdateState;
-  /** "Restart to update" is running. */
-  installing: boolean;
 }
 
 export interface ExperimentsData {
@@ -138,9 +136,8 @@ export interface FeatureOptions {
 
 const NOTIFICATIONS_POLL_MS = 5_000;
 /** The host also tells the page when its updater moves on (`update.changed`);
- * this is the slow safety net, and the pace while a download runs. */
+ * this is the slow safety net for a check that runs elsewhere. */
 const UPDATE_POLL_MS = 60_000;
-const UPDATE_DOWNLOAD_POLL_MS = 2_000;
 const STORAGE_POLL_MS = 2_000;
 const ENROLL_POLL_MS = 3_000;
 const ENROLL_POLL_LIMIT = 200;
@@ -195,7 +192,6 @@ export class SettingsFeature {
   private about: AboutInput | undefined;
   private aboutCanChange = true;
   private update: UpdateState | undefined;
-  private updateInstalling = false;
   private experiments: Experiments = {};
   private loginItem: LoginItemInput | undefined;
   private devices: DevicesInput | undefined;
@@ -280,9 +276,6 @@ export class SettingsFeature {
           const state = await this.adapter.call("update.get", {});
           if (pinned()) return;
           this.update = state;
-          // A running download is followed closely; the host's event covers the rest.
-          if (state.status === "downloading") this.every("update", UPDATE_DOWNLOAD_POLL_MS, () => this.refresh("update"));
-          else this.stop("update");
           break;
         }
         case "experiments": {
@@ -348,7 +341,7 @@ export class SettingsFeature {
         if (this.about) done({ input: this.about, view: aboutView(this.core, this.about), canChange: this.aboutCanChange } satisfies AboutData);
         break;
       case "update":
-        if (this.update) done({ state: this.update, installing: this.updateInstalling } satisfies UpdateData);
+        if (this.update) done({ state: this.update } satisfies UpdateData);
         break;
       case "experiments":
         done({ experiments: this.experiments, page: experimentsPage(this.core, this.experiments) } satisfies ExperimentsData);
@@ -400,26 +393,9 @@ export class SettingsFeature {
     this.timers.delete(key);
   }
 
-  /* ---- In-app update ---- */
-
-  /** "Restart to update". The host relaunches the app when it accepts. */
-  async installUpdate(): Promise<void> {
-    if (this.updateInstalling) return;
-    this.updateInstalling = true;
-    this.publish("update");
-    try {
-      this.update = await this.adapter.call("update.install", {});
-    } catch (e) {
-      throw toError(e);
-    } finally {
-      this.updateInstalling = false;
-      this.publish("update");
-    }
-  }
-
   /* ---- About ---- */
 
-  async setAbout(patch: { autoCheck?: boolean; autoInstall?: boolean; channel?: AboutInput["channel"] }): Promise<void> {
+  async setAbout(patch: { autoCheck?: boolean; channel?: AboutInput["channel"] }): Promise<void> {
     const before = this.about;
     if (before) {
       this.about = { ...before, ...patch };

@@ -13,7 +13,7 @@
 //! provider, the variable name, the last four characters and when it was
 //! added. Values leave only into a run's env ([`super::run_env`]), for the
 //! harness that declares the variable or a caller that names it in
-//! `env_from_host`, never into logs or telemetry.
+//! `env_from_host`, never into logs.
 
 use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};

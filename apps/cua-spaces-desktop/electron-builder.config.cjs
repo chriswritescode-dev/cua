@@ -216,7 +216,7 @@ module.exports = {
       // Not used by this app (no Sparkle inside). Sparkle refuses an update
       // that drops the key the old app had, so the cutover build keeps it.
       SUPublicEDKey: swiftInfo("SUPublicEDKey"),
-      // The full version, as the Swift app records it (About, telemetry).
+      // The full version, as the Swift app records it (About, the launch check).
       CuaVersion: version,
     },
     notarize: macNotarize,

@@ -6,7 +6,7 @@ import { useRef, type PointerEvent } from "react";
 
 import { LogOutIcon } from "lucide-react";
 
-import { signInCodeText, useBridge, useMachines, useNotifications, useRelayUsageView, useSession, useSpaces, useTrackPlanClick } from "@/bridge";
+import { signInCodeText, useBridge, useMachines, useNotifications, useRelayUsageView, useSession, useSpaces } from "@/bridge";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -80,7 +80,6 @@ export function AccountFooter() {
   const { mode, core } = useBridge();
   const { data: session, signIn, signOut, cancelSignIn, openExternal } = useSession();
   const plan = useRelayUsageView()?.planCard;
-  const trackPlanClick = useTrackPlanClick();
   if (!session) return <div className="mt-auto h-12 border-t" />;
 
   const identity = session.signedIn ? (session.identity ?? "Signed in") : null;
@@ -112,7 +111,6 @@ export function AccountFooter() {
                 data-account-plan={plan.plan}
                 className="block max-w-full truncate text-left text-2xs text-muted-foreground hover:text-foreground"
                 onClick={() => {
-                  trackPlanClick("account_menu");
                   void openExternal(plan.primary!.url.replace("from=app_plan_card", "from=app_account_menu")).catch(() => {});
                 }}
               >

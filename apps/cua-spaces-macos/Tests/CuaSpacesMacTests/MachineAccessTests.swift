@@ -102,7 +102,7 @@ enum MachinesFixture {
                          onboarding: OnboardingModel(statePath: dir.appendingPathComponent("o.json").path),
                          settingsPath: dir.appendingPathComponent("settings.json").path,
                          host: hostSetUp ? FixtureHost(status: hostStatus ?? relayHost) : FixtureHost(),
-                         account: FixtureAccount(), telemetry: FixtureTelemetry(),
+                         account: FixtureAccount(),
                          devices: fixture, presence: FixturePresence())
         m.onboarding.finish()
         await m.choose(row: "auto-connect", option: "off")

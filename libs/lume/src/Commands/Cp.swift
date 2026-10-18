@@ -50,8 +50,6 @@ struct Cp: AsyncParsableCommand {
 
     @MainActor
     func run() async throws {
-        TelemetryClient.shared.record(event: "lume_cp")
-
         let src = Self.parseEndpoint(source)
         let dst = Self.parseEndpoint(destination)
 

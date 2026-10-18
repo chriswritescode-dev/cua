@@ -178,11 +178,6 @@ pub const FLOWS: &[(&str, &str, &str)] = &[
         include_str!("../parity/golden/your-cloud.json"),
     ),
     (
-        "telemetry-funnel",
-        include_str!("../parity/telemetry-funnel.json"),
-        include_str!("../parity/golden/telemetry-funnel.json"),
-    ),
-    (
         "launch-at-login",
         include_str!("../parity/launch-at-login.json"),
         include_str!("../parity/golden/launch-at-login.json"),
@@ -1043,12 +1038,6 @@ pub mod frame {
             "presentations": v["presentations"].as_array().map(|a| a.iter().map(|c| Value::String(format!("{} [{}]{}", str_of(&c["title"]), str_of(&c["id"]),
                 if c["selected"] == true { " (selected)" } else { "" }))).collect::<Vec<_>>()).unwrap_or_default(),
             "prompts": v["prompts"],
-            "notice": v["notice"],
-            "noticeLink": if v["noticeLinkUrl"].is_null() { Value::Null } else { Value::String(format!("{} {}", str_of(&v["noticeLinkLabel"]), str_of(&v["noticeLinkUrl"]))) },
-            // `label [x] (disabled) ~help`.
-            "usage": if v["usage"].is_null() { Value::Null } else { Value::String(format!("{} [{}]{}{}", str_of(&v["usage"]["label"]),
-                if v["usage"]["on"] == true { "x" } else { " " }, if v["usage"]["enabled"] == true { "" } else { " (disabled)" },
-                v["usage"]["help"].as_str().map(|h| format!(" ~{h}")).unwrap_or_default())) },
             "drive": drive_card(&v["drive"]),
             "driveStorage": drive_storage(&v["drive"]),
         })
@@ -1713,7 +1702,6 @@ pub mod frame {
         let updates = if u.is_object() {
             json!({
                 "autoCheck": check(&u["autoCheck"], &u["autoCheckLabel"], true),
-                "autoInstall": check(&u["autoInstall"], &u["autoInstallLabel"], u["autoInstallEnabled"] == true),
                 "channel": format!("{} {}", str_of(&u["channelLabel"]), u["channels"].as_array().into_iter().flatten()
                     .map(|o| format!("{}{}", str_of(&o["label"]), if o["active"] == true { "*" } else { "" }))
                     .collect::<Vec<_>>().join(" | ")),
@@ -1936,7 +1924,6 @@ pub fn run(name: &str, flow_json: &str, h: &dyn Host) -> Result<Value, String> {
         "about" => run_about(&flow, h),
         "agent-keys" => run_agent_keys(&flow, h),
         "your-cloud" => run_your_cloud(&flow, h),
-        "telemetry-funnel" => run_telemetry(&flow, h),
         "launch-at-login" => run_launch_at_login(&flow, h),
         "experiments" => run_experiments(&flow, h),
         "placement-picker" => run_placement_picker(&flow, h),
@@ -3067,12 +3054,6 @@ fn run_checklist(f: &Value, h: &dyn Host) -> Result<Value, String> {
             json!({ "state": case["state"], "action": action }),
         )?;
         let view = c(h, "checklist.view", json!({ "state": t["state"] }))?;
-        let events: Vec<&str> = t["signals"]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .map(|s| str_of(&s["step"]))
-            .collect();
         let mut frame = json!({
             "case": case["name"],
             "observe": {
@@ -3081,7 +3062,6 @@ fn run_checklist(f: &Value, h: &dyn Host) -> Result<Value, String> {
                 "agentRan": action["agentRan"],
             },
             "progress": view["progress"],
-            "events": events,
         });
         if !case["earlier"].is_null() {
             let merged = c(
@@ -3093,7 +3073,6 @@ fn run_checklist(f: &Value, h: &dyn Host) -> Result<Value, String> {
             frame["merged"] = json!({
                 "progress": view["progress"],
                 "visible": view["visible"],
-                "events": merged["signals"].as_array().map_or(0, |s| s.len()),
             });
         }
         frames.push(frame);
@@ -3466,76 +3445,6 @@ fn run_drive_onboarding(f: &Value, h: &dyn Host) -> Result<Value, String> {
         }
     }
     Ok(json!({ "flow": "drive-onboarding", "frames": frames }))
-}
-
-/// The usage events a run from first launch to a first ready Space means:
-/// each frame is one reducer step and the signals the core derives from it
-/// (`telemetry.*`), which every shell sends the same way.
-fn run_telemetry(f: &Value, h: &dyn Host) -> Result<Value, String> {
-    let mut frames = vec![
-        json!({ "at": "launch", "signals": c(h, "telemetry.launched", f.get("launch").cloned().unwrap_or(json!({})))? }),
-    ];
-    for run in ["onboarding", "skipping", "no-usage-data"] {
-        let mut st = c(
-            h,
-            "onboarding.initial",
-            json!({ "installerMode": null, "identity": null }),
-        )?;
-        for a in f[run].as_array().into_iter().flatten() {
-            let signals = c(
-                h,
-                "telemetry.onboarding",
-                json!({ "state": st, "action": a }),
-            )?;
-            st = c(h, "onboarding.reduce", json!({ "state": st, "action": a }))?;
-            frames.push(
-                json!({ "at": run, "action": a["type"], "page": st["step"], "signals": signals }),
-            );
-        }
-        frames.push(json!({
-            "at": run,
-            "action": "finish",
-            "signals": c(h, "telemetry.onboardingFinished", json!({ "state": st }))?,
-        }));
-    }
-    let mut st = Value::Null;
-    for step in f["creates"].as_array().into_iter().flatten() {
-        let signals = c(
-            h,
-            "telemetry.creates",
-            json!({ "state": st, "action": step["action"], "now": step["now"] }),
-        )?;
-        st = c(
-            h,
-            "creates.reduce",
-            json!({ "state": st, "action": step["action"] }),
-        )?;
-        frames
-            .push(json!({ "at": "creates", "action": step["action"]["type"], "signals": signals }));
-    }
-    for (section, method) in [
-        ("storage", "telemetry.storage"),
-        ("share", "telemetry.share"),
-    ] {
-        let input = &f[section]["input"];
-        for case in f[section]["cases"].as_array().into_iter().flatten() {
-            let signals = c(
-                h,
-                method,
-                json!({ "input": input, "state": case["state"], "action": case["action"] }),
-            )?;
-            frames.push(json!({ "at": section, "step": case["step"], "signals": signals }));
-        }
-    }
-    for case in f["enroll"].as_array().into_iter().flatten() {
-        let signals = c(
-            h,
-            "telemetry.enroll",
-            json!({ "state": case["state"], "action": case["action"] }),
-        )?;
-        frames.push(json!({ "at": "enroll", "step": case["step"], "signals": signals }));
-    }
-    Ok(json!({ "flow": "telemetry-funnel", "frames": frames }))
 }
 
 /// Settings' Storage section: the section after each step (a data patch, an
@@ -3924,8 +3833,8 @@ fn run_your_cloud(f: &Value, h: &dyn Host) -> Result<Value, String> {
 }
 
 /// Settings, Experiments: the tab and what every switch decides, after
-/// each change (`changes`: a row's choice). Each frame has the tab, the
-/// events the change sends, Settings (Storage only with Cua Volume), the
+/// each change (`changes`: a row's choice). Each frame has the tab,
+/// Settings (Storage only with Cua Volume), the
 /// first run's pages and its Done page, a Space's buttons (Share only with
 /// Sharing) and New Space's Run on menu and links (clouds only with Your
 /// cloud).
@@ -3946,7 +3855,6 @@ fn run_experiments(f: &Value, h: &dyn Host) -> Result<Value, String> {
     let mut frames = Vec::new();
     let mut first = experiments_frame(f, h, &storage, &space, &x)?;
     first["step"] = json!("defaults");
-    first["signals"] = json!([]);
     frames.push(first);
     for change in f["changes"].as_array().into_iter().flatten() {
         let before = x.clone();
@@ -3955,14 +3863,8 @@ fn run_experiments(f: &Value, h: &dyn Host) -> Result<Value, String> {
             "experiments.choose",
             json!({ "experiments": before, "row": change["row"], "option": change["option"] }),
         )?;
-        let signals = c(
-            h,
-            "telemetry.experimentsChanged",
-            json!({ "before": before, "after": x }),
-        )?;
         let mut fr = experiments_frame(f, h, &storage, &space, &x)?;
         fr["step"] = change["step"].clone();
-        fr["signals"] = signals;
         frames.push(fr);
     }
     Ok(json!({ "flow": "experiments", "frames": frames }))

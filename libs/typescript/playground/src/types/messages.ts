@@ -218,7 +218,6 @@ export interface AgentKwargs {
   screenshot_delay?: number;
   use_prompt_caching?: boolean;
   max_trajectory_budget?: number | Record<string, unknown>;
-  telemetry_enabled?: boolean | { log_trajectory?: boolean };
   trust_remote_code?: boolean;
   api_key?: string;
   api_base?: string;

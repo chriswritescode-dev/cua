@@ -52,8 +52,6 @@ describe.skipIf(!built)("Teleport's run on the native layer", () => {
       HOME: home,
       USERPROFILE: home,
       CUA_HOME: cuaHome,
-      CUA_TELEMETRY: "0",
-      DO_NOT_TRACK: "1",
       CUA_KEYCHAIN_NONINTERACTIVE: "1",
     });
     native = await loadNative(dir);

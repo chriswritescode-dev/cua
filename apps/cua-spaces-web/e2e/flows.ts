@@ -73,7 +73,6 @@ export const FLOW_PLAN: Record<string, FlowPlan> = {
   about: { status: "run", screen: "settings/about" },
   "agent-keys": { status: "run", screen: "settings/agents" },
   "your-cloud": { status: "run", screen: "new-space" },
-  "telemetry-funnel": { status: "run", screen: "spaces" },
   "launch-at-login": { status: "run", screen: "settings" },
   experiments: { status: "run", screen: "settings/experiments" },
   "placement-picker": { status: "run", screen: "new-space" },
