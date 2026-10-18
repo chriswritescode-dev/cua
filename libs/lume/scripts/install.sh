@@ -1,8 +1,25 @@
 #!/bin/bash
 set -e
 
-# Lume Installer
-# This script installs Lume to your system
+# Lume source installer.
+#
+# Run it from a checkout of the fork:
+#
+#   git clone https://github.com/chriswritescode-dev/cua.git
+#   cd cua
+#   git checkout local-build
+#   libs/lume/scripts/install.sh
+#
+# It builds Lume with libs/lume/scripts/build/build-release.sh (the documented
+# local build), installs the .app bundle under ~/.local/share/lume, then puts
+# the `lume` wrapper in the install directory. The build also installs its own
+# wrapper under ~/.local/bin.
+#
+# Options:
+#   --install-dir DIR         Install the `lume` wrapper to DIR (default: $HOME/.local/bin)
+#   --port PORT               Port for lume serve (default: 7777)
+#   --no-background-service   Do not setup the Lume background service (LaunchAgent)
+#   --help                    Display this help message
 
 # Define colors for output
 BOLD=$(tput bold 2>/dev/null || echo "")
@@ -11,6 +28,16 @@ RED=$(tput setaf 1 2>/dev/null || echo "")
 GREEN=$(tput setaf 2 2>/dev/null || echo "")
 BLUE=$(tput setaf 4 2>/dev/null || echo "")
 YELLOW=$(tput setaf 3 2>/dev/null || echo "")
+
+clone_hint() {
+  echo "Lume is installed from a source checkout now. Build it locally:" >&2
+  echo "" >&2
+  echo "  git clone https://github.com/chriswritescode-dev/cua.git" >&2
+  echo "  cd cua" >&2
+  echo "  git checkout local-build" >&2
+  echo "  libs/lume/scripts/install.sh" >&2
+  echo "" >&2
+}
 
 # Check if running as root or with sudo
 if [ "$(id -u)" -eq 0 ] || [ -n "$SUDO_USER" ]; then
@@ -22,6 +49,16 @@ if [ "$(id -u)" -eq 0 ] || [ -n "$SUDO_USER" ]; then
   exit 1
 fi
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LUME_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+BUILD_SCRIPT="$LUME_DIR/scripts/build/build-release.sh"
+
+if [ ! -f "$LUME_DIR/Package.swift" ] || [ ! -f "$BUILD_SCRIPT" ]; then
+  clone_hint
+  echo "${RED}Error: $SCRIPT_DIR is not a Lume checkout.${NORMAL}" >&2
+  exit 1
+fi
+
 # Default installation directory (user-specific, doesn't require sudo)
 DEFAULT_INSTALL_DIR="$HOME/.local/bin"
 INSTALL_DIR="${INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
@@ -29,33 +66,8 @@ INSTALL_DIR="${INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
 # Default .app bundle installation directory
 APP_INSTALL_DIR="$HOME/.local/share/lume"
 
-# GitHub info
-GITHUB_REPO="trycua/cua"
-LATEST_RELEASE_URL="https://api.github.com/repos/$GITHUB_REPO/releases/latest"
-
 # Option to skip background service setup (default: install it)
 INSTALL_BACKGROUND_SERVICE=true
-
-# Deprecated auto-updater flags are still accepted for compatibility, but
-# scheduled self-updates are no longer installed. Updates are explicit:
-# `lume check-update`. Lume never installs release builds; updates come from
-# pulling the repository and rebuilding it.
-INSTALL_AUTO_UPDATER=false
-UPDATE_ON_LOGIN=false
-
-# Release selection:
-#   LUME_VERSION=0.3.10 pins a specific stable `lume-v0.3.10` release.
-#   LUME_VERSION=nightly-lume-v0.3.11-nightly.20260812.42 pins an exact
-#   immutable nightly release. Stable discovery never selects nightlies.
-#   LUME_BAKED_VERSION is updated in the release PR so the default
-#   installer path does not need a GitHub API call.
-LUME_VERSION="${LUME_VERSION:-}"
-LUME_HOME="${LUME_HOME:-$HOME/.lume}"
-LUME_CHANNEL=""
-LUME_CHANNEL_EXPLICIT=false
-# ~~~ BAKED_VERSION: auto-updated in the release PR — do not edit ~~~
-LUME_BAKED_VERSION="0.6.1" # x-release-please-version
-# ~~~ END_BAKED_VERSION ~~~
 
 # Default port for lume serve (default: 7777)
 LUME_PORT=7777
@@ -74,40 +86,19 @@ while [ "$#" -gt 0 ]; do
     --no-background-service)
       INSTALL_BACKGROUND_SERVICE=false
       ;;
-    --channel)
-      [ -n "${2:-}" ] || { echo "${RED}Error: --channel requires stable or nightly.${NORMAL}" >&2; exit 2; }
-      LUME_CHANNEL="$2"
-      LUME_CHANNEL_EXPLICIT=true
-      shift
-      ;;
-    --channel=*)
-      LUME_CHANNEL="${1#*=}"
-      LUME_CHANNEL_EXPLICIT=true
-      ;;
-    --no-auto-updater)
-      echo "${YELLOW}Warning: --no-auto-updater is deprecated; scheduled auto-updates are no longer installed.${NORMAL}"
-      INSTALL_AUTO_UPDATER=false
-      ;;
-    --update-on-login)
-      echo "${YELLOW}Warning: --update-on-login is deprecated; use 'lume check-update' to check for newer releases.${NORMAL}"
-      UPDATE_ON_LOGIN=true
-      ;;
     --help)
-      echo "${BOLD}${BLUE}Lume Installer${NORMAL}"
+      echo "${BOLD}${BLUE}Lume Source Installer${NORMAL}"
       echo "Usage: $0 [OPTIONS]"
       echo ""
       echo "Options:"
-      echo "  --install-dir DIR         Install to the specified directory (default: $DEFAULT_INSTALL_DIR)"
+      echo "  --install-dir DIR         Install the wrapper to the specified directory (default: $DEFAULT_INSTALL_DIR)"
       echo "  --port PORT               Specify the port for lume serve (default: 7777)"
       echo "  --no-background-service   Do not setup the Lume background service (LaunchAgent)"
-      echo "  --channel CHANNEL         Persist and install the latest stable or nightly release"
-      echo "  --no-auto-updater         Deprecated no-op; scheduled auto-updates are no longer installed"
-      echo "  --update-on-login         Deprecated no-op; use 'lume check-update'"
       echo "  --help                    Display this help message"
       echo ""
       echo "Examples:"
       echo "  $0                                   # Install to $DEFAULT_INSTALL_DIR and setup background service"
-      echo "  $0 --install-dir=/usr/local/bin      # Install to system directory (may require root privileges)"
+      echo "  $0 --install-dir=/usr/local/bin      # Install the wrapper to a system directory"
       echo "  $0 --port 7778                       # Use port 7778 instead of the default 7777"
       echo "  $0 --no-background-service           # Install without setting up the background service"
       echo "  INSTALL_DIR=/opt/lume $0             # Install to /opt/lume (legacy env var support)"
@@ -122,32 +113,6 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-RELEASE_CHANNEL_PATH="$LUME_HOME/release-channel"
-if [ "$LUME_CHANNEL_EXPLICIT" = true ] && [ -n "$LUME_VERSION" ]; then
-  echo "${RED}Error: --channel cannot be combined with LUME_VERSION; exact pins do not change saved channel state.${NORMAL}" >&2
-  exit 2
-fi
-if [ "$LUME_CHANNEL_EXPLICIT" != true ]; then
-  if [ -n "$LUME_VERSION" ]; then
-    # Exact pins are one-shot and outrank persisted preference. Keep them
-    # usable as a recovery path even if the preference file is malformed.
-    LUME_CHANNEL="stable"
-  elif [ -f "$RELEASE_CHANNEL_PATH" ]; then
-    LUME_CHANNEL=$(tr -d '[:space:]' < "$RELEASE_CHANNEL_PATH")
-  else
-    LUME_CHANNEL="stable"
-  fi
-fi
-case "$LUME_CHANNEL" in
-  stable) LUME_TAG_PREFIX="lume-v" ;;
-  nightly) LUME_TAG_PREFIX="nightly-lume-v" ;;
-  *)
-    echo "${RED}Error: invalid release channel '$LUME_CHANNEL' in $RELEASE_CHANNEL_PATH; expected stable or nightly.${NORMAL}" >&2
-    echo "Repair with: lume channel set stable" >&2
-    exit 1
-    ;;
-esac
-
 echo "${BOLD}${BLUE}"
 echo "  ⠀⣀⣀⡀⠀⠀⠀⠀⢀⣀⣀⣀⡀⠘⠋⢉⠙⣷⠀⠀ ⠀"
 echo " ⠀⠀⢀⣴⣿⡿⠋⣉⠁⣠⣾⣿⣿⣿⣿⡿⠿⣦⡈⠀⣿⡇⠃⠀"
@@ -156,11 +121,9 @@ echo " ⠀⠀⠀⠉⣿⣿⣦⠀⢿⣿⣿⣷⣾⡏⠀⠀⢹⣿⣿⠀⠀⠀⠀⠀�
 echo " ⠀⠀⠀⠀⠀⠉⠛⠁⠈⠿⣿⣿⣿⣷⣄⣠⡼⠟⠁${NORMAL}${BOLD}  Lume Installer${NORMAL}"
 echo "${BLUE}           macOS VM CLI and server${NORMAL}"
 echo ""
-echo "This script will install Lume to your system."
+echo "This script will build and install Lume from $LUME_DIR."
 
-# Check if we're running with appropriate permissions
 check_permissions() {
-  # System directories that typically require root privileges
   SYSTEM_DIRS=("/usr/local/bin" "/usr/bin" "/bin" "/opt")
 
   NEEDS_ROOT=false
@@ -179,7 +142,6 @@ check_permissions() {
     echo "    sudo mkdir -p $INSTALL_DIR && sudo chown $(whoami) $INSTALL_DIR"
     echo ""
 
-    # Check if we already have write permission (might have been set up previously)
     if [ ! -w "$INSTALL_DIR" ] && [ ! -w "$(dirname "$INSTALL_DIR")" ]; then
       echo "${RED}Error: You don't have write permission to $INSTALL_DIR${NORMAL}"
       echo "Please choose a different installation directory or ensure you have the proper permissions."
@@ -188,7 +150,6 @@ check_permissions() {
   fi
 }
 
-# Detect OS and architecture
 detect_platform() {
   OS=$(uname -s | tr '[:upper:]' '[:lower:]')
   ARCH=$(uname -m)
@@ -207,228 +168,46 @@ detect_platform() {
   echo "Detected platform: ${BOLD}$PLATFORM${NORMAL}"
 }
 
-# Create temporary directory
-create_temp_dir() {
-  TEMP_DIR=$(mktemp -d)
-  echo "Using temporary directory: $TEMP_DIR"
-
-  # Make sure we clean up on exit
-  trap 'rm -rf "$TEMP_DIR"' EXIT
-}
-
-# Get the latest lume release tag
-get_latest_lume_tag() {
-  if [ -n "$LUME_VERSION" ]; then
-    local selected=""
-    if [[ "$LUME_VERSION" =~ ^(lume-v|v)?([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-      selected="lume-v${BASH_REMATCH[2]}"
-    elif [[ "$LUME_VERSION" =~ ^nightly-lume-v([0-9]+\.[0-9]+\.[0-9]+-nightly\.[0-9]{8}\.[1-9][0-9]*)$ ]]; then
-      selected="nightly-lume-v${BASH_REMATCH[1]}"
-    elif [[ "$LUME_VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+-nightly\.[0-9]{8}\.[1-9][0-9]*)$ ]]; then
-      selected="nightly-lume-v${BASH_REMATCH[1]}"
-    else
-      echo "${RED}Error: LUME_VERSION must be an exact x.y.z stable version or canonical nightly tag.${NORMAL}" >&2
-      return 1
-    fi
-    echo "Using Lume release from LUME_VERSION: ${BOLD}$selected${NORMAL}" >&2
-    echo "$selected"
-    return 0
-  fi
-
-  if [ "$LUME_CHANNEL" = "stable" ] && [ -n "$LUME_BAKED_VERSION" ]; then
-    local baked="${LUME_BAKED_VERSION#v}"
-    if ! [[ "$baked" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-      echo "${RED}Error: baked Lume version must be an exact stable x.y.z version.${NORMAL}" >&2
-      return 1
-    fi
-    echo "Using baked Lume release: ${BOLD}lume-v$baked${NORMAL}" >&2
-    echo "lume-v$baked"
-    return 0
-  fi
-
-  echo "Finding latest Lume release..." >&2
-
-  local page=1
-  local per_page=100
-  local max_pages=10  # Safety limit (1000 tags max)
-  local LUME_TAG=""
-  local versions=""
-
-  while [ $page -le $max_pages ]; do
-    echo "Checking page $page..." >&2
-
-    local response=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/releases?per_page=$per_page&page=$page")
-
-    if [ -z "$response" ] || [ "$(echo "$response" | grep -c '"tag_name"')" -eq 0 ]; then
-      if [ $page -eq 1 ]; then
-        echo "${RED}Error: Failed to fetch tags from GitHub API.${NORMAL}" >&2
-        exit 1
-      else
-        echo "${RED}Error: No lume tags found after checking $((page - 1)) pages.${NORMAL}" >&2
-        exit 1
-      fi
-    fi
-
-    local page_versions
-    page_versions=$(printf '%s' "$response" | awk -v prefix="$LUME_TAG_PREFIX" -v channel="$LUME_CHANNEL" '
-      /"tag_name"[[:space:]]*:/ {
-        tag = $0
-        sub(/^.*"tag_name"[[:space:]]*:[[:space:]]*"/, "", tag)
-        sub(/".*$/, "", tag)
-        next
-      }
-      tag != "" && /"draft"[[:space:]]*:/ {
-        if ($0 ~ /"draft"[[:space:]]*:[[:space:]]*false/ &&
-            index(tag, prefix) == 1) {
-          version = substr(tag, length(prefix) + 1)
-          if ((channel == "stable" && version ~ /^[0-9]+\.[0-9]+\.[0-9]+$/) ||
-              (channel == "nightly" && version ~ /^[0-9]+\.[0-9]+\.[0-9]+-nightly\.[0-9]{8}\.[1-9][0-9]*$/)) {
-            print version
-          }
-        }
-        tag = ""
-      }
-    ')
-    if [ -n "$page_versions" ]; then
-      versions="${versions}${versions:+$'\n'}${page_versions}"
-    fi
-
-    local page_count
-    page_count=$(printf '%s' "$response" | awk '{ count += gsub(/"tag_name"[[:space:]]*:/, "&") } END { print count + 0 }')
-    if [ "$page_count" -lt "$per_page" ]; then
-      break
-    fi
-
-    page=$((page + 1))
-  done
-
-  local latest
-  latest=$(printf '%s\n' "$versions" | sed '/^$/d' | sort -t. -k1,1nr -k2,2nr -k3,3nr -k4,4nr -k5,5nr | head -n 1)
-  if [ -z "$latest" ]; then
-    echo "${RED}Error: Could not find any published $LUME_CHANNEL Lume tags after checking $max_pages pages.${NORMAL}" >&2
-    return 1
-  fi
-  LUME_TAG="$LUME_TAG_PREFIX$latest"
-  echo "Found latest Lume release: ${BOLD}$LUME_TAG${NORMAL}" >&2
-  echo "$LUME_TAG"
-}
-
-# Download the latest release
-download_release() {
-  LUME_TAG=$(get_latest_lume_tag)
-
-  if [ -z "$LUME_TAG" ]; then
-    echo "${RED}Error: Could not determine latest Lume release tag.${NORMAL}"
+build_release() {
+  echo "Building Lume from source..."
+  bash "$BUILD_SCRIPT" || {
+    echo "${RED}Error: the Lume build failed.${NORMAL}" >&2
     exit 1
-  fi
-
-  echo "Downloading Lume release $LUME_TAG..."
-
-  # Use the direct download link with the lume release tag
-  DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/$LUME_TAG/lume.tar.gz"
-  echo "Downloading from: $DOWNLOAD_URL"
-
-  # Download the tarball
-  if command -v curl &> /dev/null; then
-    curl -L --progress-bar "$DOWNLOAD_URL" -o "$TEMP_DIR/lume.tar.gz"
-
-    # Verify the download was successful
-    if [ ! -s "$TEMP_DIR/lume.tar.gz" ]; then
-      echo "${RED}Error: Failed to download Lume.${NORMAL}"
-      echo "The download URL may be incorrect or the file may not exist."
-      exit 1
-    fi
-
-    # Verify the file is a valid archive
-    if ! tar -tzf "$TEMP_DIR/lume.tar.gz" > /dev/null 2>&1; then
-      echo "${RED}Error: The downloaded file is not a valid tar.gz archive.${NORMAL}"
-      echo "Let's try the alternative URL..."
-
-      # Try alternative URL with platform-specific name
-      ALT_DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/$LUME_TAG/lume-darwin.tar.gz"
-      echo "Downloading from alternative URL: $ALT_DOWNLOAD_URL"
-      curl -L --progress-bar "$ALT_DOWNLOAD_URL" -o "$TEMP_DIR/lume.tar.gz"
-
-      # Check again
-      if ! tar -tzf "$TEMP_DIR/lume.tar.gz" > /dev/null 2>&1; then
-        echo "${RED}Error: Could not download a valid Lume archive.${NORMAL}"
-        echo "Please try installing Lume manually from: https://github.com/$GITHUB_REPO/releases/tag/$LUME_TAG"
-        exit 1
-      fi
-    fi
-  else
-    echo "${RED}Error: curl is required but not installed.${NORMAL}"
-    exit 1
-  fi
+  }
 }
 
-persist_release_channel() {
-  if [ "$LUME_CHANNEL_EXPLICIT" = true ]; then
-    mkdir -p "$LUME_HOME"
-    channel_tmp="$LUME_HOME/.release-channel.$$"
-    printf '%s\n' "$LUME_CHANNEL" > "$channel_tmp"
-    mv -f "$channel_tmp" "$RELEASE_CHANNEL_PATH"
-    echo "Saved release channel: ${BOLD}$LUME_CHANNEL${NORMAL}"
-  fi
-}
-
-# Extract and install
 install_binary() {
-  echo "Extracting archive..."
-  tar -xzf "$TEMP_DIR/lume.tar.gz" -C "$TEMP_DIR"
-
-  # Create directories
   mkdir -p "$INSTALL_DIR"
   mkdir -p "$APP_INSTALL_DIR"
 
-  if [ -d "$TEMP_DIR/lume.app" ]; then
-    # --- New .app bundle format ---
-    echo "Installing lume.app bundle..."
+  if [ ! -d "$LUME_DIR/.release/lume.app" ]; then
+    echo "${RED}Error: the build produced no .release/lume.app in $LUME_DIR.${NORMAL}" >&2
+    exit 1
+  fi
+  echo "Installing lume.app bundle..."
 
-    # Remove old standalone binary and resource bundle if present (migration)
-    if [ -f "$INSTALL_DIR/lume" ] && [ ! -L "$INSTALL_DIR/lume" ]; then
-      # It's a regular file (old standalone binary), not a symlink or script
-      if file "$INSTALL_DIR/lume" | grep -q "Mach-O"; then
-        echo "Migrating from standalone binary to .app bundle..."
-        rm -f "$INSTALL_DIR/lume"
-      fi
+  if [ -f "$INSTALL_DIR/lume" ] && [ ! -L "$INSTALL_DIR/lume" ]; then
+    if file "$INSTALL_DIR/lume" | grep -q "Mach-O"; then
+      echo "Migrating from standalone binary to .app bundle..."
+      rm -f "$INSTALL_DIR/lume"
     fi
-    rm -rf "$INSTALL_DIR/lume_lume.bundle"
+  fi
+  rm -rf "$INSTALL_DIR/lume_lume.bundle"
 
-    # Install the .app bundle
-    rm -rf "$APP_INSTALL_DIR/lume.app"
-    mv "$TEMP_DIR/lume.app" "$APP_INSTALL_DIR/"
+  rm -rf "$APP_INSTALL_DIR/lume.app"
+  cp -R "$LUME_DIR/.release/lume.app" "$APP_INSTALL_DIR/"
 
-    # Create wrapper script so lume is callable from the command line
-    cat > "$INSTALL_DIR/lume" <<WRAPPER_EOF
+  cat > "$INSTALL_DIR/lume" <<WRAPPER_EOF
 #!/bin/sh
 exec "$APP_INSTALL_DIR/lume.app/Contents/MacOS/lume" "\$@"
 WRAPPER_EOF
-    chmod +x "$INSTALL_DIR/lume"
+  chmod +x "$INSTALL_DIR/lume"
 
-    echo "${GREEN}Installation complete!${NORMAL}"
-    echo "Lume installed to ${BOLD}$APP_INSTALL_DIR/lume.app${NORMAL}"
-    echo "CLI available at ${BOLD}$INSTALL_DIR/lume${NORMAL}"
-  else
-    # --- Legacy standalone binary format ---
-    echo "Installing lume binary..."
+  echo "${GREEN}Installation complete!${NORMAL}"
+  echo "Lume installed to ${BOLD}$APP_INSTALL_DIR/lume.app${NORMAL}"
+  echo "CLI available at ${BOLD}$INSTALL_DIR/lume${NORMAL}"
 
-    mv "$TEMP_DIR/lume" "$INSTALL_DIR/"
-    chmod +x "$INSTALL_DIR/lume"
-
-    # Move the resource bundle if it exists (contains unattended presets)
-    if [ -d "$TEMP_DIR/lume_lume.bundle" ]; then
-      rm -rf "$INSTALL_DIR/lume_lume.bundle"
-      mv "$TEMP_DIR/lume_lume.bundle" "$INSTALL_DIR/"
-      echo "Resource bundle installed to ${BOLD}$INSTALL_DIR/lume_lume.bundle${NORMAL}"
-    fi
-
-    echo "${GREEN}Installation complete!${NORMAL}"
-    echo "Lume has been installed to ${BOLD}$INSTALL_DIR/lume${NORMAL}"
-  fi
-
-  # Check if the installation directory is in PATH
-  if [ -n "${PATH##*$INSTALL_DIR*}" ]; then
+  if [ -n "${PATH##*"$INSTALL_DIR"*}" ]; then
     SHELL_NAME=$(basename "$SHELL")
     echo ""
     echo "${YELLOW}╔════════════════════════════════════════════════════════════════╗${NORMAL}"
@@ -465,7 +244,6 @@ WRAPPER_EOF
   fi
 }
 
-# Remove scheduled auto-updater artifacts from older installers.
 cleanup_deprecated_auto_updater() {
   UPDATER_SERVICE_NAME="com.trycua.lume_updater"
   UPDATER_PLIST_PATH="$HOME/Library/LaunchAgents/$UPDATER_SERVICE_NAME.plist"
@@ -487,46 +265,27 @@ cleanup_deprecated_auto_updater() {
   fi
 }
 
-# Main installation flow
-main() {
-  check_permissions
-  detect_platform
-  create_temp_dir
-  download_release
-  persist_release_channel
-  install_binary
-
-  echo ""
-  echo "${GREEN}${BOLD}Lume has been successfully installed!${NORMAL}"
-  echo "Run ${BOLD}lume${NORMAL} to get started."
-
+setup_background_service() {
   if [ "$INSTALL_BACKGROUND_SERVICE" = true ]; then
-    # --- Setup background service (LaunchAgent) for Lume ---
     SERVICE_NAME="com.trycua.lume_daemon"
     PLIST_PATH="$HOME/Library/LaunchAgents/$SERVICE_NAME.plist"
     LUME_BIN="$INSTALL_DIR/lume"
     WRAPPER_SCRIPT="$INSTALL_DIR/lume-daemon"
-    UPDATER_SCRIPT="$INSTALL_DIR/lume-update"
 
     echo ""
     echo "Setting up LaunchAgent to run lume daemon on login..."
 
-    # Create LaunchAgents directory if it doesn't exist
     mkdir -p "$HOME/Library/LaunchAgents"
 
-    # Unload existing service if present
     if [ -f "$PLIST_PATH" ]; then
       echo "Existing LaunchAgent found. Unloading..."
       launchctl unload "$PLIST_PATH" 2>/dev/null || true
     fi
 
-    # Clean up old wrapper script if it exists (no longer needed)
     if [ -f "$WRAPPER_SCRIPT" ]; then
       rm -f "$WRAPPER_SCRIPT"
     fi
 
-    # Create the plist file - runs lume via the wrapper script
-    # The wrapper delegates to lume.app/Contents/MacOS/lume
     cat <<EOF > "$PLIST_PATH"
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -566,12 +325,10 @@ main() {
 </plist>
 EOF
 
-    # Set permissions
     chmod 644 "$PLIST_PATH"
     touch /tmp/lume_daemon.log /tmp/lume_daemon.error.log
     chmod 644 /tmp/lume_daemon.log /tmp/lume_daemon.error.log
 
-    # Load the LaunchAgent
     echo "Loading LaunchAgent..."
     launchctl unload "$PLIST_PATH" 2>/dev/null || true
     launchctl load "$PLIST_PATH"
@@ -595,14 +352,24 @@ EOF
       echo "Skipping Lume background service (LaunchAgent) setup as requested (use --no-background-service)."
     fi
   fi
-
-  cleanup_deprecated_auto_updater
-  echo ""
-  echo "Updates are explicit. To check later, run:"
-  echo "  ${BOLD}lume check-update${NORMAL}"
-  echo "Lume never installs release builds. To update a source checkout, run:"
-  echo "  ${BOLD}git pull && libs/lume/scripts/build/build-release.sh${NORMAL}"
 }
 
-# Run the installation
+main() {
+  check_permissions
+  detect_platform
+  build_release
+  install_binary
+
+  echo ""
+  echo "${GREEN}${BOLD}Lume has been successfully installed!${NORMAL}"
+  echo "Run ${BOLD}lume${NORMAL} to get started."
+
+  setup_background_service
+  cleanup_deprecated_auto_updater
+
+  echo ""
+  echo "Updates are explicit. To update a source checkout, run:"
+  echo "  ${BOLD}git pull && libs/lume/scripts/install.sh${NORMAL}"
+}
+
 main

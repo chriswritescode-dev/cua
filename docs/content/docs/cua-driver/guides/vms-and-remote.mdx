@@ -26,7 +26,10 @@ permissions, and Cua Driver works with SIP on too. In Terminal inside the VM
 display, install and grant consent:
 
 ```bash skip="macos-vm"
-/bin/bash -c "$(curl -fsSL https://cua.ai/driver/install.sh)"
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+libs/cua-driver/scripts/install.sh
 ```
 
 ```bash test="cli-shape" id="cua-driver-permissions-grant"

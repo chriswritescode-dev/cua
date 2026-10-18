@@ -15,7 +15,10 @@ Requirements: Docker (or Podman or Colima) and about 4 GB of free memory.
 ## 1. Install
 
 ```bash skip="host-install"
-curl -fsSL https://cua.ai/install.sh | sh   # the cua CLI
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+scripts/install/install.sh   # the cua CLI
 cua runtime doctor                          # checks the container engine
 ```
 

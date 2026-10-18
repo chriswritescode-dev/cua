@@ -36,7 +36,10 @@ Cua publishes these images on `ghcr.io/trycua`. The Linux, Windows, benchmark an
 ## Run one
 
 ```bash skip="host-install"
-curl -fsSL https://cua.ai/install.sh | sh
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+scripts/install/install.sh
 ```
 
 ```bash test="cli-shape" id="cua-sb-create-desk"

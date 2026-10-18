@@ -40,7 +40,10 @@ Use the same one-line installer on every platform; it picks the right path for t
     Requires macOS 14 (Sonoma) or later.
 
     ```bash skip="host-install"
-    /bin/bash -c "$(curl -fsSL https://cua.ai/driver/install.sh)"
+    git clone https://github.com/chriswritescode-dev/cua.git
+    cd cua
+    git checkout local-build
+    libs/cua-driver/scripts/install.sh
     ```
 
     Start the daemon through the app bundle so macOS attributes permission prompts to CuaDriver.app. This is what makes the TCC grant stick to the driver:
@@ -88,7 +91,10 @@ Use the same one-line installer on every platform; it picks the right path for t
     Requires Windows 10/11 with an interactive desktop session and PowerShell.
 
     ```powershell test="cli-shape" id="cua-driver-autostart-kick"
-    irm https://cua.ai/driver/install.ps1 | iex
+    git clone https://github.com/chriswritescode-dev/cua.git
+    cd cua
+    git checkout local-build
+    powershell -ExecutionPolicy Bypass -File libs\cua-driver\scripts\install.ps1
     cua-driver autostart kick
     ```
 
@@ -103,7 +109,10 @@ Use the same one-line installer on every platform; it picks the right path for t
     bus.
 
     ```bash skip="host-install"
-    /bin/bash -c "$(curl -fsSL https://cua.ai/driver/install.sh)"
+    git clone https://github.com/chriswritescode-dev/cua.git
+    cd cua
+    git checkout local-build
+    libs/cua-driver/scripts/install.sh
     ```
 
     Start the daemon from a terminal in the same desktop session:

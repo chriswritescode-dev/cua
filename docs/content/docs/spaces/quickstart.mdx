@@ -37,24 +37,31 @@ acceleration of same-architecture guests. The managed runtime is macOS-only.
 <Tabs items={['macOS and Linux', 'Windows']}>
   <Tab value="macOS and Linux">
     ```bash skip="host-install"
-    curl -fsSL https://cua.ai/install.sh | sh
+    git clone https://github.com/chriswritescode-dev/cua.git
+    cd cua
+    git checkout local-build
+    scripts/install/install.sh
     ```
   </Tab>
   <Tab value="Windows">
     ```powershell skip="host-install"
-    irm https://cua.ai/install.ps1 | iex
+    git clone https://github.com/chriswritescode-dev/cua.git
+    cd cua
+    git checkout local-build
+    powershell -ExecutionPolicy Bypass -File scripts\install\install.ps1
     ```
   </Tab>
 </Tabs>
 
-In a terminal it first shows a checklist: the `cua` CLI, the Cua Spaces app
-(selected by default on macOS, Linux and Windows), the cua-driver MCP and skill
-for your agents, and hosting this machine. Then it signs you in and offers to set up your AI coding agents.
+In a terminal it first shows a checklist: the `cua` CLI and cua-spacesd, the
+Cua Spaces app (selected by default on macOS, where the source build exists),
+the cua-driver MCP and skill for your agents, and hosting this machine. Then it
+signs you in and offers to set up your AI coding agents.
 Flags: `--select ITEMS`, `--only ITEMS`, `--cli-only`, `--app-only`,
-`--mode host|client`, `--version X`, `--no-onboarding`, `--dry-run`, `--yes`
-(`-Select`, `-CliOnly`, ... on Windows). GUI installers are on
-[GitHub releases](https://github.com/trycua/cua/releases). See [Install](/spaces/guides/install) for
-per-platform steps.
+`--mode host|client`, `--no-onboarding`, `--dry-run`, `--yes`
+(`-Select`, `-CliOnly`, ... on Windows). Updates are explicit: pull the
+repository and rebuild. See [Install](/spaces/guides/install) for per-platform
+steps.
 
 Start the canonical Linux image with a token:
 

@@ -13,7 +13,10 @@ on your machine, then create a pool of your own and claim a sandbox from it.
 - The `cua` CLI, signed in (`cua auth login --remote` without a browser):
 
 ```bash test="cli-shape" id="cua-auth-login"
-curl -fsSL https://cua.ai/install.sh | sh
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+scripts/install/install.sh
 cua auth login
 ```
 

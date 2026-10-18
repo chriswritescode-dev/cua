@@ -5,13 +5,7 @@ import shutil
 
 import pytest
 
-from validate_release_versions import (
-    VersionError,
-    driver_installer_withdrawn_versions,
-    driver_withdrawn_versions,
-    main,
-    validate,
-)
+from validate_release_versions import VersionError, main, validate
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -218,76 +212,6 @@ def test_version_drift_fails_with_the_source_name(tmp_path: Path):
         validate(tmp_path, "lume")
 
 
-def set_driver_installer_versions(
-    root: Path, *, shell_version: str, powershell_version: str
-) -> None:
-    state = root / ".github/release-state/cua-driver-rs-published-version"
-    state.write_text(f"{shell_version}\n")
-    shell = root / "libs/cua-driver/scripts/_install-rust.sh"
-    shell_source = shell.read_text()
-    shell.write_text(
-        re.sub(
-            r'^CUA_DRIVER_RS_BAKED_VERSION="[^"]+"',
-            f'CUA_DRIVER_RS_BAKED_VERSION="{shell_version}"',
-            shell_source,
-            count=1,
-            flags=re.MULTILINE,
-        )
-    )
-    powershell = root / "libs/cua-driver/scripts/install.ps1"
-    powershell_source = powershell.read_text()
-    powershell.write_text(
-        re.sub(
-            r'^\$Script:CuaDriverRsBakedVersion\s*=\s*"[^"]+"',
-            f'$Script:CuaDriverRsBakedVersion = "{powershell_version}"',
-            powershell_source,
-            count=1,
-            flags=re.MULTILINE,
-        )
-    )
-
-
-def test_driver_validation_allows_installer_to_lag_until_publication(tmp_path: Path):
-    copy_release_sources(tmp_path)
-    set_driver_installer_versions(
-        tmp_path, shell_version="0.0.0", powershell_version="0.0.0"
-    )
-
-    validate(tmp_path, "driver")
-
-
-def test_driver_validation_rejects_disagreeing_installer_versions(tmp_path: Path):
-    copy_release_sources(tmp_path)
-    set_driver_installer_versions(
-        tmp_path, shell_version="0.0.0", powershell_version="0.0.1"
-    )
-
-    with pytest.raises(VersionError, match="baked installers"):
-        validate(tmp_path, "driver")
-
-
-def test_driver_validation_rejects_installer_version_ahead_of_source(tmp_path: Path):
-    copy_release_sources(tmp_path)
-    set_driver_installer_versions(
-        tmp_path, shell_version="9.9.9", powershell_version="9.9.9"
-    )
-
-    with pytest.raises(VersionError, match="ahead of source release"):
-        validate(tmp_path, "driver")
-
-
-def test_withdrawn_release_can_never_be_baked(tmp_path: Path):
-    copy_release_sources(tmp_path)
-    published = (
-        tmp_path / ".github/release-state/cua-driver-rs-published-version"
-    ).read_text().strip()
-    withdrawn = tmp_path / ".github/release-state/cua-driver-rs-withdrawn-versions"
-    validate(tmp_path, "driver")
-    withdrawn.write_text(f"{published} # unsigned macOS app\n", encoding="utf-8")
-    with pytest.raises(VersionError, match=rf"withdrawn release {re.escape(published)}: unsigned macOS app"):
-        validate(tmp_path, "driver")
-
-
 def test_checked_in_withdrawn_versions_are_exact_and_explained():
     path = REPO_ROOT / ".github/release-state/cua-driver-rs-withdrawn-versions"
     entries = [
@@ -299,59 +223,6 @@ def test_checked_in_withdrawn_versions_are_exact_and_explained():
         version, _, reason = line.partition("#")
         assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version.strip())
         assert reason.strip(), f"withdrawn {version.strip()} needs a reason"
-
-
-def test_installer_withdrawn_lists_mirror_release_state():
-    listed = sorted(driver_withdrawn_versions(REPO_ROOT))
-    baked = driver_installer_withdrawn_versions(REPO_ROOT)
-    assert "0.28.3" in listed
-    assert baked == {
-        "scripts/_install-rust.sh": listed,
-        "scripts/install.ps1": listed,
-    }
-
-
-@pytest.mark.parametrize(
-    ("relative", "old", "new"),
-    [
-        (
-            "libs/cua-driver/scripts/_install-rust.sh",
-            'CUA_DRIVER_RS_WITHDRAWN_VERSIONS="0.28.3"',
-            'CUA_DRIVER_RS_WITHDRAWN_VERSIONS=""',
-        ),
-        (
-            "libs/cua-driver/scripts/install.ps1",
-            "$Script:CuaDriverRsWithdrawnVersions = @('0.28.3')",
-            "$Script:CuaDriverRsWithdrawnVersions = @('0.28.3', '0.28.1')",
-        ),
-    ],
-)
-def test_installer_withdrawn_list_drift_fails(tmp_path: Path, relative: str, old: str, new: str):
-    copy_release_sources(tmp_path)
-    path = tmp_path / relative
-    source = path.read_text(encoding="utf-8-sig")
-    assert old in source
-    path.write_text(source.replace(old, new), encoding="utf-8")
-    with pytest.raises(VersionError, match="withdraws"):
-        validate(tmp_path, "driver")
-
-
-def test_release_state_withdrawal_without_installer_update_fails(tmp_path: Path):
-    copy_release_sources(tmp_path)
-    withdrawn = tmp_path / ".github/release-state/cua-driver-rs-withdrawn-versions"
-    withdrawn.write_text(
-        withdrawn.read_text(encoding="utf-8") + "0.1.0 # test withdrawal\n", encoding="utf-8"
-    )
-    with pytest.raises(VersionError, match=r"withdraws \['0.28.3'\], but"):
-        validate(tmp_path, "driver")
-
-
-def test_malformed_withdrawn_version_fails(tmp_path: Path):
-    copy_release_sources(tmp_path)
-    withdrawn = tmp_path / ".github/release-state/cua-driver-rs-withdrawn-versions"
-    withdrawn.write_text("v0.28.3 # prefixed\n", encoding="utf-8")
-    with pytest.raises(VersionError, match="exact stable"):
-        validate(tmp_path, "driver")
 
 
 SDK_AND_SPACES_SOURCES = (

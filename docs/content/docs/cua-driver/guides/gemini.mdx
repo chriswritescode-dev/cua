@@ -81,7 +81,10 @@ You need:
 **1. Install Cua Driver and start its background service:**
 
 ```bash test="cli-shape" id="gemini-install"
-/bin/bash -c "$(curl -fsSL https://cua.ai/driver/install.sh)"
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+libs/cua-driver/scripts/install.sh
 open -n -g -a CuaDriver --args serve
 cua-driver permissions grant
 ```

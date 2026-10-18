@@ -22,8 +22,9 @@ app, in the background.
   <Tab value="macOS">
 
 ```bash test="cli-shape" id="cua-driver-permissions-grant"
-git clone https://github.com/trycua/cua
+git clone https://github.com/chriswritescode-dev/cua.git
 cd cua
+git checkout local-build
 libs/cua-driver/scripts/install-local.sh
 open -n -g -a CuaDriver --args serve
 cua-driver permissions grant
@@ -40,8 +41,9 @@ Rerun `cua-driver permissions grant` if only one prompt appeared.
   <Tab value="Windows">
 
 ```powershell test="cli-shape" id="cua-driver-autostart-kick"
-git clone https://github.com/trycua/cua
+git clone https://github.com/chriswritescode-dev/cua.git
 cd cua
+git checkout local-build
 libs\cua-driver\scripts\install-local.ps1
 cua-driver autostart kick
 ```
@@ -53,8 +55,9 @@ Run it from your desktop session. Over SSH, see
   <Tab value="Linux">
 
 ```bash test="cli-shape" id="cua-driver-serve"
-git clone https://github.com/trycua/cua
+git clone https://github.com/chriswritescode-dev/cua.git
 cd cua
+git checkout local-build
 libs/cua-driver/scripts/install-local.sh
 cua-driver serve
 ```
@@ -84,8 +87,8 @@ cannot reach the desktop; run `cua-driver doctor`.
 
 **3. Connect your agent and ask.** To set up every agent it finds at once
 (skill and MCP server), run
-`curl -fsSL https://cua.ai/install.sh | sh -s -- --select cua-driver` instead;
-it also installs the `cua` CLI.
+`scripts/install/install.sh --select cua-driver` from a checkout instead; it
+also builds and installs the `cua` CLI.
 
 <Tabs items={['Claude Code', 'Codex', 'Other']}>
   <Tab value="Claude Code">

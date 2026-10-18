@@ -15,7 +15,10 @@ sandbox in the cloud by changing one flag.
 ## Run
 
 ```bash skip="host-install"
-curl -fsSL https://cua.ai/install.sh | sh -s -- --cli-only   # or: pip install cua, npm i -g @trycua/cua
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+scripts/install/install.sh --cli-only                 # or: pip install cua, npm i -g @trycua/cua
 ```
 
 ```bash test="cli-shape" id="cua-quickstart-local"

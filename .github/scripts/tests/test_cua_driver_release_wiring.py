@@ -495,152 +495,6 @@ fi
                             entries,
                         )
 
-    def test_driver_installer_version_advances_only_after_publication(self) -> None:
-        workflow = self.read(".github/workflows/cd-rust-cua-driver.yml")
-
-        release_job = workflow.index("  release:")
-        control_checkout = workflow.index(
-            "- name: Check out release control tooling", release_job
-        )
-        stamp = workflow.index(
-            "python3 release-control/.github/scripts/"
-            "update_cua_driver_installer_version.py",
-            control_checkout,
-        )
-        staged_shell = workflow.index(
-            "--shell-path release-upload/_install-rust.sh", stamp
-        )
-        staged_powershell = workflow.index(
-            "--powershell-path release-upload/install.ps1", stamp
-        )
-        publish = workflow.index(
-            "- name: Publish the verified Release Please draft", staged_powershell
-        )
-        verify_public = workflow.index(
-            "- name: Verify the release and every staged asset are public", publish
-        )
-        bake_job = workflow.index("  advance-installer-version:", verify_public)
-        app_token = workflow.index(
-            "- name: Generate post-publication GitHub App token", bake_job
-        )
-        advance = workflow.index(
-            "- name: Advance public installer version on main", app_token
-        )
-
-        self.assertLess(release_job, control_checkout)
-        self.assertLess(control_checkout, stamp)
-        self.assertLess(stamp, staged_shell)
-        self.assertLess(staged_shell, staged_powershell)
-        self.assertLess(staged_powershell, publish)
-        self.assertLess(publish, verify_public)
-        self.assertLess(verify_public, bake_job)
-        self.assertLess(bake_job, app_token)
-        self.assertLess(app_token, advance)
-        self.assertIn("ref: ${{ github.workflow_sha }}", workflow)
-        self.assertIn("path: release-control", workflow)
-        self.assertIn("select(.draft == false and .published_at != null)", workflow)
-        self.assertIn("missing-release-assets.txt", workflow)
-        self.assertIn("--allow-newer", workflow)
-        self.assertIn(
-            "--state-path "
-            '"$UPDATE_ROOT/.github/release-state/cua-driver-rs-published-version"',
-            workflow,
-        )
-        self.assertIn("-F force=false", workflow)
-        self.assertIn("[skip ci]", workflow)
-
-    def test_release_installers_bound_cursor_theme_compatibility(self) -> None:
-        shell = self.read("libs/cua-driver/scripts/_install-rust.sh")
-        self.assertIn('CURSOR_THEME_REQUIRED_FROM="0.12.7"', shell)
-        self.assertIn('"$VERSION" "$CURSOR_THEME_REQUIRED_FROM"', shell)
-
-        powershell = self.read("libs/cua-driver/scripts/install.ps1")
-        self.assertIn('$CursorThemeRequiredFrom = [version]"0.12.7"', powershell)
-        self.assertIn("[version]$version -ge $CursorThemeRequiredFrom", powershell)
-
-    def run_release_installer_path_block(
-        self, user_shell: str, *, no_modify_path: str = "0"
-    ) -> tuple[str, str | None, str]:
-        shell = self.read("libs/cua-driver/scripts/_install-rust.sh")
-        snippets = [
-            re.search(r"^log\(\) .*$", shell, re.M),
-            re.search(r"^print_path_hint\(\) \{$.*?^\}$", shell, re.M | re.S),
-            re.search(r'^if \[\[ ":\$PATH:" .*?^fi$', shell, re.M | re.S),
-        ]
-        self.assertTrue(all(snippets))
-        with tempfile.TemporaryDirectory() as temp:
-            home = Path(temp) / "home dir"
-            home.mkdir()
-            bin_dir = str(home / "cua bin")
-            result = subprocess.run(
-                [
-                    "bash",
-                    "-c",
-                    f'BIN_DIR="{bin_dir}"\nBIN_LINK="$BIN_DIR/cua-driver"\n'
-                    + "\n".join(snippet.group(0) for snippet in snippets),
-                ],
-                env={
-                    **os.environ,
-                    "HOME": str(home),
-                    "SHELL": user_shell,
-                    "NO_MODIFY_PATH": no_modify_path,
-                },
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            bashrc = home / ".bashrc"
-            bashrc_text = bashrc.read_text() if bashrc.exists() else None
-            return result.stdout, bashrc_text, bin_dir
-
-    def test_release_installer_always_prints_an_actionable_path_hint(self) -> None:
-        posix_export = 'export PATH="{bin_dir}:$PATH"'
-        quoted_run = '"{bin_dir}/cua-driver" --version'
-        cases = {
-            "/bin/bash": (posix_export, "  " + quoted_run),
-            "/opt/homebrew/bin/fish": ('fish_add_path "{bin_dir}"', "  " + quoted_run),
-            "/usr/local/bin/nu": (
-                '$env.PATH = ($env.PATH | prepend "{bin_dir}")',
-                "  ^" + quoted_run,
-            ),
-            "": (posix_export, "  " + quoted_run),
-        }
-        for user_shell, expected_lines in cases.items():
-            for no_modify_path in ("0", "1"):
-                with self.subTest(shell=user_shell, no_modify_path=no_modify_path):
-                    stdout, bashrc, bin_dir = self.run_release_installer_path_block(
-                        user_shell, no_modify_path=no_modify_path
-                    )
-                    for expected in expected_lines:
-                        self.assertIn(expected.format(bin_dir=bin_dir) + "\n", stdout)
-                    if user_shell == "":
-                        self.assertIn("POSIX-compatible shells:", stdout)
-                    if user_shell == "/bin/bash" and no_modify_path == "0":
-                        self.assertIn(f'export PATH="{bin_dir}:$PATH"', bashrc)
-                    else:
-                        self.assertIsNone(bashrc)
-
-    def test_windows_installer_elevates_autostart_binary_without_command_string(
-        self,
-    ) -> None:
-        powershell = self.read("libs/cua-driver/scripts/install.ps1")
-        block = powershell.split(
-            "function Register-CuaDriverAutostart {", maxsplit=1
-        )[1].split(
-            "# ---------- Concurrent-install lockfile", maxsplit=1
-        )[0]
-
-        self.assertIn(
-            "Start-Process -FilePath $InstalledBinary",
-            block,
-        )
-        self.assertIn(
-            '-ArgumentList @("autostart", "enable")',
-            block,
-        )
-        self.assertNotIn("$elevCmd", block)
-        self.assertNotIn("Read-Host", block)
-
     def test_local_installer_does_not_clean_release_or_legacy_homes(self) -> None:
         installer = self.read("libs/cua-driver/scripts/_install-local-rust.sh")
 
@@ -1046,7 +900,7 @@ fi
             },
         )
 
-    def test_installer_compatibility_runs_current_installers_on_releases(
+    def test_installer_compatibility_builds_from_the_checkout(
         self,
     ) -> None:
         workflow = self.read(
@@ -1056,11 +910,11 @@ fi
         self.assertIn("workflow_call:\n", workflow)
         self.assertIn("Installer compatibility summary", workflow)
         self.assertIn("ubuntu-latest, macos-26, windows-latest", workflow)
-        # Versions come from the repository the installers download from.
-        self.assertIn("RELEASE_REPOSITORY: trycua/cua", workflow)
-        self.assertIn("repos/$RELEASE_REPOSITORY/releases?per_page=100", workflow)
         self.assertIn("libs/cua-driver/scripts/install.sh", workflow)
         self.assertIn("libs/cua-driver/scripts/install.ps1", workflow)
+        self.assertIn("CUA_DRIVER_LOCAL_INSTALL_DIR", workflow)
+        self.assertNotIn("CUA_DRIVER_RS_VERSION", workflow)
+        self.assertNotIn("releases?per_page=100", workflow)
         self.assertIn("-NoAutoStart", workflow)
 
         release_metadata = self.read(

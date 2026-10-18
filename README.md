@@ -76,11 +76,16 @@ https://github.com/user-attachments/assets/a2ccc86b-10d0-48c0-bee6-7ae652ba1c59
 
 **Install on macOS 26 or later**
 
+This build installs from source. Clone the fork and run the installer:
+
 ```sh
-curl -fsSL https://cua.ai/install.sh | sh
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+scripts/install/install.sh
 ```
 
-On macOS the installer selects the Cua Spaces app by default and adds the `cua` CLI. You can also [download the signed `.dmg`](https://github.com/trycua/cua/releases/download/cua-spaces-v0.1.0/cua-spaces-0.1.0-darwin-universal.dmg), or get the `.pkg` from the [Cua Spaces 0.1.0 release](https://github.com/trycua/cua/releases/tag/cua-spaces-v0.1.0).
+On macOS the installer builds the Cua Spaces app and the `cua` CLI by default. Updates are explicit: pull the repository and rebuild.
 
 Spaces is free for individuals. Pro is $18 a month and Teams is $30 per seat a month, available now from 1 seat. See [pricing](https://cua.ai/pricing). The app is source-available under [FSL-1.1-MIT](#licensing).
 
@@ -95,13 +100,19 @@ Give your agent tools to inspect and operate native desktop apps and browsers on
 **macOS / Linux**
 
 ```sh
-/bin/bash -c "$(curl -fsSL https://cua.ai/driver/install.sh)"
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+libs/cua-driver/scripts/install.sh
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-irm https://cua.ai/driver/install.ps1 | iex
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+powershell -ExecutionPolicy Bypass -File libs\cua-driver\scripts\install.ps1
 ```
 
 **Your first result:** connect your agent, ask it to compute 6 × 7 in Calculator, and have it verify that the app displays 42. The tutorial covers platform setup, permissions, and agent connection.
@@ -123,7 +134,10 @@ https://github.com/user-attachments/assets/b4e5517c-d2db-4758-b4cf-07131b0753b2
 Create and manage local macOS and Linux VMs on Apple Silicon using Apple's Virtualization.Framework.
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://cua.ai/lume/install.sh)"
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+libs/lume/scripts/install.sh
 ```
 
 **Your first result:** create a vanilla macOS Tahoe VM from an Apple restore image, start it, and connect over SSH. The tutorial uses the Lume CLI directly and explains the unattended setup defaults.
@@ -139,16 +153,22 @@ One SDK and one `cua` command for local VMs and containers, and for any machine 
 **macOS / Linux**
 
 ```sh
-curl -fsSL https://cua.ai/install.sh | sh
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+scripts/install/install.sh
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-irm https://cua.ai/install.ps1 | iex
+git clone https://github.com/chriswritescode-dev/cua.git
+cd cua
+git checkout local-build
+powershell -ExecutionPolicy Bypass -File scripts\install\install.ps1
 ```
 
-In a terminal the script shows a short checklist: the `cua` CLI, the Cua Spaces app (default on macOS), the cua-driver MCP and skill for your agents, and hosting this machine. It then runs `cua auth login`, which signs you in and offers to install cua skills and the cua MCP server into your AI coding agents (Claude Code, Codex, Cursor, and others). Preselect items with `sh -s -- --select cua-driver`, or skip the checklist with `--only cua-driver`. See [the installer options](scripts/install/README.md).
+In a terminal the script shows a short checklist: the `cua` CLI, the Cua Spaces app (default on macOS), the cua-driver MCP and skill for your agents, and hosting this machine. It then runs `cua auth login`, which signs you in and offers to install cua skills and the cua MCP server into your AI coding agents (Claude Code, Codex, Cursor, and others). Preselect items with `--select cua-driver`, or skip the checklist with `--only cua-driver`. See [the installer options](scripts/install/README.md).
 
 ```sh
 cua sb create ubuntu --name dev          # a gVisor container, set up on first use
