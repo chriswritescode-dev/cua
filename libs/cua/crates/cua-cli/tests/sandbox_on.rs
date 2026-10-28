@@ -138,6 +138,22 @@ async fn url_sandboxes_and_uniform_ops() {
     let o = h.run(&pf).await;
     o.ok();
     assert_eq!(o.json()["local_addr"], format!("127.0.0.1:{free}"));
+    let o = h
+        .run(&[
+            "--embedded",
+            "--json",
+            "sb",
+            "port-forward",
+            "dev",
+            &format!("3211:{free}"),
+            "--bind",
+            "0.0.0.0",
+            "--no-wait",
+        ])
+        .await;
+    o.ok();
+    assert_eq!(o.json()["local_addr"], format!("0.0.0.0:{free}"));
+    assert_eq!(o.json()["bind"], "0.0.0.0");
     // Bytes round trip through a running forward.
     let echo = echo_server().await;
     let mut child = h.spawn(&[

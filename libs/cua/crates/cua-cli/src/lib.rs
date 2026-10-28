@@ -3259,6 +3259,37 @@ mod tests {
         assert!(parse(&["build", "--cpus", "many"]).is_err());
     }
 
+    /// `cua sb port-forward` listens on loopback unless `--bind` says otherwise.
+    #[test]
+    fn port_forward_takes_a_bind_address() {
+        use std::net::{IpAddr, Ipv4Addr};
+        let parse =
+            |a: &[&str]| Cli::try_parse_from(std::iter::once("cua").chain(a.iter().copied()));
+        let bind = |a: &[&str]| match parse(a).unwrap().command {
+            Command::Sandbox(cmd) => match *cmd {
+                sandbox::SandboxCmd::PortForward { bind, .. } => bind,
+                other => panic!("{other:?}"),
+            },
+            other => panic!("{other:?}"),
+        };
+        assert_eq!(
+            bind(&["sb", "port-forward", "dev", "8080"]),
+            IpAddr::V4(Ipv4Addr::LOCALHOST)
+        );
+        assert_eq!(
+            bind(&[
+                "sb",
+                "port-forward",
+                "dev",
+                "3211:3311",
+                "--bind",
+                "0.0.0.0"
+            ]),
+            IpAddr::V4(Ipv4Addr::UNSPECIFIED)
+        );
+        assert!(parse(&["sb", "port-forward", "dev", "8080", "--bind", "localhost"]).is_err());
+    }
+
     #[test]
     fn local_pool_commands_parse() {
         let parse =

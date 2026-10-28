@@ -6384,7 +6384,7 @@
     },
     {
      "abstract": "Forward a guest port: `port-forward NAME PORT[:LOCAL]` (a local sandbox's port not published at create tunnels through cua-spacesd when the image has it)",
-     "after_help": "Examples:\n  # Guest port 8080 on localhost:8080 until Ctrl-C\n  cua sb port-forward dev 8080\n  # Guest port 5432 on localhost:15432\n  cua sb port-forward local:dev 5432:15432",
+     "after_help": "Examples:\n  # Guest port 8080 on localhost:8080 until Ctrl-C\n  cua sb port-forward dev 8080\n  # Guest port 5432 on localhost:15432\n  cua sb port-forward local:dev 5432:15432\n  # Guest port 3211 on 3311 of every interface, for other machines on the LAN\n  cua sb port-forward minime-macos 3211:3311 --bind 0.0.0.0",
      "aliases": [
       "forward"
      ],
@@ -6448,7 +6448,24 @@
      "hidden": false,
      "hidden_aliases": [],
      "name": "port-forward",
-     "options": [],
+     "options": [
+      {
+       "aliases": [],
+       "default_value": "127.0.0.1",
+       "env": null,
+       "help": "Local address to listen on; a non-loopback address such as `0.0.0.0` exposes the port to the network",
+       "hidden": false,
+       "is_optional": true,
+       "multiple_values": false,
+       "name": "bind",
+       "possible_values": [],
+       "repeatable": false,
+       "short_name": null,
+       "takes_value": true,
+       "type": "string",
+       "value_name": "BIND"
+      }
+     ],
      "subcommand_optional": false,
      "subcommands": [],
      "usage": "cua sandbox port-forward [OPTIONS] <NAME> <SPEC>"

@@ -903,6 +903,7 @@ Alias: `cua sandbox forward`.
 
 | Flag | Type | Default | Description |
 | --- | --- | --- | --- |
+| <span id="cua-sandbox-port-forward--bind"></span>`--bind` | string | `127.0.0.1` | Local address to listen on; a non-loopback address such as `0.0.0.0` exposes the port to the network. |
 | <span id="cua-sandbox-port-forward--local"></span>`--local` | boolean | `false` | Look NAME up among local sandboxes only (same as `local:NAME`). |
 | <span id="cua-sandbox-port-forward--no-wait"></span>`--no-wait` | boolean | `false` | Print the target and exit instead of forwarding until Ctrl-C. |
 
@@ -914,6 +915,9 @@ cua sb port-forward dev 8080
 
 # Guest port 5432 on localhost:15432
 cua sb port-forward local:dev 5432:15432
+
+# Guest port 3211 on 3311 of every interface, for other machines on the LAN
+cua sb port-forward minime-macos 3211:3311 --bind 0.0.0.0
 ```
 
 ### `cua sandbox url`

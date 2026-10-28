@@ -10,7 +10,12 @@ use crate::{
 use clap::{Args, Subcommand};
 use cua_sandbox_core::placement::{Kind, On, Runtime};
 use cua_sdk::{Cua, CuaError, ReadinessProbe, SandboxCreateOptions, SandboxInfo};
-use std::{io::Write, path::PathBuf, sync::Arc};
+use std::{
+    io::Write,
+    net::{IpAddr, Ipv4Addr},
+    path::PathBuf,
+    sync::Arc,
+};
 
 mod bake;
 
@@ -766,7 +771,9 @@ pub enum SandboxCmd {
   # Guest port 8080 on localhost:8080 until Ctrl-C
   cua sb port-forward dev 8080
   # Guest port 5432 on localhost:15432
-  cua sb port-forward local:dev 5432:15432"
+  cua sb port-forward local:dev 5432:15432
+  # Guest port 3211 on 3311 of every interface, for other machines on the LAN
+  cua sb port-forward minime-macos 3211:3311 --bind 0.0.0.0"
     )]
     PortForward {
         /// Sandbox name or ref (`local:NAME`).
@@ -775,6 +782,10 @@ pub enum SandboxCmd {
         at: Narrow,
         /// PORT or PORT:LOCAL_PORT.
         spec: String,
+        /// Local address to listen on; a non-loopback address such as
+        /// `0.0.0.0` exposes the port to the network.
+        #[arg(long, default_value_t = IpAddr::V4(Ipv4Addr::LOCALHOST))]
+        bind: IpAddr,
         /// Print the target and exit instead of forwarding until Ctrl-C.
         #[arg(long)]
         no_wait: bool,
@@ -2133,10 +2144,11 @@ pub async fn run(
             name,
             at,
             spec,
+            bind,
             no_wait,
         } => {
             let name = at.apply(&name)?;
-            return port_forward(cua, &name, &spec, no_wait, json_global, out).await;
+            return port_forward(cua, &name, &spec, bind, no_wait, json_global, out).await;
         }
         SandboxCmd::Info {
             name,
@@ -3305,11 +3317,12 @@ async fn logs(
     Ok(0)
 }
 
-/// `sb port-forward NAME PORT[:LOCAL]`.
+/// `sb port-forward NAME PORT[:LOCAL] [--bind ADDR]`.
 async fn port_forward(
     cua: &Arc<Cua>,
     name: &str,
     spec: &str,
+    bind: IpAddr,
     no_wait: bool,
     json: bool,
     out: &mut dyn Write,
@@ -3336,11 +3349,12 @@ async fn port_forward(
         (None, None) => unreachable!("one of the two is set"),
     };
     let target = fwd.local_addr();
-    let listen = match (local, &target) {
-        (Some(l), Some(t)) => {
-            let listener = tokio::net::TcpListener::bind(("127.0.0.1", l))
-                .await
-                .map_err(|e| CuaError::InvalidArgument(format!("127.0.0.1:{l}: {e}")))?;
+    let listen = match &target {
+        Some(t) if local.is_some() || bind != IpAddr::V4(Ipv4Addr::LOCALHOST) => {
+            let addr = std::net::SocketAddr::from((bind, local.unwrap_or(0)));
+            let why = |e: std::io::Error| CuaError::InvalidArgument(format!("bind {addr}: {e}"));
+            let listener = tokio::net::TcpListener::bind(addr).await.map_err(why)?;
+            let bound = listener.local_addr().map_err(why)?;
             let t = t.clone();
             tokio::spawn(async move {
                 while let Ok((mut inbound, _)) = listener.accept().await {
@@ -3352,14 +3366,14 @@ async fn port_forward(
                     });
                 }
             });
-            Some(format!("127.0.0.1:{l}"))
+            Some(bound.to_string())
         }
         _ => target.clone(),
     };
     let addr = listen.clone().or_else(|| fwd.url()).unwrap_or_default();
     print(
         out,
-        serde_json::json!({"name": name, "guest_port": port, "local_addr": listen, "url": fwd.url()}),
+        serde_json::json!({"name": name, "guest_port": port, "bind": bind, "local_addr": listen, "url": fwd.url()}),
         json,
         || format!("Forwarding {addr} -> {name}:{port}"),
     );
