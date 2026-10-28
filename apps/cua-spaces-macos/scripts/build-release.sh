@@ -52,7 +52,9 @@
 # trycua/cua's rolling cua-spaces-latest release). The release workflow passes
 # its own repository's, so a staging build updates from staging.
 #
-# --sign takes a codesign identity ("Developer ID Application: Name (TEAM)");
+# --sign takes a codesign identity ("Developer ID Application: Name (TEAM)",
+# or "Apple Development: Name (TEAM)" for a local build signed by another
+# Apple team);
 # the default "-" signs ad hoc (the hardened runtime and entitlements are
 # still applied, so the bundle's layout and flags match a release). An ad
 # hoc signature has no team, and the hardened runtime's library validation
@@ -63,6 +65,12 @@
 # result must pass scripts/check-launch.sh (every library resolves inside
 # the bundle and passes library validation; the app starts and exits). Notarization and
 # the DMG are separate steps (scripts/package-dmg.sh, cd-cua-spaces.yml).
+#
+# CUA_TEAM_ID is the Apple team the build is signed by and the Keyvault
+# trusts (default YCK386LBJ7, Cua's own). It is exported to the cargo builds
+# below, so the trust policy they compile names the team this script signs
+# with; signing with another team without setting it ships an app whose
+# Keyvault answers "not signed by Cua".
 #
 # Cargo builds into CARGO_TARGET_DIR (default libs/cua/target) with
 # CARGO_BUILD_JOBS as set. --skip-cargo reuses <target>/<triple>/release.
@@ -90,7 +98,7 @@ while [ $# -gt 0 ]; do
     --out) out="$2"; shift ;;
     --skip-cargo) skip_cargo=1 ;;
     --feed-url) feed_url="$2"; shift ;;
-    -h | --help) sed -n '5,69p' "$0"; exit 0 ;;
+    -h | --help) sed -n '5,77p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
   shift
@@ -123,11 +131,18 @@ case "$arch" in
 esac
 triple() { [ "$1" = arm64 ] && echo aarch64-apple-darwin || echo x86_64-apple-darwin; }
 
+# The Apple team every signature must carry: the Keyvault's trust policy is
+# compiled in from this value, so it is both exported to cargo and checked.
+team="${CUA_TEAM_ID:-YCK386LBJ7}"
+[[ "$team" =~ ^[A-Z0-9]{10}$ ]] ||
+  { echo "CUA_TEAM_ID must be a 10-character Apple team id (got '$team')" >&2; exit 2; }
+
 target="${CARGO_TARGET_DIR:-$cua/target}"
 case "$target" in /*) ;; *) target="$cua/$target" ;; esac
 if [ "$skip_cargo" = 0 ]; then
   for a in $archs; do
-    (cd "$cua" && CUA_DEFAULT_ENV="" cargo build --locked --release -p cua-spaces-ffi -p cua-spaces-cli --target "$(triple "$a")")
+    (cd "$cua" && CUA_DEFAULT_ENV="" CUA_TEAM_ID="$team" \
+      cargo build --locked --release -p cua-spaces-ffi -p cua-spaces-cli --target "$(triple "$a")")
   done
 fi
 
@@ -156,6 +171,10 @@ for f in libcua_spaces_ffi.dylib cua-spaces-cli; do
   for a in $archs; do
     s="$target/$(triple "$a")/release/$f"
     [ -f "$s" ] || { echo "missing $s (build it, or drop --skip-cargo)" >&2; exit 1; }
+    if [ "$skip_cargo" = 1 ] && [ "$f" = cua-spaces-cli ]; then
+      grep -qa -- "$team" "$s" ||
+        { echo "$s was not built with CUA_TEAM_ID=$team: drop --skip-cargo, or reuse binaries built with it" >&2; exit 1; }
+    fi
     slices+=("$s")
   done
   lipo -create "${slices[@]}" -output "$joined/release/$f"
@@ -249,26 +268,25 @@ done
   { echo "the bundled cua is not signed as com.trycua.cua" >&2; exit 1; }
 [ "$(codesign -dv "$app" 2>&1 | sed -n 's/^Identifier=//p')" = com.trycua.spaces.macos ] ||
   { echo "the app is not signed as com.trycua.spaces.macos" >&2; exit 1; }
-# A Developer ID build must be first party to the Keyvault: the broker and
-# its clients accept only code meeting TrustPolicy::production() (Apple
-# anchored, the pinned team CUA_TEAM_ID in cua-keyvault's caller.rs, a Cua
-# identifier, hardened runtime; checked above). Signing with another team
-# would ship an app whose Keyvault answers "not signed by Cua".
+# A signed build must be first party to the Keyvault: the broker and its
+# clients accept only code meeting TrustPolicy::production() (Apple
+# anchored, the build's team CUA_TEAM_ID, a Cua identifier, hardened
+# runtime; checked above). Signing with another team would ship an app whose
+# Keyvault answers "not signed by Cua".
 if [ "$identity" != "-" ]; then
-  team="$(sed -n 's/^pub const CUA_TEAM_ID: &str = "\([A-Z0-9]*\)";/\1/p' \
-    "$cua/crates/cua-keyvault/src/caller.rs")"
-  [ -n "$team" ] || { echo "could not read CUA_TEAM_ID from cua-keyvault" >&2; exit 1; }
   for pair in "$app:com.trycua.spaces.macos" "$app/Contents/MacOS/cua:com.trycua.cua"; do
     f="${pair%:*}"
     id="${pair##*:}"
     codesign --verify -R="anchor apple generic and certificate leaf[subject.OU] = \"$team\" and identifier \"$id\"" "$f" ||
-      { echo "$f does not meet the Keyvault requirement (team $team, $id): sign with the Cua team's Developer ID" >&2; exit 1; }
+      { echo "$f does not meet the Keyvault requirement (team $team, $id): sign with an Apple identity of team $team" >&2; exit 1; }
   done
 fi
 # The saved sign-in's keychain items trust each Cua executable by its
 # designated requirement (cua-auth's macos_keychain.rs, README "Keychain"):
 # it must be the identifier and the team, never a cdhash, or the next build
 # would not meet it and macOS would ask for the login password again.
+# An Apple Development certificate's designated requirement names the leaf
+# CN, not the team (which the requirement check above already proved).
 if [ "$identity" != "-" ]; then
   for pair in "$app/Contents/MacOS/CuaSpacesMac:com.trycua.spaces.macos" "$app/Contents/MacOS/cua:com.trycua.cua"; do
     f="${pair%:*}"
@@ -277,12 +295,13 @@ if [ "$identity" != "-" ]; then
     case "$dr" in
       *cdhash*|"") echo "$f has no stable designated requirement ($dr)" >&2; exit 1 ;;
       *"identifier \"$id\""*"leaf[subject.OU] = $team"*) ;;
+      *"identifier \"$id\""*"leaf[subject.CN] = \"$identity\""*) ;;
       *) echo "$f: designated requirement does not name $id and team $team ($dr)" >&2; exit 1 ;;
     esac
   done
 fi
-# A Developer ID build signs Sparkle with the same team (library
-# validation stays on: the app loads only its own team's code).
+# A signed build signs Sparkle with the same team (library validation stays
+# on: the app loads only its own team's code).
 if [ "$identity" != "-" ]; then
   for f in "${sparkle_parts[@]}" "$app/Contents/Helpers/cua-spacesd"; do
     codesign --verify -R="anchor apple generic and certificate leaf[subject.OU] = \"$team\"" "$f" ||

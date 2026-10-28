@@ -18,8 +18,13 @@ use cua_driver_core::tool::ToolRegistry;
 
 static HISTORY_ADMITTED: AtomicBool = AtomicBool::new(false);
 static DAEMON_LAUNCH_STATE: OnceLock<Mutex<DaemonLaunchState>> = OnceLock::new();
+/// The team a release Cua Driver is signed with: `CUA_TEAM_ID` at build time
+/// selects the team this build was signed by, and defaults to Cua's own.
 #[cfg(target_os = "macos")]
-const RELEASE_TEAM_IDENTIFIER: &str = "YCK386LBJ7";
+const RELEASE_TEAM_IDENTIFIER: &str = match option_env!("CUA_TEAM_ID") {
+    Some(team) => team,
+    None => "YCK386LBJ7",
+};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct DaemonLaunchState {

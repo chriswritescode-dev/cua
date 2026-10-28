@@ -369,8 +369,12 @@ pub fn may_have_session() -> bool {
 }
 
 /// Cua's Apple Developer team (the one `cua_keyvault::caller::CUA_TEAM_ID`
-/// names).
-pub const CUA_TEAM_ID: &str = "YCK386LBJ7";
+/// names): `CUA_TEAM_ID` at build time selects the team this build signs
+/// with, and defaults to Cua's own.
+pub const CUA_TEAM_ID: &str = match option_env!("CUA_TEAM_ID") {
+    Some(team) => team,
+    None => "YCK386LBJ7",
+};
 
 /// Whether this process is signed with Cua's Developer ID. Only then does
 /// the default store use the macOS keychain: the keychain remembers "Always

@@ -234,8 +234,16 @@ pub struct TrustPolicy {
     pub is_test_policy: bool,
 }
 
-/// The Apple team that signs Cua releases.
-pub const CUA_TEAM_ID: &str = "YCK386LBJ7";
+/// The team Cua releases are signed with, when the build sets no team.
+pub const DEFAULT_CUA_TEAM_ID: &str = "YCK386LBJ7";
+/// The Apple team that signs Cua releases. A build with `CUA_TEAM_ID` set
+/// (build-release.sh exports the team it signs with) trusts that team, so a
+/// local build signed with another Apple team is first party to its own
+/// binaries.
+pub const CUA_TEAM_ID: &str = match option_env!("CUA_TEAM_ID") {
+    Some(team) => team,
+    None => DEFAULT_CUA_TEAM_ID,
+};
 /// Where the Linux packages install Cua (the `.deb`'s `/opt/<product name>`,
 /// and the distro-style locations): only executables inside one of these, in
 /// a tree no one but root can change, count as Cua on Linux.

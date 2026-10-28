@@ -81,7 +81,8 @@ describe("the bundled daemon's signature", () => {
     const listed = /pub const CUA_IDENTIFIERS: &\[&str\] = &\[([^\]]*)\]/.exec(rust)?.[1] ?? "";
     expect(listed).toContain(`"${signer.DAEMON_IDENTIFIER}"`);
     expect(listed).toContain(`"${config.mac.appId}"`);
-    expect(rust).toContain('pub const CUA_TEAM_ID: &str = "YCK386LBJ7"');
+    expect(rust).toContain('pub const DEFAULT_CUA_TEAM_ID: &str = "YCK386LBJ7"');
+    expect(rust).toMatch(/pub const CUA_TEAM_ID: &str =[\s\S]{0,120}option_env!\("CUA_TEAM_ID"\)/);
   });
 
   it("grants the daemon what the Swift app's does, and nothing more", () => {
