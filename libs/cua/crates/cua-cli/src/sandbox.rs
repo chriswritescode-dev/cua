@@ -3317,6 +3317,35 @@ async fn logs(
     Ok(0)
 }
 
+/// Relays every inbound connection on `listener` to `target`; the returned
+/// receiver turns `true` once `target` refuses a connection, which means the
+/// forward's daemon-owned listener is gone and the forward must be restarted.
+fn relay_forward(
+    listener: tokio::net::TcpListener,
+    target: String,
+) -> tokio::sync::watch::Receiver<bool> {
+    let (gone, lost) = tokio::sync::watch::channel(false);
+    tokio::spawn(async move {
+        while let Ok((mut inbound, _)) = listener.accept().await {
+            let target = target.clone();
+            let gone = gone.clone();
+            tokio::spawn(async move {
+                let mut up = match tokio::net::TcpStream::connect(&target).await {
+                    Ok(up) => up,
+                    Err(e) => {
+                        if e.kind() == std::io::ErrorKind::ConnectionRefused {
+                            let _ = gone.send(true);
+                        }
+                        return;
+                    }
+                };
+                let _ = tokio::io::copy_bidirectional(&mut inbound, &mut up).await;
+            });
+        }
+    });
+    lost
+}
+
 /// `sb port-forward NAME PORT[:LOCAL] [--bind ADDR]`.
 async fn port_forward(
     cua: &Arc<Cua>,
@@ -3349,23 +3378,14 @@ async fn port_forward(
         (None, None) => unreachable!("one of the two is set"),
     };
     let target = fwd.local_addr();
+    let mut upstream_lost = None;
     let listen = match &target {
         Some(t) if local.is_some() || bind != IpAddr::V4(Ipv4Addr::LOCALHOST) => {
             let addr = std::net::SocketAddr::from((bind, local.unwrap_or(0)));
             let why = |e: std::io::Error| CuaError::InvalidArgument(format!("bind {addr}: {e}"));
             let listener = tokio::net::TcpListener::bind(addr).await.map_err(why)?;
             let bound = listener.local_addr().map_err(why)?;
-            let t = t.clone();
-            tokio::spawn(async move {
-                while let Ok((mut inbound, _)) = listener.accept().await {
-                    let t = t.clone();
-                    tokio::spawn(async move {
-                        if let Ok(mut up) = tokio::net::TcpStream::connect(&t).await {
-                            let _ = tokio::io::copy_bidirectional(&mut inbound, &mut up).await;
-                        }
-                    });
-                }
-            });
+            upstream_lost = Some((t.clone(), relay_forward(listener, t.clone())));
             Some(bound.to_string())
         }
         _ => target.clone(),
@@ -3378,12 +3398,29 @@ async fn port_forward(
         || format!("Forwarding {addr} -> {name}:{port}"),
     );
     let _ = out.flush();
+    let mut code = 0;
     if !no_wait {
         eprintln!("Press Ctrl-C to stop.");
-        let _ = tokio::signal::ctrl_c().await;
+        match upstream_lost {
+            Some((t, mut lost)) => {
+                tokio::select! {
+                    _ = tokio::signal::ctrl_c() => {}
+                    _ = lost.wait_for(|lost| *lost) => {
+                        eprintln!(
+                            "forward to {name}:{port} lost its upstream ({t}); \
+                             exiting so it can be restarted"
+                        );
+                        code = 1;
+                    }
+                }
+            }
+            None => {
+                let _ = tokio::signal::ctrl_c().await;
+            }
+        }
     }
     let _ = fwd.close().await;
-    Ok(0)
+    Ok(code)
 }
 
 /// Web display services of images without cua-spacesd, in preference order
@@ -4486,5 +4523,39 @@ mod tests {
             confirm_delete(false, true, || false),
             DeleteConfirmation::Declined
         );
+    }
+
+    #[tokio::test]
+    async fn a_relay_reports_a_lost_upstream() {
+        use std::time::Duration;
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        let upstream = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let target = upstream.local_addr().unwrap();
+        let relay = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = relay.local_addr().unwrap();
+        let mut lost = relay_forward(relay, target.to_string());
+
+        let mut client = tokio::net::TcpStream::connect(addr).await.unwrap();
+        let (mut server, _) = tokio::time::timeout(Duration::from_secs(5), upstream.accept())
+            .await
+            .unwrap()
+            .unwrap();
+        client.write_all(b"ping").await.unwrap();
+        let mut buf = [0u8; 4];
+        server.read_exact(&mut buf).await.unwrap();
+        assert_eq!(&buf, b"ping");
+        server.write_all(b"pong").await.unwrap();
+        client.read_exact(&mut buf).await.unwrap();
+        assert_eq!(&buf, b"pong");
+        assert!(!*lost.borrow_and_update());
+
+        drop(upstream);
+        let mut refused = tokio::net::TcpStream::connect(addr).await.unwrap();
+        let _ = refused.write_all(b"ping").await;
+        tokio::time::timeout(Duration::from_secs(5), lost.wait_for(|lost| *lost))
+            .await
+            .expect("the relay reports a lost upstream")
+            .expect("the relay's signal is still connected");
     }
 }
