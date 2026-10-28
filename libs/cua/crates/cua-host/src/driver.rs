@@ -67,7 +67,7 @@ pub fn locate(explicit: Option<&Path>) -> Result<PathBuf> {
             )))
         };
     }
-    if let Ok(exe) = std::env::current_exe()
+    if let Ok(exe) = std::env::current_exe().and_then(std::fs::canonicalize)
         && let Some(dir) = exe.parent()
     {
         // Next to the CLI (also a Cua Spaces app before 0.15), or in a macOS
