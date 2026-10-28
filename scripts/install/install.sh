@@ -60,6 +60,8 @@
 #   CUA_INSTALL_REINSTALL=1           with --pair, build the CLI and app even if present
 #   CUA_REPO_URL                      the clone this installer points at
 #   CUA_INSTALL_OS, CUA_INSTALL_ARCH  override platform detection
+#   CUA_CODESIGN_IDENTITY  sign the Cua Spaces app with this codesign identity
+#                       (default ad hoc); set CUA_TEAM_ID to its Apple team
 #   CUA_HOME                          cua state dir (default ~/.cua)
 #   CARGO_TARGET_DIR                  cargo target directory (as cargo itself)
 set -eu
@@ -385,8 +387,21 @@ target_dir() {
 cua_binary() { printf '%s/release/cua\n' "$(target_dir "$repo_root/libs/cua/target")"; }
 spacesd_binary() { printf '%s/release/cua-spacesd\n' "$(target_dir "$repo_root/libs/cua-spacesd/target")"; }
 
+# prefer_rustup_cargo: put rustup's cargo proxy first in PATH when rustup is
+# installed, so the checkout's rust-toolchain.toml (its pinned version and
+# targets) applies even when another Rust, such as Homebrew's `rust`, comes
+# first. Homebrew's rustup is keg-only, so its proxies are not on PATH.
+prefer_rustup_cargo() {
+    has rustup || return 0
+    rustup_dir="$(dirname "$(readlink -f "$(command -v rustup)" 2>/dev/null || command -v rustup)")"
+    [ -x "$rustup_dir/cargo" ] || return 0
+    PATH="$rustup_dir:$PATH"
+    export PATH
+}
+
 # check_build_tools: fail before installing anything when a build cannot run.
 check_build_tools() {
+    prefer_rustup_cargo
     if [ "$want_cli" = 1 ]; then
         has cargo || die "cargo is required to build cua; install Rust from https://rustup.rs and rerun"
     fi
@@ -805,13 +820,27 @@ install_app_darwin() {
         fi
     fi
     app_path="$appdir/Cua Spaces.app"
+    app_arch="$arch"
+    [ "$app_arch" = x64 ] && app_arch=x86_64
     if [ "$dry_run" = 1 ]; then
-        say "[dry-run] bash $script --out $tmp/app"
+        say "[dry-run] bash $script --out $tmp/app --arch $app_arch"
         say "[dry-run] copy $tmp/app/Cua Spaces.app -> $app_path"
         return
     fi
     step "Building the Cua Spaces app into $appdir"
-    bash "$script" --out "$tmp/app" || die "the Cua Spaces build failed"
+    case "${DEVELOPER_DIR:-$(xcode-select -p 2>/dev/null)}" in
+    */Xcode*.app/Contents/Developer) ;;
+    *)
+        [ -d /Applications/Xcode.app/Contents/Developer ] ||
+            die "the Cua Spaces app needs Xcode (the Command Line Tools lack xcstringstool); install Xcode and rerun"
+        DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+        export DEVELOPER_DIR
+        unset SDKROOT
+        ;;
+    esac
+    set -- --out "$tmp/app" --arch "$app_arch"
+    [ -n "${CUA_CODESIGN_IDENTITY:-}" ] && set -- "$@" --sign "$CUA_CODESIGN_IDENTITY"
+    bash "$script" "$@" || die "the Cua Spaces build failed"
     src="$tmp/app/Cua Spaces.app"
     [ -d "$src" ] || die "the Cua Spaces build produced no app bundle"
     mkdir -p "$appdir"
