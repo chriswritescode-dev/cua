@@ -1039,7 +1039,7 @@ class Context:
         self.guard: Optional[DiskGuard] = None
 
     def env(self) -> Dict[str, str]:
-        env = {**self.lean, **os.environ, **self.rust_env, "CARGO_TARGET_DIR": str(self.target), "CUA_TELEMETRY": "0", "DO_NOT_TRACK": "1"}
+        env = {**self.lean, **os.environ, **self.rust_env, "CARGO_TARGET_DIR": str(self.target)}
         shim = python3_shim_dir()
         if shim:
             key = next((k for k in env if k.upper() == "PATH"), "PATH")

@@ -11,7 +11,7 @@
 set -u
 OLD=$1; NEW=$2; NODE=$3
 T=$(mktemp -d "${TMPDIR:-/tmp}/replica-upgrade.XXXXXX"); H=$T/home-a; H2=$T/home-b; mkdir -p $H $H2
-export CUA_HOME=$H CUA_TELEMETRY=0 HOME=$T/fakehome; mkdir -p $HOME
+export CUA_HOME=$H HOME=$T/fakehome; mkdir -p $HOME
 fail() { echo "FAIL: $*"; cleanup; exit 1; }
 pids=()
 cleanup() { for p in "${pids[@]:-}"; do kill $p 2>/dev/null; done; sleep 1; [ -n "${KEEP:-}" ] || rm -rf "$T"; }

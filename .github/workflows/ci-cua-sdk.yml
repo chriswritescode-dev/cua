@@ -361,11 +361,10 @@ jobs:
       # The agent harness crate and its runner's own node tests
       # (runner/test/*.test.mjs through tests/runner_node.rs: durable runs,
       # journal shipping, the 0.8.0 journal upgrade). Agent onboarding: the
-      # connection-state matrix against fake harness homes, and the telemetry
-      # vocabulary its sign-in import adds to.
-      - name: Test (cua-agent-setup and cua-telemetry)
+      # connection-state matrix against fake harness homes.
+      - name: Test (cua-agent-setup)
         if: matrix.shard == 2
-        run: cargo test --locked --no-fail-fast -p cua-agent-setup -p cua-telemetry -- --test-threads=4
+        run: cargo test --locked --no-fail-fast -p cua-agent-setup -- --test-threads=4
       - name: Test (cua-agents and its runner)
         if: matrix.shard == 2
         run: cargo test --locked --no-fail-fast -p cua-agents -- --test-threads=4

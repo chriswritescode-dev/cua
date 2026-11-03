@@ -95,7 +95,7 @@ class Cua:
     def __init__(self, binary: str, home: str):
         self.binary = binary
         self.home = home
-        self.env = dict(os.environ, CUA_HOME=home, DO_NOT_TRACK="1", CUA_TELEMETRY="0")
+        self.env = dict(os.environ, CUA_HOME=home)
         self.root = os.path.join(home, "job-cache", "repos")
 
     def __call__(self, *args, timeout=1800) -> subprocess.CompletedProcess:

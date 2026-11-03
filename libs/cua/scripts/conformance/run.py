@@ -41,7 +41,7 @@ class Run:
         self.cua, self.home, self.mode, self.log = cua, Path(home), mode, log
         self.env = dict(os.environ)
         self.env.update({
-            "CUA_HOME": str(self.home), "CUA_TELEMETRY": "0", "DO_NOT_TRACK": "1",
+            "CUA_HOME": str(self.home),
             "CUA_CREDENTIAL_STORE": "test-keychain",
         })
         # The daemon forwards it to the agent (`env_from_host`); the scripted model ignores the value.
