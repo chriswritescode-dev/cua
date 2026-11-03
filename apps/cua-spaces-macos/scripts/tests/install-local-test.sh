@@ -74,7 +74,7 @@ DAEMON_CHECKOUT="$WORK/daemon-checkout"
 DAEMON_PINNED="$WORK/daemon-pinned"
 FAKE_DAEMON_BUILT="$FAKE_REPO/libs/cua-spacesd/target/dev-fast/cua-spacesd"
 
-mkdir -p "$FAKE_SCRIPTS" "$FAKE_REPO/libs/cua-driver/scripts" "$FAKE_REPO/libs/lume/scripts" \
+mkdir -p "$FAKE_SCRIPTS" "$FAKE_REPO/libs/cua-driver/scripts" "$FAKE_REPO/libs/cua-driver/rust" "$FAKE_REPO/libs/lume/scripts" \
     "$FAKE_REPO/libs/cua" "$FAKE_REPO/libs/cua-spacesd" "$FAKE_REPO/libs/spaces-app-swift/scripts" \
     "$FAKE_REPO/apps/cua-spaces-web/scripts" "$FAKE_REPO/apps/cua-spaces" \
     "$SHIMS" "$SHIM_STATE" "$FAKE_HOME"
@@ -376,6 +376,8 @@ case "$PWD" in
     fi ;;
   */libs/cua)
     mkdir -p "target/$P" && : > "target/$P/cua-spaces-cli" && : > "target/$P/libcua_spaces_ffi.dylib" ;;
+  */libs/cua-driver/rust)
+    mkdir -p target/release && : > target/release/cua-driver && : > target/release/cua-cursor-theme ;;
 esac
 exit 0'
 
@@ -400,7 +402,7 @@ run() {
         # CI is set on a CI runner and not on a Mac. The web UI check expects
         # CI=true only where install-local.sh sets it (pnpm install), so drop it.
         unset SUDO_USER CUA_DRIVER_LOCAL_SIGNING_KEYCHAIN CUA_DRIVER_LOCAL_SIGNING_IDENTITY CUA_CHANNEL CUA_HOME CUA_ENV \
-            CARGO_TARGET_DIR CUA_SPACESD_BIN CUA_WEBUI_DIST CI
+            CARGO_TARGET_DIR CUA_SPACESD_BIN CUA_DRIVER_DIR CUA_WEBUI_DIST CI
         "$@" < "$STDIN_FILE" 2>&1
     )"
     RC=$?
@@ -653,6 +655,8 @@ check "the library and CLI are built and staged, with the dev-fast profile by de
     'grep >/dev/null "^cargo build --locked --profile dev-fast --no-default-features -p cua-spaces-ffi -p cua-spaces-cli \[in cua\]$" "$CARGO_LOG" && grep >/dev/null "^stage-library" "$CARGO_LOG"'
 check "cua-spacesd is built from this checkout's libs/cua-spacesd" \
     'grep >/dev/null "^cargo build --locked --profile dev-fast -p cua-spacesd --bin cua-spacesd \[in cua-spacesd\]$" "$CARGO_LOG"'
+check "Cua Driver is built from this checkout's libs/cua-driver/rust, not the pinned release" \
+    'grep >/dev/null "^cargo build --locked --release -p cua-driver -p cursor-theme-cli \[in rust\]$" "$CARGO_LOG"'
 check "(the checkout's and the pinned daemon of this fixture differ in code)" '[ "$(text_hash "$DAEMON_CHECKOUT")" != "$(text_hash "$DAEMON_PINNED")" ]'
 check "the bundled cua-spacesd is this checkout's build" '[ "$(text_hash "$LOCAL_APP/Contents/Helpers/cua-spacesd")" = "$(text_hash "$DAEMON_CHECKOUT")" ]'
 check "and not the pinned release" '[ "$(text_hash "$LOCAL_APP/Contents/Helpers/cua-spacesd")" != "$(text_hash "$DAEMON_PINNED")" ]'

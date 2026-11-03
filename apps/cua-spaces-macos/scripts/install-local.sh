@@ -257,11 +257,14 @@ esac
 # per workspace.
 if [ -n "${CARGO_TARGET_DIR:-}" ]; then
     SPACESD_TARGET_DIR="$CARGO_TARGET_DIR/cua-spacesd"
+    DRIVER_TARGET_DIR="$CARGO_TARGET_DIR/cua-driver"
     export CARGO_TARGET_DIR="$CARGO_TARGET_DIR/cua"
 else
     SPACESD_TARGET_DIR="$SPACESD_DIR/target"
+    DRIVER_TARGET_DIR="$REPO_ROOT/libs/cua-driver/rust/target"
 fi
 SPACESD_BIN="$SPACESD_TARGET_DIR/$RUST_PROFILE/cua-spacesd"
+DRIVER_DIR="$DRIVER_TARGET_DIR/release"
 
 [ -x "$BUILD_SCRIPT" ] || die "missing $BUILD_SCRIPT"
 [ -f "$SIGNING_LIB" ] || die "missing $SIGNING_LIB (the stable local signing shared with Cua Driver)"
@@ -442,6 +445,8 @@ if [ "$SKIP_RUST_BUILD" = 0 ]; then
     # support". Release builds keep the default `aws` feature.
     (cd "$REPO_ROOT/libs/cua" && cargo build --locked --profile "$RUST_PROFILE" --no-default-features -p cua-spaces-ffi -p cua-spaces-cli)
     CUA_CARGO_PROFILE_DIR="$RUST_PROFILE" "$REPO_ROOT/libs/spaces-app-swift/scripts/stage-library.sh"
+    log "building Cua Driver from this checkout (cargo, release)"
+    (cd "$REPO_ROOT/libs/cua-driver/rust" && CARGO_TARGET_DIR="$DRIVER_TARGET_DIR" cargo build --locked --release -p cua-driver -p cursor-theme-cli)
     if wait "$SPACESD_PID"; then
         tail -n 1 "$SPACESD_BUILD_LOG"
         rm -f "$SPACESD_BUILD_LOG"
@@ -489,7 +494,7 @@ SPACESD_CODE_HASH="$(code_hash "$SPACESD_BIN")" || die "cannot read the machine 
 log "building the app (build-app.sh --channel local $CONFIG)"
 mkdir -p "$BUILD_OUT"
 # build-app.sh prints the bundle path as its last line.
-if ! BUILT_APP="$(CUA_CARGO_PROFILE_DIR="$RUST_PROFILE" CUA_SPACESD_BIN="$SPACESD_BIN" CUA_WEBUI_DIST="$WEBUI_DIST" "$BUILD_SCRIPT" --channel local "$CONFIG" "$BUILD_OUT" | tee /dev/stderr | tail -n 1)"; then
+if ! BUILT_APP="$(CUA_CARGO_PROFILE_DIR="$RUST_PROFILE" CUA_SPACESD_BIN="$SPACESD_BIN" CUA_DRIVER_DIR="$DRIVER_DIR" CUA_WEBUI_DIST="$WEBUI_DIST" "$BUILD_SCRIPT" --channel local "$CONFIG" "$BUILD_OUT" | tee /dev/stderr | tail -n 1)"; then
     die "build-app.sh failed"
 fi
 T_APP_DONE=$SECONDS

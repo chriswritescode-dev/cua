@@ -25,9 +25,9 @@
 #                                          login item; never in Contents/MacOS, where
 #                                          it would register as the app)
 #   Contents/Helpers/cua-cursor-theme      cua-cursor-theme (Cua Driver's cursor themes)
-#   Contents/Helpers/cua-driver            cua-driver, its own entitlements kept (Cua
-#                                          Driver, pinned in cua-driver.release.json;
-#                                          the host service runs it as its child)
+#   Contents/Helpers/cua-driver            cua-driver, CuaDriver.entitlements (Cua
+#                                          Driver, built from this checkout like
+#                                          cua-spacesd; the host service runs it)
 #   Cua Spaces.app                        com.trycua.spaces.macos, Support/CuaSpacesMac.entitlements
 #
 #   scripts/build-release.sh [--version 0.2.0[-suffix][+build]] [--build-number N]
@@ -149,6 +149,11 @@ if [ "$skip_cargo" = 0 ]; then
   for a in $archs; do
     (cd "$cua" && CUA_DEFAULT_ENV="" CUA_TEAM_ID="$team" \
       cargo build --locked --release -p cua-spaces-ffi -p cua-spaces-cli --target "$(triple "$a")")
+    (cd "$repo/libs/cua-spacesd" && CARGO_TARGET_DIR="$target/spacesd" \
+      RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }-C link-arg=-Wl,-rpath,/usr/lib/swift" \
+      cargo build --locked --release -p cua-spacesd --target "$(triple "$a")")
+    (cd "$repo/libs/cua-driver/rust" && CARGO_TARGET_DIR="$target" CUA_TEAM_ID="$team" \
+      cargo build --locked --release -p cua-driver -p cursor-theme-cli --target "$(triple "$a")")
   done
 fi
 
@@ -178,15 +183,16 @@ fi
 "$cua/netgw/build.sh" "$out/.netgw" >/dev/null
 microvm_env+=(CUA_NETGW_BIN="$out/.netgw/cua-netgw")
 
-# One library and one CLI with every architecture, where stage-library.sh
+# The library, the CLI and the helpers with every architecture, where stage-library.sh
 # and build-app.sh look for them.
 joined="$out/.joined"
 rm -rf "$joined"
 mkdir -p "$joined/release"
-for f in libcua_spaces_ffi.dylib cua-spaces-cli; do
+for f in libcua_spaces_ffi.dylib cua-spaces-cli cua-spacesd cua-driver cua-cursor-theme; do
   slices=()
   for a in $archs; do
     s="$target/$(triple "$a")/release/$f"
+    [ "$f" = cua-spacesd ] && s="$target/spacesd/$(triple "$a")/release/$f"
     [ -f "$s" ] || { echo "missing $s (build it, or drop --skip-cargo)" >&2; exit 1; }
     if [ "$skip_cargo" = 1 ] && [ "$f" = cua-spaces-cli ]; then
       grep -qa -- "$team" "$s" ||
@@ -199,6 +205,7 @@ done
 CARGO_TARGET_DIR="$joined" "$repo/libs/spaces-app-swift/scripts/stage-library.sh"
 
 env ${microvm_env[@]+"${microvm_env[@]}"} CUA_APP_ARCHS="$archs" CUA_CLI_BIN="$joined/release/cua-spaces-cli" \
+  CUA_SPACESD_BIN="$joined/release/cua-spacesd" CUA_DRIVER_DIR="$joined/release" \
   "$here/scripts/build-app.sh" release "$out" >/dev/null
 app="$out/Cua Spaces.app"
 [ -x "$app/Contents/MacOS/cua" ] || { echo "$app has no bundled cua CLI" >&2; exit 1; }
@@ -275,11 +282,12 @@ fi
 # are the app's (designated requirement: identifier and team, checked
 # below), and they stay granted across updates.
 "${sign[@]}" --identifier com.trycua.cua-env-driver "$app/Contents/Helpers/cua-spacesd"
-# Cua Driver, which the host service runs as its child. Same identifiers as
-# the standalone release, and the driver keeps its entitlements.
+# Cua Driver, which the host service runs as its child. Same identifiers and
+# entitlements as the standalone release.
 driver_parts=("$app/Contents/Helpers/cua-cursor-theme" "$app/Contents/Helpers/cua-driver")
 "${sign[@]}" --identifier cua-cursor-theme "$app/Contents/Helpers/cua-cursor-theme"
-"${sign[@]}" --identifier cua-driver --preserve-metadata=entitlements "$app/Contents/Helpers/cua-driver"
+"${sign[@]}" --identifier cua-driver \
+  --entitlements "$repo/libs/cua-driver/rust/scripts/CuaDriver.entitlements" "$app/Contents/Helpers/cua-driver"
 app_entitlements="$here/Support/CuaSpacesMac.entitlements"
 if [ "$identity" = "-" ]; then
   app_entitlements="$out/.adhoc.entitlements"
