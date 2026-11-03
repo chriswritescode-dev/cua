@@ -152,7 +152,7 @@ if [ "$skip_cargo" = 0 ]; then
     (cd "$repo/libs/cua-spacesd" && CARGO_TARGET_DIR="$target/spacesd" \
       RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }-C link-arg=-Wl,-rpath,/usr/lib/swift" \
       cargo build --locked --release -p cua-spacesd --target "$(triple "$a")")
-    (cd "$repo/libs/cua-driver/rust" && CARGO_TARGET_DIR="$target" CUA_TEAM_ID="$team" \
+    (cd "$repo/libs/cua-driver/rust" && CARGO_TARGET_DIR="$target/driver" CUA_TEAM_ID="$team" \
       cargo build --locked --release -p cua-driver -p cursor-theme-cli --target "$(triple "$a")")
   done
 fi
@@ -192,7 +192,10 @@ for f in libcua_spaces_ffi.dylib cua-spaces-cli cua-spacesd cua-driver cua-curso
   slices=()
   for a in $archs; do
     s="$target/$(triple "$a")/release/$f"
-    [ "$f" = cua-spacesd ] && s="$target/spacesd/$(triple "$a")/release/$f"
+    case "$f" in
+      cua-spacesd) s="$target/spacesd/$(triple "$a")/release/$f" ;;
+      cua-driver | cua-cursor-theme) s="$target/driver/$(triple "$a")/release/$f" ;;
+    esac
     [ -f "$s" ] || { echo "missing $s (build it, or drop --skip-cargo)" >&2; exit 1; }
     if [ "$skip_cargo" = 1 ] && [ "$f" = cua-spaces-cli ]; then
       grep -qa -- "$team" "$s" ||
