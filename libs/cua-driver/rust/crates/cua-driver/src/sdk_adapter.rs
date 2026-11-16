@@ -78,7 +78,7 @@ impl SdkAdapter {
         let options = TrustedSessionOptions {
             public_session: public_session.clone(),
             mode,
-            ttl_seconds: 3600,
+            ttl_seconds: u64::from(u32::MAX),
             idle_ttl_seconds: 300,
             capability_manifest_path: None,
             bounded_manifest_path: None,
