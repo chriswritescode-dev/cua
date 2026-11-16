@@ -310,6 +310,16 @@ mod tests {
             Subclass::PullInterrupted,
             Subclass::LocalNetworkDenied,
             Subclass::LocalNetworkVpn,
+            Subclass::CapacityVms,
+            Subclass::CapacityOther,
+            Subclass::RuntimeInstallFailed,
+            Subclass::RuntimeNotSigned,
+            Subclass::RuntimeUnresponsive,
+            Subclass::RuntimeTooOld,
+            Subclass::RuntimeApiError,
+            Subclass::VmNeverStarted,
+            Subclass::VmConfigInvalid,
+            Subclass::HostCommandFailed,
         ];
         let words: Vec<&str> = all.iter().map(|s| s.as_str()).collect();
         assert_eq!(words, SUBCLASSES);

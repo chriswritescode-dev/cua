@@ -57,7 +57,7 @@ describe.skipIf(!wasmBuilt)("a create that fails", () => {
     expect(labels.has("Failed")).toBe(false);
     // One final outcome: ready, past the runtime's start.
     await until(() => expect(row(store, "box")?.progress ?? null).toBeNull());
-    expect(store.get<Space[]>("spaces").data?.find((x) => x.name === "box")?.power).toBe("running");
+    expect(store.get<Space[]>("spaces").data?.find((x) => x.name === "box")?.status).toBe("running");
   });
 
   it("is never retried for a lasting cause, and offers the fix the second time", async () => {
