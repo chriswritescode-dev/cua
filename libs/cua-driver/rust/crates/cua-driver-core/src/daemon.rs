@@ -208,11 +208,21 @@ pub fn is_daemon_listening(socket_path: &str) -> bool {
 const DAEMON_OVERHEAD_ALLOWANCE: Duration = Duration::from_secs(30);
 
 /// Longest a client waits for the daemon's reply to one request. The largest
-/// budget a caller can ask any tool for ([`crate::tool_schema::TIMEOUT_MS_MAX`])
+/// budget a caller can ask any tool for, including `run_script`,
 /// fits under it with [`DAEMON_OVERHEAD_ALLOWANCE`] to spare, so a tool that
 /// legitimately uses its whole budget still gets its result delivered.
-pub const REPLY_DEADLINE: Duration = Duration::from_millis(crate::tool_schema::TIMEOUT_MS_MAX)
-    .saturating_add(DAEMON_OVERHEAD_ALLOWANCE);
+pub const REPLY_DEADLINE: Duration =
+    Duration::from_millis(LONGEST_TOOL_BUDGET_MS).saturating_add(DAEMON_OVERHEAD_ALLOWANCE);
+
+#[cfg(feature = "script")]
+const LONGEST_TOOL_BUDGET_MS: u64 =
+    if crate::script_tool::MAX_TIMEOUT_MS > crate::tool_schema::TIMEOUT_MS_MAX {
+        crate::script_tool::MAX_TIMEOUT_MS
+    } else {
+        crate::tool_schema::TIMEOUT_MS_MAX
+    };
+#[cfg(not(feature = "script"))]
+const LONGEST_TOOL_BUDGET_MS: u64 = crate::tool_schema::TIMEOUT_MS_MAX;
 
 /// Send one newline-delimited request and read one response.
 ///
