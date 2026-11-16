@@ -69,11 +69,7 @@ export const initialUpdateState = (currentVersion: string): UpdateStateValue => 
   message: null,
 });
 
-export type UpdateEvent =
-  | { type: "checking" }
-  | { type: "available"; version: string }
-  | { type: "none" }
-  | { type: "error"; message: string };
+export type UpdateEvent = { type: "checking" } | { type: "available"; version: string } | { type: "none" } | { type: "error"; message: string };
 
 /** The next state. A found update stays found through later checks and failures; a check that finds nothing clears it. */
 export function reduceUpdate(s: UpdateStateValue, e: UpdateEvent): UpdateStateValue {

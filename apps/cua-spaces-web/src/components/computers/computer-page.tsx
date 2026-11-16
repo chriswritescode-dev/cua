@@ -445,14 +445,7 @@ function MachineIssues({
             )}
             <span className="min-w-0 flex-1 text-[13px]">{i.text}</span>
             {i.action ? (
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0"
-                disabled={host.busy}
-                onClick={() => act(i)}
-                data-machine-issue-action={i.id}
-              >
+              <Button size="sm" variant="outline" className="shrink-0" disabled={host.busy} onClick={() => act(i)} data-machine-issue-action={i.id}>
                 {i.action.label}
               </Button>
             ) : null}

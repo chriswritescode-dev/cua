@@ -117,14 +117,7 @@ describe("InstallerFlow", () => {
     const drive = fakeDrive({ volume_mount_status: MOUNT_OFF });
     localStorage.removeItem("cua.settings.menuBar");
     render(
-      <InstallerFlow
-        installer={installer}
-        host={host}
-        auth={auth}
-        drive={drive.bridge}
-        os="macos"
-        onDone={onDone}
-      />,
+      <InstallerFlow installer={installer} host={host} auth={auth} drive={drive.bridge} os="macos" onDone={onDone} />,
     );
 
     expect(screen.getByText("Welcome to Cua Spaces")).toBeInTheDocument();

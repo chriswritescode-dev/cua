@@ -126,9 +126,7 @@ async def test_local_is_the_default_with_a_one_time_notice(monkeypatch, fresh_no
         with warnings.catch_warnings():
             warnings.simplefilter("error", DeprecationWarning)
             with pytest.raises(_Stop):
-                await Sandbox.create(
-                    Image.linux(kind="container"), services={"web": 80}
-                )
+                await Sandbox.create(Image.linux(kind="container"), services={"web": 80})
     assert len(calls) == 2, "both went to the local runtime"
     notices = [r for r in caplog.records if "defaulting to a local sandbox" in r.message]
     assert len(notices) == 1, "the notice is shown once"

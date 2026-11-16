@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12, <3.14"
 resolution-markers = [
     "sys_platform == 'win32'",
@@ -135,15 +135,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/e3/0f/d40bbe294bbf004d436a8bcbcfaadca8b5140d39ad0ad3d73d1a8ba15f14/automat-25.4.16.tar.gz", hash = "sha256:0017591a5477066e90d26b0e696ddc143baafd87b588cfac8100bc6be9634de0", size = 129977, upload-time = "2025-04-16T20:12:16.002Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/02/ff/1175b0b7371e46244032d43a56862d0af455823b5280a50c63d99cc50f18/automat-25.4.16-py3-none-any.whl", hash = "sha256:04e9bce696a8d5671ee698005af6e5a9fa15354140a87f4870744604dcdd3ba1", size = 42842, upload-time = "2025-04-16T20:12:14.447Z" },
-]
-
-[[package]]
-name = "backoff"
-version = "2.2.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/47/d7/5bbeb12c44d7c4f2fb5b56abce497eb5ed9f34d85701de869acedd602619/backoff-2.2.1.tar.gz", hash = "sha256:03f829f5bb1923180821643f8753b0502c3b682293992485b0eef2807afa5cba", size = 17001, upload-time = "2022-10-05T19:19:32.061Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/73/b6e24bd22e6720ca8ee9a85a0c4a2971af8497d8f3193fa05390cbd46e09/backoff-2.2.1-py3-none-any.whl", hash = "sha256:63579f9a0628e06278f7e47b7d7d5b6ce20dc65c5e96a6f3ca99a6adca0396e8", size = 15148, upload-time = "2022-10-05T19:19:30.546Z" },
 ]
 
 [[package]]
@@ -427,11 +418,11 @@ source = { editable = "../cua/python" }
 
 [package.metadata]
 requires-dist = [
-    { name = "cua-agent", extras = ["all"], marker = "python_full_version >= '3.11' and extra == 'all'", specifier = ">=0.8.0" },
-    { name = "cua-agent", extras = ["cloud"], marker = "python_full_version >= '3.11' and extra == 'agent'", specifier = ">=0.8.0" },
-    { name = "cua-agent", extras = ["ui"], marker = "python_full_version >= '3.11' and extra == 'ui'", specifier = ">=0.8.0" },
-    { name = "cua-sandbox", marker = "python_full_version >= '3.11' and extra == 'all'", specifier = ">=0.8.0" },
-    { name = "cua-sandbox", marker = "python_full_version >= '3.11' and extra == 'sandbox'", specifier = ">=0.8.0" },
+    { name = "cua-agent", extras = ["all"], marker = "python_full_version >= '3.11' and extra == 'all'", directory = "../python/agent" },
+    { name = "cua-agent", extras = ["cloud"], marker = "python_full_version >= '3.11' and extra == 'agent'", directory = "../python/agent" },
+    { name = "cua-agent", extras = ["ui"], marker = "python_full_version >= '3.11' and extra == 'ui'", directory = "../python/agent" },
+    { name = "cua-sandbox", marker = "python_full_version >= '3.11' and extra == 'all'", directory = "../python/cua-sandbox" },
+    { name = "cua-sandbox", marker = "python_full_version >= '3.11' and extra == 'sandbox'", directory = "../python/cua-sandbox" },
     { name = "pytest", marker = "extra == 'test'" },
 ]
 provides-extras = ["test", "sandbox", "agent", "ui", "all"]
@@ -549,7 +540,7 @@ requires-dist = [
     { name = "cssselect", marker = "extra == 'osworld'", specifier = ">=1.2" },
     { name = "cua-agent", editable = "../python/agent" },
     { name = "cua-agent", marker = "extra == 'agents'", editable = "../python/agent" },
-    { name = "cua-bench", extras = ["browser", "agents", "otel", "spice"], marker = "extra == 'all'" },
+    { name = "cua-bench", extras = ["browser", "agents", "cloud", "spice"], marker = "extra == 'all'" },
     { name = "cua-sandbox", editable = "../python/cua-sandbox" },
     { name = "datasets", specifier = ">=3.0.0" },
     { name = "fastdtw", marker = "extra == 'osworld'", specifier = ">=0.3" },
@@ -566,9 +557,6 @@ requires-dist = [
     { name = "odfpy", marker = "extra == 'osworld'", specifier = ">=1.4" },
     { name = "opencv-python-headless", marker = "extra == 'osworld'", specifier = ">=4.8" },
     { name = "openpyxl", marker = "extra == 'osworld'", specifier = ">=3.1" },
-    { name = "opentelemetry-api", marker = "extra == 'otel'", specifier = ">=1.45.2" },
-    { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'otel'", specifier = ">=1.45.2" },
-    { name = "opentelemetry-sdk", marker = "extra == 'otel'", specifier = ">=1.45.2" },
     { name = "pandas", marker = "extra == 'osworld'", specifier = ">=2.0" },
     { name = "pdfplumber", marker = "extra == 'osworld'", specifier = ">=0.11" },
     { name = "pillow", specifier = ">=11.0.0" },
@@ -597,7 +585,7 @@ requires-dist = [
     { name = "tqdm", specifier = ">=4.66.0" },
     { name = "xmltodict", marker = "extra == 'osworld'", specifier = ">=0.13" },
 ]
-provides-extras = ["all", "packaging", "browser", "agents", "otel", "spice", "server", "windows", "osworld", "dev", "rl"]
+provides-extras = ["all", "packaging", "browser", "agents", "cloud", "spice", "server", "windows", "osworld", "dev", "rl"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -661,21 +649,8 @@ provides-extras = ["torch", "tinker", "dev"]
 name = "cua-core"
 version = "0.3.2"
 source = { editable = "../python/core" }
-dependencies = [
-    { name = "posthog" },
-]
 
 [package.metadata]
-requires-dist = [
-    { name = "opentelemetry-api", marker = "extra == 'otel'", specifier = ">=1.45.2" },
-    { name = "opentelemetry-api", marker = "extra == 'telemetry'", specifier = ">=1.45.2" },
-    { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'otel'", specifier = ">=1.45.2" },
-    { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'telemetry'", specifier = ">=1.45.2" },
-    { name = "opentelemetry-sdk", marker = "extra == 'otel'", specifier = ">=1.45.2" },
-    { name = "opentelemetry-sdk", marker = "extra == 'telemetry'", specifier = ">=1.45.2" },
-    { name = "posthog", specifier = ">=3.20.0" },
-]
-provides-extras = ["otel", "telemetry"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.3.5" }]
@@ -686,7 +661,6 @@ version = "0.11.7"
 source = { editable = "../python/cua-sandbox" }
 dependencies = [
     { name = "cua" },
-    { name = "cua-core" },
     { name = "grpcio" },
     { name = "httpx" },
     { name = "oras" },
@@ -699,7 +673,6 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "cua", editable = "../cua/python" },
-    { name = "cua-core", specifier = ">=0.1.18,<0.4.0" },
     { name = "cua-driver", marker = "extra == 'driver'", specifier = ">=0.37.0,<0.53" },
     { name = "grpcio", specifier = "==1.78.0" },
     { name = "httpx", specifier = ">=0.27.0" },
@@ -1826,21 +1799,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f9/e2/3e91f31a7d2b083fe6ef3fa267035b518369d9511ffab804f839851d2779/pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3", size = 69412, upload-time = "2025-05-15T12:30:07.975Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746", size = 20538, upload-time = "2025-05-15T12:30:06.134Z" },
-]
-
-[[package]]
-name = "posthog"
-version = "7.60.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "backoff" },
-    { name = "distro" },
-    { name = "requests" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/bd/16/b5d1489bae5ef5bd20c85b5b95f2b44609926b4ddb6c86794213ce1a832b/posthog-7.60.0.tar.gz", hash = "sha256:6c1ab0f0d31c83b47a3cf6b6829d4ee83f250a4f8844c4c24adae329982d3f36", size = 689157, upload-time = "2026-09-23T16:34:43.475Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/23/212a7007dc70dc58b4273c461dbac794844065639935573a129356f80931/posthog-7.60.0-py3-none-any.whl", hash = "sha256:48ecc52c124d8262779bef4fd3dc268ef66a08905449700c4ddfe44f5b0027d1", size = 805784, upload-time = "2026-09-23T16:34:41.242Z" },
 ]
 
 [[package]]

@@ -15,17 +15,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDownIcon } from "lucide-react";
 import { useMemo } from "react";
 
-import {
-  accountMenu,
-  proBanner,
-  upgradeLink,
-  useBridge,
-  useRelayUsage,
-  useRelayUsageView,
-  useSession,
-  useSettings,
-  type AccountMenuItem,
-} from "@/bridge";
+import { accountMenu, proBanner, upgradeLink, useBridge, useRelayUsage, useRelayUsageView, useSession, useSettings, type AccountMenuItem } from "@/bridge";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { useT } from "@/i18n";

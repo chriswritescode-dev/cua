@@ -3,7 +3,16 @@
 
 import { describe, expect, it } from "vitest";
 import { FixtureUpdater } from "../src/model/updates";
-import { initialUpdateState, rebuildCommand, reduceUpdate, releaseNotesUrl, updateInstruction, UPDATE_POLL_MS, UPDATE_STARTUP_DELAY_MS, type UpdateEvent } from "../src/update-state";
+import {
+  initialUpdateState,
+  rebuildCommand,
+  reduceUpdate,
+  releaseNotesUrl,
+  updateInstruction,
+  UPDATE_POLL_MS,
+  UPDATE_STARTUP_DELAY_MS,
+  type UpdateEvent,
+} from "../src/update-state";
 
 const run = (events: UpdateEvent[], from = initialUpdateState("0.9.2")) => events.reduce(reduceUpdate, from);
 

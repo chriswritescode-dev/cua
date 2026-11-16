@@ -13,7 +13,8 @@ import { SidebarUpdateButton, TopBarUpdateIndicator } from "./update-indicator";
 afterEach(cleanup);
 
 const NOTES = "https://github.com/trycua/cua/releases/tag/cua-spaces-v0.9.3";
-const INSTRUCTION = "A newer Cua Spaces release (0.9.3) is available. Update by pulling the repository and rebuilding: git pull && pnpm --dir apps/cua-spaces build";
+const INSTRUCTION =
+  "A newer Cua Spaces release (0.9.3) is available. Update by pulling the repository and rebuilding: git pull && pnpm --dir apps/cua-spaces build";
 const available: Partial<UpdateState> = { status: "available", version: "0.9.3", notesUrl: NOTES, instructions: INSTRUCTION };
 
 /** The demo host with an updater in `update`, recording what the page asks of it. */

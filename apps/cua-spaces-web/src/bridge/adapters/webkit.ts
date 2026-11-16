@@ -318,9 +318,7 @@ export function toSettingsSnapshot(s: WkSettings, page: Pick<SettingsValues, "th
   const location = rows.get("default-location");
   const loginRow = rows.get("launch-at-login");
   const env = lockedBy(location);
-  const defaultLocation: DefaultLocation | null = location
-    ? { value: active(location) ?? "local", source: env ? "env" : "config", env, path: "" }
-    : null;
+  const defaultLocation: DefaultLocation | null = location ? { value: active(location) ?? "local", source: env ? "env" : "config", env, path: "" } : null;
   // The rows only this host lays out: what they show now, so the core lays
   // them out again on the page (null: the host has none).
   const on = (id: string) => (rows.has(id) ? active(rows.get(id)) === "on" : null);

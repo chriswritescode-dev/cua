@@ -16,15 +16,7 @@ import { firstSpaceOffers } from "@/bridge/new-space";
 import type { AgentSetupRow } from "@/bridge/contracts/agents";
 import { readFirstRun, resetFirstRunCache, writeFirstRun as writeFirstRunForTest } from "@/bridge/first-run";
 import { resetSavedOnboardingCache } from "@/bridge/onboarding";
-import {
-  AgentScreen,
-  COPY_RIGHT,
-  PermissionsScreen,
-  ReadyScreen,
-  SignInScreen,
-  StepDots,
-  useMoreBelow,
-} from "@/components/first-run-new/first-run-new";
+import { AgentScreen, COPY_RIGHT, PermissionsScreen, ReadyScreen, SignInScreen, StepDots, useMoreBelow } from "@/components/first-run-new/first-run-new";
 import { BringTheRestCard, CliPanel } from "@/components/ask-first/bring-the-rest";
 import { KEY_GAP, placeKeys } from "@/components/first-run-new/float-keys";
 import { resetConnectedAppsState } from "@/hooks/use-connected-apps";

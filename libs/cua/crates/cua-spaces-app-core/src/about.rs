@@ -676,10 +676,11 @@ mod tests {
             i.version = version.into();
             i.channel = UpdateChannel::Stable;
             let u = view(&i).updates.unwrap();
-            assert!(u
-                .channel_note
-                .unwrap()
-                .contains("stays until the next Stable release"));
+            assert!(
+                u.channel_note
+                    .unwrap()
+                    .contains("stays until the next Stable release")
+            );
             assert_eq!(u.download_label.as_deref(), Some("Download Stable"));
             assert_eq!(u.download_url.as_deref(), Some(DOWNLOAD_URL));
         }
@@ -763,17 +764,21 @@ mod tests {
             "Cua Spaces updated, but could not refresh the Cua skills in your AI agents \
              (exit status 1). Run `cua agents update` to try again."
         );
-        assert!(refresh_notice(&RefreshReport {
-            agents_error: None,
-            daemon_error: Some(String::new()),
-        })
-        .unwrap()
-        .contains("restart the Cua daemon. Quit"));
-        assert!(refresh_notice(&RefreshReport {
-            agents_error: Some("a".into()),
-            daemon_error: Some("b".into()),
-        })
-        .unwrap()
-        .contains("or restart the Cua daemon"));
+        assert!(
+            refresh_notice(&RefreshReport {
+                agents_error: None,
+                daemon_error: Some(String::new()),
+            })
+            .unwrap()
+            .contains("restart the Cua daemon. Quit")
+        );
+        assert!(
+            refresh_notice(&RefreshReport {
+                agents_error: Some("a".into()),
+                daemon_error: Some("b".into()),
+            })
+            .unwrap()
+            .contains("or restart the Cua daemon")
+        );
     }
 }

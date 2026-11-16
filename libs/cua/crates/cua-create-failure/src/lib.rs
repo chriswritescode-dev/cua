@@ -538,9 +538,7 @@ mod tests {
             assert!(!kind.is_empty() && !kind.contains(' '), "{k}");
             assert_eq!(retry::snake(k), *k, "{k} is not snake case");
             assert!(
-                kind == *k
-                    || matches!(kind, "local_network")
-                    || TEXT_KINDS.contains(&kind),
+                kind == *k || matches!(kind, "local_network") || TEXT_KINDS.contains(&kind),
                 "{k} rolls up to {kind}"
             );
         }

@@ -21,8 +21,8 @@ use crate::{
     drive_page, drive_settings, driver_preview, environment_tag, experiments, github_connection,
     host, local_network, login_item, machines, notch, notifications, nudges, onboarding,
     onboarding_preview, palette, paths, persistent, prepare, presence, relay_usage, resources,
-    runtimes, settings, share, sign_in, space_menu, summon, thread_cards, tips, upsell,
-    window, wizard,
+    runtimes, settings, share, sign_in, space_menu, summon, thread_cards, tips, upsell, window,
+    wizard,
 };
 use serde::Serialize;
 use serde::de::DeserializeOwned;

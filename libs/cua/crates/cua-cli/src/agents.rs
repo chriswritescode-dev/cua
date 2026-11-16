@@ -4,9 +4,9 @@
 use crate::util::{self, internal, line};
 use clap::{Args, Subcommand};
 use cua_agent_setup::{
-    connection::ConnectParts, AgentSetup, AgentStatus, Change, ConnectionReport, ConnectionRow,
-    ConnectionState, ImportState, McpServer, McpState, Outcome, Parts, ProblemAction,
-    RemoveOptions, SignedInState, StatusOptions, Target, DRIVER_MCP_SERVER_NAME,
+    AgentSetup, AgentStatus, Change, ConnectionReport, ConnectionRow, ConnectionState,
+    DRIVER_MCP_SERVER_NAME, ImportState, McpServer, McpState, Outcome, Parts, ProblemAction,
+    RemoveOptions, SignedInState, StatusOptions, Target, connection::ConnectParts,
 };
 use cua_sdk::CuaError;
 use std::{

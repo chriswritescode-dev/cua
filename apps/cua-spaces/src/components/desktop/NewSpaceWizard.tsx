@@ -573,11 +573,7 @@ export function NewSpaceWizard({
               {v.primaryLabel}
             </button>
           ) : (
-            <button
-              type="button"
-              className="dw-btn dw-btn-primary"
-              onClick={() => onCreate(v.plan)}
-            >
+            <button type="button" className="dw-btn dw-btn-primary" onClick={() => onCreate(v.plan)}>
               {v.primaryLabel}
             </button>
           )}

@@ -7,7 +7,8 @@ import type { UpdateState } from "@/bridge";
 import { updateView } from "./update-copy";
 
 const base: UpdateState = { status: "idle", currentVersion: "0.9.2", version: null, notesUrl: null, message: null };
-const INSTRUCTION = "A newer Cua Spaces release (0.9.3) is available. Update by pulling the repository and rebuilding: git pull && pnpm --dir apps/cua-spaces tauri build";
+const INSTRUCTION =
+  "A newer Cua Spaces release (0.9.3) is available. Update by pulling the repository and rebuilding: git pull && pnpm --dir apps/cua-spaces tauri build";
 
 describe("updateView", () => {
   it("is quiet while idle, checking or failed", () => {

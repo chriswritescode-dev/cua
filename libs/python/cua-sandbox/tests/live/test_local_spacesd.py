@@ -43,9 +43,7 @@ async def test_local_container_sandbox_through_spacesd(tmp_path):
     image = Image.from_registry(IMAGE, os_type="linux", kind="container")
     runtime = DockerRuntime(memory_mb=2048, cpus=2)
 
-    async with Sandbox.ephemeral(
-        image, local=True, runtime=runtime, name=name
-    ) as sb:
+    async with Sandbox.ephemeral(image, local=True, runtime=runtime, name=name) as sb:
         inspect = json.loads(_docker("inspect", name).stdout)[0]
         host_config = inspect["HostConfig"]
         print("container runtime:", host_config.get("Runtime"), "memory:", host_config["Memory"])

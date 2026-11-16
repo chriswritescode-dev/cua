@@ -19,7 +19,7 @@
 //! `UPDATE_PARITY=1 cargo test -p cua-spaces-app-core --test parity`
 //! rewrites the goldens from the typed Rust run.
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 fn str_of(v: &Value) -> &str {
     v.as_str().unwrap_or("")
@@ -3934,20 +3934,21 @@ fn run_first_run(f: &Value, h: &dyn Host) -> Result<Value, String> {
                     json!({ "id": o["id"], "os": o["os"], "time": o["time"], "size": o["size"], "blocked": o["blocked"] })
                 })
                 .collect();
-            offered = json!(list
-                .iter()
-                .map(|o| format!(
-                    "{} {} ({}; {}){}",
-                    o["id"].as_str().unwrap_or(""),
-                    o["os"].as_str().unwrap_or(""),
-                    o["size"].as_str().unwrap_or("-"),
-                    o["time"].as_str().unwrap_or(""),
-                    o["blocked"]
-                        .as_str()
-                        .map(|b| format!(" blocked: {b}"))
-                        .unwrap_or_default()
-                ))
-                .collect::<Vec<_>>());
+            offered = json!(
+                list.iter()
+                    .map(|o| format!(
+                        "{} {} ({}; {}){}",
+                        o["id"].as_str().unwrap_or(""),
+                        o["os"].as_str().unwrap_or(""),
+                        o["size"].as_str().unwrap_or("-"),
+                        o["time"].as_str().unwrap_or(""),
+                        o["blocked"]
+                            .as_str()
+                            .map(|b| format!(" blocked: {b}"))
+                            .unwrap_or_default()
+                    ))
+                    .collect::<Vec<_>>()
+            );
             input["offers"] = json!(list);
             input["hostOs"] = m["hostOs"].clone();
             // The example jobs for that machine (`firstPrompts.choose`).

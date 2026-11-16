@@ -1169,9 +1169,7 @@ export function NewFirstRun() {
   let body: ReactNode = null;
   switch (s.screen) {
     case "welcome":
-      body = (
-        <WelcomeScreen onAdd={startSignIn} />
-      );
+      body = <WelcomeScreen onAdd={startSignIn} />;
       break;
     case "signin":
       body = (

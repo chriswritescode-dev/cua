@@ -40,11 +40,7 @@ export function UpgradeCard({
         {card.body}
       </p>
       <div className="mt-3 flex items-center gap-2">
-        <Button
-          size="sm"
-          data-upgrade-cta=""
-          onClick={() => void openExternal(card.cta.url).catch(() => {})}
-        >
+        <Button size="sm" data-upgrade-cta="" onClick={() => void openExternal(card.cta.url).catch(() => {})}>
           {card.cta.label}
         </Button>
         <span className="text-xs text-muted-foreground" data-upgrade-price>

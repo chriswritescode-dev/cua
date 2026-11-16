@@ -34,7 +34,16 @@ import type { UpdaterDriving } from "./model/updates";
 import { describeUpdateError } from "./update-error";
 import { readSettings, writeSettings } from "./settings";
 import { autoCheckPref, channelPref, type UpdateChannel } from "./update-prefs";
-import { initialUpdateState, reduceUpdate, rebuildDetail, updateHeadline, UPDATE_POLL_MS, UPDATE_STARTUP_DELAY_MS, type UpdateEvent, type UpdateStateValue } from "./update-state";
+import {
+  initialUpdateState,
+  reduceUpdate,
+  rebuildDetail,
+  updateHeadline,
+  UPDATE_POLL_MS,
+  UPDATE_STARTUP_DELAY_MS,
+  type UpdateEvent,
+  type UpdateStateValue,
+} from "./update-state";
 
 export type { UpdateChannel } from "./update-prefs";
 

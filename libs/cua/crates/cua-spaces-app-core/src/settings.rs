@@ -1114,7 +1114,9 @@ mod tests {
         });
         assert_eq!(
             ids(&p),
-            ["account", "teams", "general", "runtimes", "keyvault", "agents"]
+            [
+                "account", "teams", "general", "runtimes", "keyvault", "agents"
+            ]
         );
         let kv = &p.sections[4];
         assert_eq!(kv.title, "Keyvault");
@@ -1161,10 +1163,12 @@ mod tests {
         let last = with.rows.last().unwrap();
         assert_eq!(last.id, "keyvault-protection:Touch ID");
         assert_eq!(last.value.as_deref(), Some("Asked by the Cua daemon"));
-        assert!(!with
-            .rows
-            .iter()
-            .any(|r| r.id.starts_with("keyvault-site-icons")));
+        assert!(
+            !with
+                .rows
+                .iter()
+                .any(|r| r.id.starts_with("keyvault-site-icons"))
+        );
         // A file from a build with the site icons switch still loads.
         let old: AppSettings =
             serde_json::from_str(r#"{"menuBar":true,"keyvaultSiteIcons":false}"#).unwrap();

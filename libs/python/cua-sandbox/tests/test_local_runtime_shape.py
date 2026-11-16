@@ -49,9 +49,7 @@ async def test_create_local_forwards_cpu_and_memory_to_lume(monkeypatch):
     monkeypatch.setattr("cua_sandbox.runtime.lume.LumeRuntime", _recorder(calls))
 
     with pytest.raises(_Stop):
-        await Sandbox.create(
-            Image.macos(), local=True, cpu=6, memory_mb=8192
-        )
+        await Sandbox.create(Image.macos(), local=True, cpu=6, memory_mb=8192)
 
     assert calls == [{"cpus": 6, "memory_mb": 8192}]
 

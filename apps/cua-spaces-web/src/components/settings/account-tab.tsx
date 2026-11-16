@@ -1,15 +1,7 @@
 // SPDX-License-Identifier: FSL-1.1-MIT
 // Copyright (c) 2026 Cua AI, Inc.
 
-import {
-  useRelayUsage,
-  useRelayUsageView,
-  useSession,
-  useSettings,
-  type RelayUsage,
-  type SettingsRow as CoreRow,
-  type SettingsSection,
-} from "@/bridge";
+import { useRelayUsage, useRelayUsageView, useSession, useSettings, type RelayUsage, type SettingsRow as CoreRow, type SettingsSection } from "@/bridge";
 import { SettingsGroup, SettingsRow } from "@/components/settings-group";
 import { CoreSettingsRow } from "@/components/settings/core-section";
 import { Button } from "@/components/ui/button";
@@ -164,11 +156,7 @@ export function AccountTab() {
 
       <div className="flex flex-col gap-3">
         {upgrade ? (
-          <Button
-            className="h-12 w-full text-[13px]"
-            data-plan-primary=""
-            onClick={() => open(upgrade.url)}
-          >
+          <Button className="h-12 w-full text-[13px]" data-plan-primary="" onClick={() => open(upgrade.url)}>
             {t("settings.account.upgrade")}
           </Button>
         ) : null}

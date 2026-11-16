@@ -1057,14 +1057,12 @@ export class BridgeStore {
     // The host's sign-in failed (the browser never confirmed, the network
     // dropped, the keychain refused): say why now, never keep waiting.
     if (failure) {
-      this.signInFailed(
-        {
-          kind: "failed",
-          reason: (failure.reason as SignInFailure) || "unknown",
-          message: failure.message,
-          detail: failure.detail,
-        },
-      );
+      this.signInFailed({
+        kind: "failed",
+        reason: (failure.reason as SignInFailure) || "unknown",
+        message: failure.message,
+        detail: failure.detail,
+      });
       return;
     }
     if (!waiting) return;
