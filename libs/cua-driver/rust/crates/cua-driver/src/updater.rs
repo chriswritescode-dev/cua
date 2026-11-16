@@ -7,7 +7,6 @@
 //! driver only ever reports that a newer release exists and tells the user to
 //! pull the repository and rebuild from source.
 
-use std::process::Command;
 
 /// Something other than Driver's own installer updates this executable, so
 /// Driver's update check, `update --apply` and channel commands refuse and
@@ -86,7 +85,7 @@ fn pacman_owns_executable(executable: &std::path::Path, pacman: &std::path::Path
 
 #[cfg(any(target_os = "linux", all(test, unix)))]
 fn pacman_owns_path(path: &std::path::Path, pacman: &std::path::Path) -> bool {
-    use std::process::Stdio;
+    use std::process::{Command, Stdio};
     use std::time::{Duration, Instant};
 
     // A just-written executable is briefly ETXTBSY while a concurrent fork

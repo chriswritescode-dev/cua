@@ -1873,14 +1873,13 @@ pub fn app_call(
                         Error::InvalidArgument(format!("{} isn't set in your shell", a.env))
                     })?;
                     let provider = provider_of(&a.env);
-                    let saved = keys.set_with(
+                    keys.set_with(
                         provider,
                         (provider == "other").then_some(a.env.as_str()),
                         &value,
                         a.region.as_deref(),
                         &a.fields,
-                    );
-                    saved
+                    )
                 })
                 .and_then(|_| keys.report()),
         ),

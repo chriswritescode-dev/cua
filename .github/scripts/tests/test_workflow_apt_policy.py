@@ -34,7 +34,7 @@ ALLOWED = {
     ".github/workflows/ci-distro-compat-cua-driver.yml": (3, "runs inside distro containers"),
     ".github/workflows/ci-hyprland-plugin.yml": (1, "step also runs other commands; split the step and use the action (follow-up)"),
     ".github/workflows/ci-hyprland-plugin-kit.yml": (1, "kernel-version package, best effort"),
-    ".github/workflows/ci-installers.yml": (2, "runs inside distro containers"),
+    ".github/workflows/ci-installers.yml": (1, "runs inside distro containers"),
     ".github/workflows/ci-vm-density.yml": (1, "step also runs other commands; split the step and use the action (follow-up)"),
     ".github/workflows/e2b-core-nightly.yml": (1, "step also runs other commands; split the step and use the action (follow-up)"),
     ".github/workflows/e2e-cua-sdk.yml": (1, "step also runs other commands; split the step and use the action (follow-up)"),
