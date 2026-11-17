@@ -7,7 +7,6 @@
 //! driver only ever reports that a newer release exists and tells the user to
 //! pull the repository and rebuild from source.
 
-
 /// Something other than Driver's own installer updates this executable, so
 /// Driver's update check, `update --apply` and channel commands refuse and
 /// point at it instead.
