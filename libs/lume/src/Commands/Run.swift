@@ -1,6 +1,5 @@
 import ArgumentParser
 import Foundation
-import Virtualization
 
 struct Run: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
@@ -38,7 +37,7 @@ struct Run: AsyncParsableCommand {
     @Option(
         name: [.customLong("shared-dir")],
         help:
-            "Directory to share with the VM. Can be just a path for read-write access (e.g. ~/src) or path:tag where tag is 'ro' for read-only or 'rw' for read-write (e.g. ~/src:ro)"
+            "Directory to share with the VM. A path shares it read-write (e.g. ~/src); path:ro or path:rw sets the access mode (e.g. ~/src:ro); append :tag=NAME to expose it under that virtio-fs tag instead of the macOS guest automount (e.g. ~/src:rw:tag=src)"
     )
     var sharedDirectories: [String] = []
 
@@ -126,38 +125,41 @@ struct Run: AsyncParsableCommand {
         }
     }
 
-    private var parsedSharedDirectories: [SharedDirectory] {
+    var parsedSharedDirectories: [SharedDirectory] {
         get throws {
             try sharedDirectories.map { dirString -> SharedDirectory in
-                let components = dirString.split(separator: ":", maxSplits: 1)
+                let components = dirString.split(separator: ":", maxSplits: 2)
                 let hostPath = String(components[0])
 
-                // If no tag is provided, default to read-write
-                if components.count == 1 {
-                    return SharedDirectory(
-                        hostPath: hostPath,
-                        tag: VZVirtioFileSystemDeviceConfiguration.macOSGuestAutomountTag,
-                        readOnly: false
-                    )
+                // If no access mode is provided, default to read-write
+                var readOnly = false
+                if components.count > 1 {
+                    switch components[1].lowercased() {
+                    case "ro":
+                        readOnly = true
+                    case "rw":
+                        readOnly = false
+                    default:
+                        throw ValidationError(
+                            "Invalid tag value. Must be either 'ro' for read-only or 'rw' for read-write"
+                        )
+                    }
                 }
 
-                // Parse the tag if provided
-                let tag = String(components[1])
-                let readOnly: Bool
-                switch tag.lowercased() {
-                case "ro":
-                    readOnly = true
-                case "rw":
-                    readOnly = false
-                default:
-                    throw ValidationError(
-                        "Invalid tag value. Must be either 'ro' for read-only or 'rw' for read-write"
-                    )
+                var tag: String?
+                if components.count > 2 {
+                    let option = String(components[2])
+                    guard option.hasPrefix("tag=") else {
+                        throw ValidationError(
+                            "Invalid shared directory option '\(option)'. Expected 'tag=<name>'"
+                        )
+                    }
+                    tag = String(option.dropFirst("tag=".count))
                 }
 
                 return SharedDirectory(
                     hostPath: hostPath,
-                    tag: VZVirtioFileSystemDeviceConfiguration.macOSGuestAutomountTag,
+                    tag: try SharedDirectory.validatedTag(tag),
                     readOnly: readOnly
                 )
             }

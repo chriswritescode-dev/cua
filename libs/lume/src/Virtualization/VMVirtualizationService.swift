@@ -370,6 +370,7 @@ class BaseVirtualizationService: VMVirtualizationService {
             let device = VZVirtioFileSystemDeviceConfiguration(tag: tag)
             device.share = createDirectoryShare(
                 directories,
+                tag: tag,
                 withLiveUpdatePlaceholder: withLiveUpdatePlaceholder && tag == automountTag
             )
             return device
@@ -378,8 +379,20 @@ class BaseVirtualizationService: VMVirtualizationService {
 
     nonisolated static func createDirectoryShare(
         _ sharedDirectories: [SharedDirectory],
+        tag: String = VZVirtioFileSystemDeviceConfiguration.macOSGuestAutomountTag,
         withLiveUpdatePlaceholder: Bool = false
     ) -> VZDirectoryShare {
+        if tag != VZVirtioFileSystemDeviceConfiguration.macOSGuestAutomountTag,
+            sharedDirectories.count == 1
+        {
+            return VZSingleDirectoryShare(
+                directory: VZSharedDirectory(
+                    url: URL(fileURLWithPath: sharedDirectories[0].hostPath),
+                    readOnly: sharedDirectories[0].readOnly
+                )
+            )
+        }
+
         var directories: [String: VZSharedDirectory] = [:]
         if withLiveUpdatePlaceholder {
             // Live updates work reliably when VZMultipleDirectoryShare starts populated.

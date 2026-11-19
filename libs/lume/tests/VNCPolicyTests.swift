@@ -1,6 +1,7 @@
 import ArgumentParser
 import Foundation
 import Testing
+import Virtualization
 
 @testable import lume
 
@@ -509,6 +510,13 @@ private func decodeRunRequest(_ json: String) throws -> RunVMRequest {
   try JSONDecoder().decode(RunVMRequest.self, from: Data(json.utf8))
 }
 
+private func withTemporaryDirectory<T>(_ body: (String) throws -> T) throws -> T {
+  let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+  try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+  defer { try? FileManager.default.removeItem(at: url) }
+  return try body(url.path)
+}
+
 @Test("The run request body defaults to an enabled VNC server")
 func runRequestDefaultsToEnabled() throws {
   #expect(try decodeRunRequest("{}").parseVNCPolicy() == .enabled)
@@ -521,6 +529,35 @@ func runRequestParsesVNCPolicy() throws {
   #expect(try decodeRunRequest(#"{"vnc":"disabled"}"#).parseVNCPolicy() == .disabled)
   #expect(throws: ValidationError.self) {
     _ = try decodeRunRequest(#"{"vnc":"off"}"#).parseVNCPolicy()
+  }
+}
+
+@MainActor
+@Test("The run request body carries per-share virtio-fs tags")
+func runRequestParsesSharedDirectoryTags() throws {
+  let automount = VZVirtioFileSystemDeviceConfiguration.macOSGuestAutomountTag
+  try withTemporaryDirectory { path in
+    let request = try decodeRunRequest(
+      #"{"sharedDirectories":[{"hostPath":"\#(path)"},{"hostPath":"\#(path)","readOnly":true},{"hostPath":"\#(path)","readOnly":false,"tag":"src"}]}"#
+    )
+    let directories = try request.parse()
+
+    #expect(directories.map(\.hostPath) == [path, path, path])
+    #expect(directories.map(\.tag) == [automount, automount, "src"])
+    #expect(directories.map(\.readOnly) == [false, true, false])
+  }
+}
+
+@MainActor
+@Test("The run request body rejects an invalid virtio-fs tag")
+func runRequestRejectsInvalidSharedDirectoryTag() throws {
+  try withTemporaryDirectory { path in
+    let longTag = String(repeating: "a", count: 40)
+    let request = try decodeRunRequest(
+      #"{"sharedDirectories":[{"hostPath":"\#(path)","tag":"\#(longTag)"}]}"#)
+    #expect(throws: ValidationError.self) {
+      _ = try request.parse()
+    }
   }
 }
 

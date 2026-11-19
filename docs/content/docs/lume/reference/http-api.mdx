@@ -370,7 +370,7 @@ POST /lume/vms/:name/run
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
 | `noDisplay` | `boolean` | `false` | Run without VNC display. |
-| `sharedDirectories` | `array` |  | Directories to share with the VM. |
+| `sharedDirectories` | `array` |  | Directories to share with the VM. Each entry takes hostPath, readOnly, and an optional tag: without a tag the share uses the macOS guest automount tag (mounted at /Volumes/My Shared Files/&lt;name&gt;); with a tag a macOS guest mounts it with mount_virtiofs &lt;tag&gt; &lt;path&gt;. |
 | `recoveryMode` | `boolean` | `false` | Boot macOS VM in recovery mode. |
 | `storage` | `string` |  | VM storage location. |
 | `clipboard` | `boolean` | `false` | Enable bidirectional clipboard sync via SSH (experimental). |

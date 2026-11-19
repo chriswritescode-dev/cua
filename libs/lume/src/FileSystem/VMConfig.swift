@@ -11,6 +11,19 @@ struct SharedDirectory: Codable, Sendable {
     var string: String {
         return "\(hostPath):\(tag):\(readOnly ? "ro" : "rw")"
     }
+
+    static func validatedTag(_ tag: String?) throws -> String {
+        guard let tag else {
+            return VZVirtioFileSystemDeviceConfiguration.macOSGuestAutomountTag
+        }
+        do {
+            try VZVirtioFileSystemDeviceConfiguration.validateTag(tag)
+        } catch {
+            throw ValidationError(
+                "Invalid virtio-fs tag '\(tag)'. Tags must be non-empty and shorter than 36 bytes.")
+        }
+        return tag
+    }
 }
 
 // MARK: - VMConfig

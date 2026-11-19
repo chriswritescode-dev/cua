@@ -317,7 +317,7 @@ enum APIDocExtractor {
                 description: "Run options (all fields optional)",
                 fields: [
                     APIFieldDoc(name: "noDisplay", type: "boolean", required: false, description: "Run without VNC display", defaultValue: "false"),
-                    APIFieldDoc(name: "sharedDirectories", type: "array", required: false, description: "Directories to share with the VM", defaultValue: nil),
+                    APIFieldDoc(name: "sharedDirectories", type: "array", required: false, description: "Directories to share with the VM. Each entry takes hostPath, readOnly, and an optional tag: without a tag the share uses the macOS guest automount tag (mounted at /Volumes/My Shared Files/<name>); with a tag a macOS guest mounts it with mount_virtiofs <tag> <path>", defaultValue: nil),
                     APIFieldDoc(name: "recoveryMode", type: "boolean", required: false, description: "Boot macOS VM in recovery mode", defaultValue: "false"),
                     APIFieldDoc(name: "storage", type: "string", required: false, description: "VM storage location", defaultValue: nil),
                     APIFieldDoc(name: "clipboard", type: "boolean", required: false, description: "Enable bidirectional clipboard sync via SSH (experimental)", defaultValue: "false"),

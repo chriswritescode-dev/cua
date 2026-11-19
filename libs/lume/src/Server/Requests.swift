@@ -1,6 +1,5 @@
 import ArgumentParser
 import Foundation
-import Virtualization
 
 private func parseNetworkModeString(_ value: String) throws -> NetworkMode {
     guard let mode = NetworkMode.parse(value) else {
@@ -31,6 +30,7 @@ struct RunVMRequest: Codable {
     struct SharedDirectoryRequest: Codable {
         let hostPath: String
         let readOnly: Bool?
+        let tag: String?
     }
 
     func parse() throws -> [SharedDirectory] {
@@ -48,7 +48,7 @@ struct RunVMRequest: Codable {
 
             return SharedDirectory(
                 hostPath: dir.hostPath,
-                tag: VZVirtioFileSystemDeviceConfiguration.macOSGuestAutomountTag,
+                tag: try SharedDirectory.validatedTag(dir.tag),
                 readOnly: dir.readOnly ?? false
             )
         }

@@ -125,3 +125,53 @@ func testLiveSharePlaceholderScope() throws {
     let regularDeviceShare = try #require(regularDevice.share as? VZMultipleDirectoryShare)
     #expect(regularDeviceShare.directories[".lume-live-share"] == nil)
 }
+
+@MainActor
+@Test("A single directory with a custom tag shares the directory itself")
+func testSingleDirectoryCustomTagShare() throws {
+    let tag = "projA"
+    let devices = BaseVirtualizationService.createDirectorySharingDevices(
+        sharedDirectories: [
+            SharedDirectory(hostPath: "/tmp/projA", tag: tag, readOnly: true)
+        ]
+    )
+
+    #expect(devices.count == 1)
+    let device = try #require(devices.first as? VZVirtioFileSystemDeviceConfiguration)
+    #expect(device.tag == tag)
+    let share = try #require(device.share as? VZSingleDirectoryShare)
+    #expect(share.directory.url.path == "/tmp/projA")
+    #expect(share.directory.isReadOnly)
+}
+
+@MainActor
+@Test("Automount and multi-directory custom tags keep a multiple directory share")
+func testMultipleDirectoryShareSelection() throws {
+    let automountTag = VZVirtioFileSystemDeviceConfiguration.macOSGuestAutomountTag
+    let automountDevices = BaseVirtualizationService.createDirectorySharingDevices(
+        sharedDirectories: [
+            SharedDirectory(hostPath: "/tmp/projA", tag: automountTag, readOnly: false)
+        ]
+    )
+    let automountDevice = try #require(
+        automountDevices.first as? VZVirtioFileSystemDeviceConfiguration)
+    #expect(automountDevice.tag == automountTag)
+    #expect(automountDevice.share is VZMultipleDirectoryShare)
+
+    let customTag = "projA"
+    let customDevices = BaseVirtualizationService.createDirectorySharingDevices(
+        sharedDirectories: [
+            SharedDirectory(hostPath: "/tmp/projA", tag: customTag, readOnly: false),
+            SharedDirectory(hostPath: "/tmp/projB", tag: customTag, readOnly: true),
+        ]
+    )
+
+    #expect(customDevices.count == 1)
+    let customDevice = try #require(
+        customDevices.first as? VZVirtioFileSystemDeviceConfiguration)
+    #expect(customDevice.tag == customTag)
+    let customShare = try #require(customDevice.share as? VZMultipleDirectoryShare)
+    #expect(Swift.Set(customShare.directories.keys) == ["projA", "projB"])
+    #expect(customShare.directories["projA"]?.isReadOnly == false)
+    #expect(customShare.directories["projB"]?.isReadOnly == true)
+}
