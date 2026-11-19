@@ -384,6 +384,30 @@ func TestUDPFollowsTheRules(t *testing.T) {
 	h.waitEvent(events.Blocked, policy.ReasonHostLoopback, hostIP+":"+itoa(otherPort))
 }
 
+// ask sends one question to the gateway's resolver and returns the reply.
+func (h *harness) ask(name string, qtype uint16) *dns.Msg {
+	h.t.Helper()
+	c := h.dialUDP(gwIP, 53)
+	defer c.Close()
+	_ = c.SetDeadline(time.Now().Add(5 * time.Second))
+	q := new(dns.Msg)
+	q.SetQuestion(name, qtype)
+	wire, _ := q.Pack()
+	if _, err := c.Write(wire); err != nil {
+		h.t.Fatal(err)
+	}
+	buf := make([]byte, 4096)
+	n, err := c.Read(buf)
+	if err != nil {
+		h.t.Fatal(err)
+	}
+	m := new(dns.Msg)
+	if err := m.Unpack(buf[:n]); err != nil {
+		h.t.Fatal(err)
+	}
+	return m
+}
+
 func TestDNSStripsRebindingAnswers(t *testing.T) {
 	h := newHarness(t, `{"version":1,"default_accept":true,"rules":[
 		{"net":"10.0.0.0/8","accept":false,"reason":"default:lan"}]}`)
@@ -400,49 +424,63 @@ func TestDNSStripsRebindingAnswers(t *testing.T) {
 		}
 		return nil, &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
 	}
-	ask := func(name string, qtype uint16) *dns.Msg {
-		t.Helper()
-		c := h.dialUDP(gwIP, 53)
-		defer c.Close()
-		_ = c.SetDeadline(time.Now().Add(5 * time.Second))
-		q := new(dns.Msg)
-		q.SetQuestion(name, qtype)
-		wire, _ := q.Pack()
-		if _, err := c.Write(wire); err != nil {
-			t.Fatal(err)
-		}
-		buf := make([]byte, 4096)
-		n, err := c.Read(buf)
-		if err != nil {
-			t.Fatal(err)
-		}
-		m := new(dns.Msg)
-		if err := m.Unpack(buf[:n]); err != nil {
-			t.Fatal(err)
-		}
-		return m
-	}
-	m := ask("rebind.example.", dns.TypeA)
+	m := h.ask("rebind.example.", dns.TypeA)
 	if len(m.Answer) != 1 || m.Answer[0].(*dns.A).A.String() != "93.184.216.34" {
 		t.Fatalf("answers: %v", m.Answer)
 	}
 	h.waitEvent(events.DNSStripped, policy.ReasonLoopback, "127.0.0.1")
 	h.waitEvent(events.DNSStripped, "default:lan", "10.0.0.7")
-	if m := ask("private.example.", dns.TypeA); m.Rcode != dns.RcodeSuccess || len(m.Answer) != 0 {
+	if m := h.ask("private.example.", dns.TypeA); m.Rcode != dns.RcodeSuccess || len(m.Answer) != 0 {
 		t.Fatalf("private answer kept: %v", m)
 	}
-	if m := ask("metadata.google.internal.", dns.TypeA); m.Rcode != dns.RcodeNameError {
+	if m := h.ask("metadata.google.internal.", dns.TypeA); m.Rcode != dns.RcodeNameError {
 		t.Fatalf("metadata name: %v", m)
 	}
-	if m := ask("7.0.0.10.in-addr.arpa.", dns.TypePTR); m.Rcode != dns.RcodeNameError {
+	if m := h.ask("7.0.0.10.in-addr.arpa.", dns.TypePTR); m.Rcode != dns.RcodeNameError {
 		t.Fatalf("reverse lookup of a refused address: %v", m)
 	}
-	if m := ask("missing.example.", dns.TypeA); m.Rcode != dns.RcodeNameError {
+	if m := h.ask("missing.example.", dns.TypeA); m.Rcode != dns.RcodeNameError {
 		t.Fatalf("missing name: %v", m)
 	}
 	// No name the guest chose is ever in the events.
 	if s := h.events.String(); strings.Contains(s, "example") || strings.Contains(s, "metadata") {
 		t.Fatalf("a name leaked into the events: %s", s)
+	}
+}
+
+// Cua's rules for no network but the names it allows: the allowed name's
+// answer reaches the guest (and its addresses stay reachable), while any
+// other name is still refused.
+func TestDNSKeepsAnAllowedNamesAnswerUnderDefaultNone(t *testing.T) {
+	h := newHarness(t, `{"version":1,"rules":[
+		{"net":"0.0.0.0/0","accept":false,"reason":"default:none"},
+		{"net":"::/0","accept":false,"reason":"default:none"}],
+		"default_accept":true,
+		"domains":{"allow":["github.com"]}}`)
+	h.gw.dns.lookup = func(_ context.Context, _, host string) ([]netip.Addr, error) {
+		switch host {
+		case "github.com.":
+			return []netip.Addr{netip.MustParseAddr("140.82.112.3")}, nil
+		}
+		return nil, &net.DNSError{Err: "no such host", Name: host, IsNotFound: true}
+	}
+	if m := h.ask("github.com.", dns.TypeA); len(m.Answer) != 1 || m.Answer[0].(*dns.A).A.String() != "140.82.112.3" {
+		t.Fatalf("an allowed answer was stripped: %v", m.Answer)
+	}
+	if s := h.events.String(); strings.Contains(s, "dns_stripped") {
+		t.Fatalf("a stripped answer: %s", s)
+	}
+	// The answer's addresses are bound to the name, so the connection path
+	// lets them through.
+	bound := h.gw.bound.names(netip.MustParseAddr("140.82.112.3"))
+	if len(bound) != 1 || bound[0] != "github.com." {
+		t.Fatalf("bound names: %v", bound)
+	}
+	if v := h.gw.rules.Current().DecideNamed(&h.gw.network, policy.TCP, netip.MustParseAddr("140.82.112.3"), 443, bound); !v.Accept {
+		t.Fatalf("connection to the allowed name: %+v", v)
+	}
+	if m := h.ask("example.com.", dns.TypeA); m.Rcode != dns.RcodeRefused {
+		t.Fatalf("a name that is not allowed: %v", m)
 	}
 }
 

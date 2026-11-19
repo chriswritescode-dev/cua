@@ -401,6 +401,16 @@ func (f *File) DecideNamed(n *Network, proto Proto, dst netip.Addr, port uint16,
 // it (a rebinding answer such as 127.0.0.1 or 10.0.0.1) never reaches the
 // guest. Rules limited to ports or one protocol do not count.
 func (f *File) StripAnswer(n *Network, dst netip.Addr) (bool, string) {
+	return f.StripAnswerNamed(n, dst, "")
+}
+
+// StripAnswerNamed is StripAnswer for the answer to a question for name:
+// the address of an allowed name stays, exactly as DecideNamed lets it
+// through where only a default deny (a "default:" reason, or the
+// non-accepting default) would refuse it. The platform's denies and the
+// user's own address denies still remove it; a denied name is stripped as
+// before (the resolver already refuses its questions).
+func (f *File) StripAnswerNamed(n *Network, dst netip.Addr, name string) (bool, string) {
 	dst = Normalize(dst)
 	switch {
 	case inAny(loopbackNets, dst):
@@ -417,6 +427,7 @@ func (f *File) StripAnswer(n *Network, dst netip.Addr) (bool, string) {
 	if f.blockHostAddrs() && n.HostAddrs != nil && slices.Contains(n.HostAddrs(), dst) {
 		return true, ReasonHostAddress
 	}
+	named := f.DomainVerdict(name) == 1
 	for i := range f.Rules {
 		r := &f.Rules[i]
 		if len(r.Ports) > 0 || r.Proto != "" || !r.prefix.Contains(dst) {
@@ -425,9 +436,14 @@ func (f *File) StripAnswer(n *Network, dst netip.Addr) (bool, string) {
 		if r.Accept {
 			return false, ""
 		}
+		// An allowed name beats the defaults, never a user's or the
+		// platform's deny.
+		if named && strings.HasPrefix(r.Reason, "default:") {
+			return false, ""
+		}
 		return true, r.Reason
 	}
-	if f.DefaultAccept {
+	if f.DefaultAccept || named {
 		return false, ""
 	}
 	return true, f.DefaultReason

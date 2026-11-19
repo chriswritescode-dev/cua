@@ -9,6 +9,8 @@ package gateway
 // it (A, AAAA, and the address hints of SVCB/HTTPS records) that the rules
 // refuse on every port is removed, so a name that resolves to 127.0.0.1,
 // 10.0.0.1 or a metadata address (DNS rebinding) never reaches the guest.
+// An answer to a question for an allowed name is an exception: it stays
+// where only a default deny would refuse it (as DecideNamed decides).
 // A reverse lookup of such an address gets NXDOMAIN, and so do the cloud
 // metadata names.
 //
@@ -148,7 +150,8 @@ func (r *resolver) answer(req *dns.Msg) *dns.Msg {
 	}
 	if q.Qtype == dns.TypePTR {
 		if ip, ok := reverseAddr(name); ok {
-			if strip, _ := r.strip(ip); strip {
+			// A reverse lookup has no name of its own: the address decides.
+			if strip, _ := r.strip(ip, ""); strip {
 				m.Rcode = dns.RcodeNameError
 				return m
 			}
@@ -199,7 +202,7 @@ func (r *resolver) answer(req *dns.Msg) *dns.Msg {
 		got.Id = req.Id
 		m = got
 	}
-	r.filter(m)
+	r.filter(m, name)
 	// The addresses an allowed name resolved to stay reachable for as long
 	// as the answer lives.
 	if rules.DomainVerdict(name) == 1 {
@@ -267,31 +270,33 @@ func (r *resolver) forward(req *dns.Msg) *dns.Msg {
 	return nil
 }
 
-// strip asks the rules whether an answer of ip is removed.
-func (r *resolver) strip(ip netip.Addr) (bool, string) {
-	return r.g.rules.Current().StripAnswer(&r.g.network, ip)
+// strip asks the rules whether an answer of ip to a question for name is
+// removed.
+func (r *resolver) strip(ip netip.Addr, name string) (bool, string) {
+	return r.g.rules.Current().StripAnswerNamed(&r.g.network, ip, name)
 }
 
-// filter removes the refused addresses from every section of m.
-func (r *resolver) filter(m *dns.Msg) {
-	m.Answer = r.filterRRs(m.Answer)
-	m.Ns = r.filterRRs(m.Ns)
-	m.Extra = r.filterRRs(m.Extra)
+// filter removes the refused addresses from every section of m (the answer
+// to a question for name).
+func (r *resolver) filter(m *dns.Msg, name string) {
+	m.Answer = r.filterRRs(m.Answer, name)
+	m.Ns = r.filterRRs(m.Ns, name)
+	m.Extra = r.filterRRs(m.Extra, name)
 }
 
-func (r *resolver) filterRRs(rrs []dns.RR) []dns.RR {
+func (r *resolver) filterRRs(rrs []dns.RR, name string) []dns.RR {
 	out := rrs[:0]
 	for _, rr := range rrs {
 		keep := true
 		switch v := rr.(type) {
 		case *dns.A:
-			keep = r.keep(v.A)
+			keep = r.keep(v.A, name)
 		case *dns.AAAA:
-			keep = r.keep(v.AAAA)
+			keep = r.keep(v.AAAA, name)
 		case *dns.SVCB:
-			v.Value = r.filterHints(v.Value)
+			v.Value = r.filterHints(v.Value, name)
 		case *dns.HTTPS:
-			v.Value = r.filterHints(v.Value)
+			v.Value = r.filterHints(v.Value, name)
 		}
 		if keep {
 			out = append(out, rr)
@@ -300,17 +305,17 @@ func (r *resolver) filterRRs(rrs []dns.RR) []dns.RR {
 	return out
 }
 
-func (r *resolver) filterHints(kvs []dns.SVCBKeyValue) []dns.SVCBKeyValue {
+func (r *resolver) filterHints(kvs []dns.SVCBKeyValue, name string) []dns.SVCBKeyValue {
 	out := kvs[:0]
 	for _, kv := range kvs {
 		switch h := kv.(type) {
 		case *dns.SVCBIPv4Hint:
-			h.Hint = r.keepIPs(h.Hint)
+			h.Hint = r.keepIPs(h.Hint, name)
 			if len(h.Hint) == 0 {
 				continue
 			}
 		case *dns.SVCBIPv6Hint:
-			h.Hint = r.keepIPs(h.Hint)
+			h.Hint = r.keepIPs(h.Hint, name)
 			if len(h.Hint) == 0 {
 				continue
 			}
@@ -320,22 +325,22 @@ func (r *resolver) filterHints(kvs []dns.SVCBKeyValue) []dns.SVCBKeyValue {
 	return out
 }
 
-func (r *resolver) keepIPs(ips []net.IP) []net.IP {
+func (r *resolver) keepIPs(ips []net.IP, name string) []net.IP {
 	out := ips[:0]
 	for _, ip := range ips {
-		if r.keep(ip) {
+		if r.keep(ip, name) {
 			out = append(out, ip)
 		}
 	}
 	return out
 }
 
-func (r *resolver) keep(ip net.IP) bool {
+func (r *resolver) keep(ip net.IP, name string) bool {
 	a, ok := netip.AddrFromSlice(ip)
 	if !ok {
 		return false
 	}
-	if strip, reason := r.strip(a); strip {
+	if strip, reason := r.strip(a, name); strip {
 		r.g.events.Emit(events.DNSStripped, reason, "", netip.AddrPortFrom(a.Unmap(), 0))
 		return false
 	}

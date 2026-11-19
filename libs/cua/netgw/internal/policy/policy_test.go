@@ -144,6 +144,55 @@ func TestStripAnswer(t *testing.T) {
 	}
 }
 
+// Cua's encoding of a default none with allowed names: the deny rules name
+// every destination, so a name-blind strip removed the allowed name's own
+// answer before the gateway could bind it.
+func TestStripAnswerKeepsAnAllowedNamesAddress(t *testing.T) {
+	f := mustParse(t, `{"version":1,"rules":[
+		{"net":"0.0.0.0/0","accept":false,"reason":"default:none"},
+		{"net":"::/0","accept":false,"reason":"default:none"}],
+		"default_accept":true,
+		"domains":{"allow":["github.com","registry.npmjs.org"]}}`)
+	for _, c := range []struct {
+		name, ip, reason string
+	}{
+		{"github.com.", "140.82.112.3", ""},
+		{"registry.npmjs.org.", "104.16.25.34", ""},
+		{"example.com.", "93.184.216.34", ReasonDefaultNone},
+		{"github.com.", "127.0.0.1", ReasonLoopback},
+		{"github.com.", "169.254.169.254", ReasonMetadata},
+		{"github.com.", "172.16.0.6", ReasonHostLoopback},
+		{"github.com.", "172.16.0.5", ReasonGateway},
+		{"github.com.", "192.168.1.20", ReasonHostAddress},
+	} {
+		strip, reason := f.StripAnswerNamed(testNet, a(c.ip), c.name)
+		if strip != (c.reason != "") || reason != c.reason {
+			t.Errorf("%s %s: strip=%v %q, want %q", c.ip, c.name, strip, reason, c.reason)
+		}
+	}
+	// The same rules with the default that refuses.
+	g := mustParse(t, `{"version":1,"rules":[],"default_accept":false,"default_reason":"default:none","domains":{"allow":["github.com"]}}`)
+	if strip, reason := g.StripAnswerNamed(testNet, a("140.82.112.3"), "github.com."); strip || reason != "" {
+		t.Errorf("allowed name under the refusing default: strip=%v %q", strip, reason)
+	}
+	if strip, reason := g.StripAnswerNamed(testNet, a("93.184.216.34"), "example.com."); !strip || reason != ReasonDefaultNone {
+		t.Errorf("unnamed under the refusing default: strip=%v %q", strip, reason)
+	}
+	// The user's own deny comes first (first match wins, as in DecideNamed).
+	u := mustParse(t, `{"version":1,"rules":[
+		{"net":"140.82.112.0/20","accept":false,"reason":"user:deny"},
+		{"net":"0.0.0.0/0","accept":false,"reason":"default:none"}],
+		"default_accept":true,
+		"domains":{"allow":["github.com"]}}`)
+	if strip, reason := u.StripAnswerNamed(testNet, a("140.82.112.3"), "github.com."); !strip || reason != ReasonUserDeny {
+		t.Errorf("an allowed name in a user deny: strip=%v %q", strip, reason)
+	}
+	// Unnamed answers keep the behaviour of StripAnswer.
+	if strip, reason := f.StripAnswer(testNet, a("140.82.112.3")); !strip || reason != ReasonDefaultNone {
+		t.Errorf("unnamed: strip=%v %q", strip, reason)
+	}
+}
+
 func TestParseRefusesWhatItCannotRead(t *testing.T) {
 	for _, s := range []string{
 		`{"version":2,"rules":[]}`,
